@@ -1,0 +1,17 @@
+﻿@page "/"
+
+<h1>Quiz Game</h1>
+<p>Aplikace běží správně 🎉</p>
+
+<button @onclick="SayHello">Klikni</button>
+
+<p>@message</p>
+
+@code {
+    string message = "";
+
+    void SayHello()
+    {
+        message = "Hello from Blazor WebAssembly!";
+    }
+}
