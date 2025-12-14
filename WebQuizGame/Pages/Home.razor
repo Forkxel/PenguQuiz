@@ -1,17 +1,82 @@
 ﻿@page "/"
+@using WebQuizGame.Classes
+<h3>Quiz Game – Multiple Questions</h3>
 
-<h1>Quiz Game</h1>
-<p>Aplikace běží správně 🎉</p>
+@if (CurrentQuestionIndex < Questions.Count)
+{
+    <div>
+        <p><strong>Question @(@CurrentQuestionIndex + 1):</strong> @CurrentQuestion.Text</p>
 
-<button @onclick="SayHello">Klikni</button>
+        @foreach (var answer in CurrentQuestion.Answers)
+        {
+            <button class="answer-btn" @onclick="() => CheckAnswer(answer)" disabled="@IsAnswered">
+                @answer
+            </button>
+        }
+    </div>
 
-<p>@message</p>
+    @if (ResultMessage != null)
+    {
+        <p>@ResultMessage</p>
+    }
+}
+else
+{
+    <p>Quiz finished! Your final score: @Score</p>
+}
 
 @code {
-    string message = "";
-
-    void SayHello()
+    private List<Question> Questions = new List<Question>
     {
-        message = "Hello from Blazor WebAssembly!";
+        new Question
+        {
+            Text = "What is the capital of France?",
+            CorrectAnswer = "Paris",
+            Answers = new List<string> { "Paris", "Lyon", "Marseille", "Bordeaux" }
+        },
+        new Question
+        {
+            Text = "Which planet is known as the Red Planet?",
+            CorrectAnswer = "Mars",
+            Answers = new List<string> { "Mars", "Venus", "Jupiter", "Saturn" }
+        },
+        new Question
+        {
+            Text = "What is 5 + 7?",
+            CorrectAnswer = "12",
+            Answers = new List<string> { "10", "11", "12", "13" }
+        }
+    };
+
+    private int CurrentQuestionIndex = 0;
+    private int Score = 0;
+    private string? ResultMessage;
+    private bool IsAnswered = false;
+
+    private async Task CheckAnswer(string selectedAnswer)
+    {
+        IsAnswered = true;
+        StateHasChanged();
+
+        if (selectedAnswer == CurrentQuestion.CorrectAnswer)
+        {
+            Score += 10;
+            ResultMessage = "Correct! 🎉";
+        }
+        else
+        {
+            ResultMessage = $"Wrong! The correct answer was: {CurrentQuestion.CorrectAnswer}";
+        }
+
+        StateHasChanged();
+
+        await Task.Delay(1500);
+
+        ResultMessage = null;
+        IsAnswered = false;
+        CurrentQuestionIndex++;
+        StateHasChanged();
     }
+
+    private Question CurrentQuestion => Questions[CurrentQuestionIndex];
 }
