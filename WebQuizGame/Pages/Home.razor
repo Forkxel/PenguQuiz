@@ -11,7 +11,7 @@
 
         @foreach (var answer in ShuffledAnswers)
         {
-            <button class="answer-btn" @onclick="() => CheckAnswer(answer)" disabled="@IsAnswered">
+            <button class="answer-btn @GetAnswerClass(answer)" @onclick="() => CheckAnswer(answer)" disabled="@IsAnswered">
                 @answer
             </button>
         }
@@ -54,10 +54,10 @@ else
     private int Score = 0;
     private string? ResultMessage;
     private bool IsAnswered = false;
-
     private int TimeLeft = 10;
-    private List<string> ShuffledAnswers = new List<string>();
+    private List<string> ShuffledAnswers = new();
     private Timer? QuestionTimer;
+    private string? SelectedAnswer;
 
     protected override void OnInitialized()
     {
@@ -68,6 +68,7 @@ else
     {
         IsAnswered = false;
         ResultMessage = null;
+        SelectedAnswer = null;
         TimeLeft = 10;
         
         var rnd = new Random();
@@ -93,6 +94,7 @@ else
 
     private async Task CheckAnswer(string? selectedAnswer)
     {
+        SelectedAnswer = selectedAnswer;
         if (IsAnswered) return;
 
         IsAnswered = true;
@@ -121,6 +123,19 @@ else
             ResultMessage = null;
             StateHasChanged();
         }
+    }
+    
+    private string GetAnswerClass(string answer)
+    {
+        if (!IsAnswered) return "";
+
+        if (answer == CurrentQuestion.CorrectAnswer)
+            return "correct";
+
+        if (answer == SelectedAnswer)
+            return "wrong";
+
+        return "disabled";
     }
 
     private Question CurrentQuestion => Questions[CurrentQuestionIndex];

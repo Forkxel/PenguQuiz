@@ -86,3 +86,26 @@ code {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+
+.answer-btn {
+    display: block;
+    margin: 8px 0;
+    padding: 12px;
+    width: 100%;
+    font-size: 16px;
+    transition: all 0.3s ease;
+}
+
+.correct {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.wrong {
+    background-color: #F44336;
+    color: white;
+}
+
+.disabled {
+    opacity: 0.4;
+}
