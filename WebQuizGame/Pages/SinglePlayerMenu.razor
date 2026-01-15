@@ -1,0 +1,68 @@
+﻿@page "/singleplayer"
+
+<h2>Singleplayer</h2>
+
+<div class="sp-menu">
+    <button class="menu-btn" @onclick="StartRanked">
+        Ranked Singleplayer
+    </button>
+
+    <button class="menu-btn" @onclick="ShowCasualSetupClicked">
+        Casual Singleplayer
+    </button>
+</div>
+
+@if (ShowCasualSetup)
+{
+    <div class="casual-setup">
+        <h3>Casual Settings</h3>
+
+        <label>
+            Number of questions:
+            <select @bind="QuestionCount">
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="15">15</option>
+            </select>
+        </label>
+
+        <label>
+            Time per question:
+            <select @bind="TimePerQuestion">
+                <option value="5">5 s</option>
+                <option value="10">10 s</option>
+                <option value="15">15 s</option>
+            </select>
+        </label>
+
+        <button class="menu-btn" @onclick="StartCasual">
+            Start Casual Game
+        </button>
+    </div>
+}
+
+@code {
+    [Inject] NavigationManager Navigation { get; set; } = default!;
+
+    private bool ShowCasualSetup = false;
+
+    private int QuestionCount = 10;
+    private int TimePerQuestion = 10;
+
+    private void StartRanked()
+    {
+        // pevné hodnoty pro ranked
+        Navigation.NavigateTo("/game?mode=ranked");
+    }
+
+    private void StartCasual()
+    {
+        Navigation.NavigateTo($"/game?mode=casual&questions={QuestionCount}&time={TimePerQuestion}");
+    }
+    
+    private void ShowCasualSetupClicked()
+    {
+        ShowCasualSetup = true;
+    }
+
+}

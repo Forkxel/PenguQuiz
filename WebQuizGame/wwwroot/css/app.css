@@ -133,3 +133,17 @@ code {
     background-color: #444;
     color: white;
 }
+
+.sp-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    max-width: 300px;
+    margin: auto;
+}
+
+.casual-setup {
+    margin-top: 30px;
+    padding: 15px;
+    border: 1px solid #ccc;
+}
