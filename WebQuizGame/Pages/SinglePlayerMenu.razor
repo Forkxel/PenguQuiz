@@ -1,4 +1,4 @@
-﻿@page "/singleplayer"
+﻿@page "/singleplayerMenu"
 @using WebQuizGame.Classes
 
 <h2>Singleplayer</h2>
@@ -89,8 +89,19 @@
 
     private void StartCasual()
     {
-        Navigation.NavigateTo($"/game?mode=casual&questions={QuestionCount}&time={TimePerQuestion}");
+        string categoriesParam = string.Join(",", SelectedCategoryIds);
+
+        Navigation.NavigateTo(
+            $"/singleplayer" +
+            $"?mode=casual" +
+            $"&categories={categoriesParam}" +
+            $"&difficulty={SelectedDifficulty}" +
+            $"&amount={QuestionCount}" +
+            $"&time={TimePerQuestion}"
+        );
     }
+
+
     
     private void ShowCasualSetupClicked()
     {

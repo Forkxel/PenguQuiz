@@ -1,0 +1,171 @@
+﻿@page "/singleplayer"
+@using WebQuizGame.Classes
+@inject NavigationManager Navigation
+@inject HttpClient Http
+
+<h2>Quiz Game</h2>
+
+@if(Questions == null)
+{
+    <p>Loading questions...</p>
+}
+else if(Questions.Count == 0)
+{
+    <p>No questions available. Please try again.</p>
+}
+else if(CurrentQuestionIndex < Questions.Count)
+{
+    <div>
+        <p><strong>Question @(@CurrentQuestionIndex + 1):</strong> @Questions[CurrentQuestionIndex].Text</p>
+
+        @if(Questions[CurrentQuestionIndex].Type == "boolean")
+        {
+            <button class="answer-btn @GetAnswerClass("True")"
+                    disabled="@Answered"
+                    @onclick="CheckTrue">True</button>
+
+            <button class="answer-btn @GetAnswerClass("False")"
+                    disabled="@Answered"
+                    @onclick="CheckFalse">False</button>
+
+        }
+        else
+        {
+            @foreach(var ans in Questions[CurrentQuestionIndex].Answers)
+            {
+                <button class="answer-btn @GetAnswerClass(ans)"
+                        disabled="@Answered"
+                        @onclick="() => CheckAnswer(ans)">
+                    @ans
+                </button>
+            }
+        }
+    </div>
+}
+else
+{
+    <p>Quiz finished! Your score: @Score</p>
+}
+
+@code {
+    [Parameter] [SupplyParameterFromQuery] public string? categories { get; set; }
+    [Parameter] [SupplyParameterFromQuery] public string? difficulty { get; set; }
+    [Parameter] [SupplyParameterFromQuery] public int amount { get; set; }
+    [Parameter] [SupplyParameterFromQuery] public int time { get; set; }
+
+
+    private List<Question>? Questions;
+    private int CurrentQuestionIndex = 0;
+    private int Score = 0;
+    private string? SelectedAnswer = null;
+    private bool Answered = false;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        await FetchQuestions();
+    }
+
+    private async Task FetchQuestions()
+    {
+        Questions = new List<Question>();
+
+        if (string.IsNullOrEmpty(categories))
+        {
+            var url =
+                $"https://opentdb.com/api.php?amount={amount}&difficulty={difficulty}";
+
+            var response = await Http.GetFromJsonAsync<TriviaResponse>(url);
+            if (response?.Results != null)
+                Questions.AddRange(ParseTrivia(response));
+
+            CurrentQuestionIndex = 0;
+            return;
+        }
+
+        var categoryIds = categories.Split(',').Select(int.Parse).ToList();
+        int amountPerCategory = Math.Max(1, amount / categoryIds.Count);
+        
+        for (int i = 0; i < categoryIds.Count; i++)
+        {
+            var requestUrl =
+                $"https://opentdb.com/api.php?amount={amountPerCategory}&category={categoryIds[i]}&difficulty={difficulty}";
+
+            var response = await Http.GetFromJsonAsync<TriviaResponse>(requestUrl);
+            if (response?.Results != null)
+                Questions.AddRange(ParseTrivia(response));
+
+            if (i < categoryIds.Count - 1)
+                await Task.Delay(5000);
+        }
+
+        Questions = Questions.OrderBy(q => Guid.NewGuid()).ToList();
+        CurrentQuestionIndex = 0;
+    }
+
+
+
+    private async void CheckAnswer(string selected)
+    {
+        if (Answered) return;
+
+        SelectedAnswer = selected;
+        Answered = true;
+
+        var current = Questions[CurrentQuestionIndex];
+        if (selected == current.CorrectAnswer)
+            Score += 10;
+
+        StateHasChanged();
+
+        await Task.Delay(800);
+
+        SelectedAnswer = null;
+        Answered = false;
+        CurrentQuestionIndex++;
+
+        StateHasChanged();
+    }
+
+
+    private void CheckTrue()
+    {
+        CheckAnswer("True");
+    }
+
+    private void CheckFalse()
+    {
+        CheckAnswer("False");
+    }
+    
+    private List<Question> ParseTrivia(TriviaResponse response)
+    {
+        return response.Results.Select(r => new Question
+        {
+            Text = System.Net.WebUtility.HtmlDecode(r.Question),
+            CorrectAnswer = System.Net.WebUtility.HtmlDecode(r.CorrectAnswer),
+            Type = r.Type,
+            Answers = r.Type == "multiple"
+                ? r.IncorrectAnswers.Select(a => System.Net.WebUtility.HtmlDecode(a))
+                    .Append(System.Net.WebUtility.HtmlDecode(r.CorrectAnswer))
+                    .OrderBy(a => Guid.NewGuid()).ToList()
+                : new List<string> { "True", "False" }
+        }).ToList();
+    }
+
+    private string GetAnswerClass(string answer)
+    {
+        if (!Answered) return "";
+
+        var correct = Questions[CurrentQuestionIndex].CorrectAnswer;
+
+        if (answer == correct)
+            return "correct";
+
+        if (answer == SelectedAnswer)
+            return "wrong";
+
+        return "disabled";
+    }
+
+}
