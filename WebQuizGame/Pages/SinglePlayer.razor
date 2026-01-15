@@ -5,20 +5,26 @@
 
 <h2>Quiz Game</h2>
 
-@if(Questions == null)
+@if (Questions == null || Questions.Count == 0)
 {
     <p>Loading questions...</p>
 }
-else if(Questions.Count == 0)
-{
-    <p>No questions available. Please try again.</p>
-}
-else if(CurrentQuestionIndex < Questions.Count)
+else if (CurrentQuestionIndex < Questions.Count)
 {
     <div>
-        <p><strong>Question @(@CurrentQuestionIndex + 1):</strong> @Questions[CurrentQuestionIndex].Text</p>
+        @if (Questions != null && Questions.Count > 0 && CurrentQuestionIndex < Questions.Count && time > 0)
+        {
+            <p>Time left: @TimeLeft s</p>
+        }
+    </div>
 
-        @if(Questions[CurrentQuestionIndex].Type == "boolean")
+    <div>
+        <p>
+            <strong>Question @(@CurrentQuestionIndex + 1):</strong>
+            @Questions[CurrentQuestionIndex].Text
+        </p>
+
+        @if (Questions[CurrentQuestionIndex].Type == "boolean")
         {
             <button class="answer-btn @GetAnswerClass("True")"
                     disabled="@Answered"
@@ -27,7 +33,6 @@ else if(CurrentQuestionIndex < Questions.Count)
             <button class="answer-btn @GetAnswerClass("False")"
                     disabled="@Answered"
                     @onclick="CheckFalse">False</button>
-
         }
         else
         {
@@ -47,103 +52,126 @@ else
     <p>Quiz finished! Your score: @Score</p>
 }
 
-@code {
-    [Parameter] [SupplyParameterFromQuery] public string? categories { get; set; }
-    [Parameter] [SupplyParameterFromQuery] public string? difficulty { get; set; }
-    [Parameter] [SupplyParameterFromQuery] public int amount { get; set; }
-    [Parameter] [SupplyParameterFromQuery] public int time { get; set; }
 
+@code {
+    [Parameter, SupplyParameterFromQuery] public string? categories { get; set; }
+    [Parameter, SupplyParameterFromQuery] public string? difficulty { get; set; }
+    [Parameter, SupplyParameterFromQuery] public int amount { get; set; }
+    [Parameter, SupplyParameterFromQuery] public int time { get; set; }
 
     private List<Question>? Questions;
     private int CurrentQuestionIndex = 0;
     private int Score = 0;
-    private string? SelectedAnswer = null;
+    private string? SelectedAnswer;
     private bool Answered = false;
-
+    private int TimeLeft;
+    private CancellationTokenSource? TimerCts;
 
     protected override async Task OnInitializedAsync()
     {
-        await FetchQuestions();
+        Questions = new List<Question>();
+        await LoadQuestionsAsync(); 
+        if (Questions.Count > 0)
+        {
+            StartTimer(); 
+        }
     }
 
-    private async Task FetchQuestions()
+
+    private async Task LoadQuestionsAsync()
     {
-        Questions = new List<Question>();
-        
         if (string.IsNullOrWhiteSpace(categories))
         {
-            var url = $"https://opentdb.com/api.php?amount={amount}";
-
-            if (!string.IsNullOrWhiteSpace(difficulty) && difficulty != "any")
-                url += $"&difficulty={difficulty}";
-
-            var response = await Http.GetFromJsonAsync<TriviaResponse>(url);
-
-            if (response?.Results != null)
-                Questions.AddRange(ParseTrivia(response));
-
-            Questions = Questions.OrderBy(q => Guid.NewGuid()).ToList();
-            CurrentQuestionIndex = 0;
+            await LoadAnyCategory();
             return;
         }
-        
+
         var categoryIds = categories.Split(',').Select(int.Parse).ToList();
         int amountPerCategory = Math.Max(1, amount / categoryIds.Count);
 
         for (int i = 0; i < categoryIds.Count; i++)
         {
-            var requestUrl =
-                $"https://opentdb.com/api.php?amount={amountPerCategory}&category={categoryIds[i]}";
-
-            if (!string.IsNullOrWhiteSpace(difficulty) && difficulty != "any")
-                requestUrl += $"&difficulty={difficulty}";
-
-            var response = await Http.GetFromJsonAsync<TriviaResponse>(requestUrl);
-
-            if (response?.Results != null)
-                Questions.AddRange(ParseTrivia(response));
+            await LoadCategory(categoryIds[i], amountPerCategory);
 
             if (i < categoryIds.Count - 1)
                 await Task.Delay(5000);
         }
+    }
 
-        Questions = Questions.OrderBy(q => Guid.NewGuid()).ToList();
-        CurrentQuestionIndex = 0;
+    private async Task LoadAnyCategory()
+    {
+        var url = $"https://opentdb.com/api.php?amount={amount}";
+
+        if (!string.IsNullOrWhiteSpace(difficulty) && difficulty != "any")
+            url += $"&difficulty={difficulty}";
+
+        var response = await Http.GetFromJsonAsync<TriviaResponse>(url);
+
+        if (response?.Results != null)
+        {
+            Questions!.AddRange(ParseTrivia(response));
+            ShuffleRemainingQuestions();
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadCategory(int categoryId, int amount)
+    {
+        var url = $"https://opentdb.com/api.php?amount={amount}&category={categoryId}";
+
+        if (!string.IsNullOrWhiteSpace(difficulty) && difficulty != "any")
+            url += $"&difficulty={difficulty}";
+
+        var response = await Http.GetFromJsonAsync<TriviaResponse>(url);
+
+        if (response?.Results != null)
+        {
+            Questions!.AddRange(ParseTrivia(response));
+            ShuffleRemainingQuestions();
+            StateHasChanged();
+        }
+    }
+
+    private void ShuffleRemainingQuestions()
+    {
+        var answered = Questions!.Take(CurrentQuestionIndex).ToList();
+        var remaining = Questions.Skip(CurrentQuestionIndex)
+            .OrderBy(_ => Guid.NewGuid())
+            .ToList();
+
+        Questions = answered.Concat(remaining).ToList();
     }
 
     private async Task CheckAnswer(string selected)
     {
-        if (Answered) return;
+        if (Answered || Questions == null) return;
 
         SelectedAnswer = selected;
         Answered = true;
 
+        TimerCts?.Cancel();
+
         var current = Questions[CurrentQuestionIndex];
+
         if (selected == current.CorrectAnswer)
+        {
             Score += 10;
+        }
 
         StateHasChanged();
-
         await Task.Delay(800);
 
         SelectedAnswer = null;
         Answered = false;
         CurrentQuestionIndex++;
+        
+        if (CurrentQuestionIndex < Questions.Count)
+            StartTimer();
 
         StateHasChanged();
     }
 
 
-    private void CheckTrue()
-    {
-        CheckAnswer("True");
-    }
-
-    private void CheckFalse()
-    {
-        CheckAnswer("False");
-    }
-    
     private List<Question> ParseTrivia(TriviaResponse response)
     {
         return response.Results.Select(r => new Question
@@ -152,16 +180,18 @@ else
             CorrectAnswer = System.Net.WebUtility.HtmlDecode(r.CorrectAnswer),
             Type = r.Type,
             Answers = r.Type == "multiple"
-                ? r.IncorrectAnswers.Select(a => System.Net.WebUtility.HtmlDecode(a))
+                ? r.IncorrectAnswers
+                    .Select(a => System.Net.WebUtility.HtmlDecode(a))
                     .Append(System.Net.WebUtility.HtmlDecode(r.CorrectAnswer))
-                    .OrderBy(a => Guid.NewGuid()).ToList()
+                    .OrderBy(_ => Guid.NewGuid())
+                    .ToList()
                 : new List<string> { "True", "False" }
         }).ToList();
     }
 
     private string GetAnswerClass(string answer)
     {
-        if (!Answered) return "";
+        if (!Answered || Questions == null) return "";
 
         var correct = Questions[CurrentQuestionIndex].CorrectAnswer;
 
@@ -174,4 +204,41 @@ else
         return "disabled";
     }
 
+    private void CheckTrue()
+    {
+        CheckAnswer("True"); 
+    }
+
+    private void CheckFalse()
+    {
+        CheckAnswer("False");
+    }
+    
+    private void StartTimer()
+    {
+        if (time == 0) 
+            return;
+
+        TimerCts?.Cancel();
+        TimerCts = new CancellationTokenSource();
+
+        TimeLeft = time;
+        _ = RunTimer(TimerCts.Token);
+    }
+    
+    private async Task RunTimer(CancellationToken token)
+    {
+        while (TimeLeft > 0 && !token.IsCancellationRequested)
+        {
+            await Task.Delay(1000, token);
+            TimeLeft--;
+
+            StateHasChanged();
+        }
+
+        if (TimeLeft == 0 && !Answered)
+        {
+            await CheckAnswer("TIMEOUT");
+        }
+    }
 }

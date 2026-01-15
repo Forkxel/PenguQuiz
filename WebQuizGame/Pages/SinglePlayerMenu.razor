@@ -34,19 +34,21 @@
                 <option value="30">30 s</option>
                 <option value="60">60 s</option>
                 <option value="120"> 120 s</option>
-                <option value="Infinite">Infinite</option>
+                <option value="0">Infinite</option>
             </select>
         </label>
 
         <!-- Kategorie multi-select -->
         <div>
-            <p>Select Categories:</p>
+            <p>Select Categories (max 3):</p>
             @foreach(var cat in Categories)
             {
                 <label>
-                    <input type="checkbox" value="@cat.Id" 
+                    <input type="checkbox"
+                           value="@cat.Id"
                            @onchange="() => ToggleCategory(cat.Id)"
-                           checked="@SelectedCategoryIds.Contains(cat.Id)" />
+                           checked="@SelectedCategoryIds.Contains(cat.Id)"
+                           disabled="@(!SelectedCategoryIds.Contains(cat.Id) && SelectedCategoryIds.Count >= 3)" />
                     @cat.Name
                 </label>
             }
