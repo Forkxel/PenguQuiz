@@ -1,4 +1,5 @@
 ﻿@page "/singleplayer"
+@using WebQuizGame.Classes
 
 <h2>Singleplayer</h2>
 
@@ -17,29 +18,60 @@
     <div class="casual-setup">
         <h3>Casual Settings</h3>
 
+        <!-- Počet otázek slider -->
         <label>
-            Number of questions:
-            <select @bind="QuestionCount">
-                <option value="5">5</option>
-                <option value="10">10</option>
-                <option value="15">15</option>
-            </select>
+            Number of questions: @((QuestionCount == MaxQuestionCount) ? "Infinite" : QuestionCount.ToString())
         </label>
+        <input type="range" min="5" max="@MaxQuestionCount" step="1" @bind="QuestionCount" />
 
+        <!-- Výběr času -->
         <label>
             Time per question:
             <select @bind="TimePerQuestion">
                 <option value="5">5 s</option>
                 <option value="10">10 s</option>
                 <option value="15">15 s</option>
+                <option value="30">30 s</option>
+                <option value="60">60 s</option>
+                <option value="120"> 120 s</option>
+                <option value="Infinite">Infinite</option>
             </select>
         </label>
+
+        <!-- Kategorie multi-select -->
+        <div>
+            <p>Select Categories:</p>
+            @foreach(var cat in Categories)
+            {
+                <label>
+                    <input type="checkbox" value="@cat.Id" 
+                           @onchange="() => ToggleCategory(cat.Id)"
+                           checked="@SelectedCategoryIds.Contains(cat.Id)" />
+                    @cat.Name
+                </label>
+            }
+        </div>
+
+        <!-- Difficulty radio -->
+        <div>
+            <p>Difficulty:</p>
+            @foreach(var diff in Difficulties)
+            {
+                <label>
+                    <input type="radio" name="difficulty" value="@diff" 
+                           @onchange="() => SelectedDifficulty = diff"
+                           checked="@SelectedDifficulty == diff" />
+                    @diff
+                </label>
+            }
+        </div>
 
         <button class="menu-btn" @onclick="StartCasual">
             Start Casual Game
         </button>
     </div>
 }
+
 
 @code {
     [Inject] NavigationManager Navigation { get; set; } = default!;
@@ -65,4 +97,45 @@
         ShowCasualSetup = true;
     }
 
+    private const int MaxQuestionCount = 50;
+
+    private List<Category> Categories = new()
+    {
+        new Category { Id = 9,  Name = "General Knowledge" },
+        new Category { Id = 10, Name = "Entertainment: Books" },
+        new Category { Id = 11, Name = "Entertainment: Film" },
+        new Category { Id = 12, Name = "Entertainment: Music" },
+        new Category { Id = 13, Name = "Entertainment: Musicals & Theatres" },
+        new Category { Id = 14, Name = "Entertainment: Television" },
+        new Category { Id = 15, Name = "Entertainment: Video Games" },
+        new Category { Id = 16, Name = "Entertainment: Board Games" },
+        new Category { Id = 17, Name = "Science & Nature" },
+        new Category { Id = 18, Name = "Science: Computers" },
+        new Category { Id = 19, Name = "Science: Mathematics" },
+        new Category { Id = 20, Name = "Mythology" },
+        new Category { Id = 21, Name = "Sports" },
+        new Category { Id = 22, Name = "Geography" },
+        new Category { Id = 23, Name = "History" },
+        new Category { Id = 24, Name = "Politics" },
+        new Category { Id = 25, Name = "Art" },
+        new Category { Id = 26, Name = "Celebrities" },
+        new Category { Id = 27, Name = "Animals" },
+        new Category { Id = 28, Name = "Vehicles" },
+        new Category { Id = 29, Name = "Entertainment: Comics" },
+        new Category { Id = 30, Name = "Science: Gadgets" },
+        new Category { Id = 31, Name = "Entertainment: Japanese Anime & Manga" },
+        new Category { Id = 32, Name = "Entertainment: Cartoon & Animations" }
+    };
+
+    private List<int> SelectedCategoryIds = new();
+    private List<string> Difficulties = new() { "any", "easy", "medium", "hard" };
+    private string SelectedDifficulty = "any";
+
+    private void ToggleCategory(int id)
+    {
+        if (SelectedCategoryIds.Contains(id))
+            SelectedCategoryIds.Remove(id);
+        else
+            SelectedCategoryIds.Add(id);
+    }
 }
