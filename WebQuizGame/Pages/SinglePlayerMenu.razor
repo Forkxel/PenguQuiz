@@ -89,17 +89,23 @@
 
     private void StartCasual()
     {
-        string categoriesParam = string.Join(",", SelectedCategoryIds);
+        var query = new List<string>();
 
-        Navigation.NavigateTo(
-            $"/singleplayer" +
-            $"?mode=casual" +
-            $"&categories={categoriesParam}" +
-            $"&difficulty={SelectedDifficulty}" +
-            $"&amount={QuestionCount}" +
-            $"&time={TimePerQuestion}"
-        );
+        query.Add($"amount={QuestionCount}");
+
+        if (SelectedDifficulty != "any")
+            query.Add($"difficulty={SelectedDifficulty}");
+
+        if (SelectedCategoryIds.Any())
+            query.Add($"categories={string.Join(",", SelectedCategoryIds)}");
+
+        query.Add($"time={TimePerQuestion}");
+
+        var queryString = string.Join("&", query);
+
+        Navigation.NavigateTo($"/singleplayer?mode=casual&{queryString}");
     }
+
 
 
     

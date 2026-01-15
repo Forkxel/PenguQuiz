@@ -69,29 +69,37 @@ else
     private async Task FetchQuestions()
     {
         Questions = new List<Question>();
-
-        if (string.IsNullOrEmpty(categories))
+        
+        if (string.IsNullOrWhiteSpace(categories))
         {
-            var url =
-                $"https://opentdb.com/api.php?amount={amount}&difficulty={difficulty}";
+            var url = $"https://opentdb.com/api.php?amount={amount}";
+
+            if (!string.IsNullOrWhiteSpace(difficulty) && difficulty != "any")
+                url += $"&difficulty={difficulty}";
 
             var response = await Http.GetFromJsonAsync<TriviaResponse>(url);
+
             if (response?.Results != null)
                 Questions.AddRange(ParseTrivia(response));
 
+            Questions = Questions.OrderBy(q => Guid.NewGuid()).ToList();
             CurrentQuestionIndex = 0;
             return;
         }
-
+        
         var categoryIds = categories.Split(',').Select(int.Parse).ToList();
         int amountPerCategory = Math.Max(1, amount / categoryIds.Count);
-        
+
         for (int i = 0; i < categoryIds.Count; i++)
         {
             var requestUrl =
-                $"https://opentdb.com/api.php?amount={amountPerCategory}&category={categoryIds[i]}&difficulty={difficulty}";
+                $"https://opentdb.com/api.php?amount={amountPerCategory}&category={categoryIds[i]}";
+
+            if (!string.IsNullOrWhiteSpace(difficulty) && difficulty != "any")
+                requestUrl += $"&difficulty={difficulty}";
 
             var response = await Http.GetFromJsonAsync<TriviaResponse>(requestUrl);
+
             if (response?.Results != null)
                 Questions.AddRange(ParseTrivia(response));
 
@@ -103,9 +111,7 @@ else
         CurrentQuestionIndex = 0;
     }
 
-
-
-    private async void CheckAnswer(string selected)
+    private async Task CheckAnswer(string selected)
     {
         if (Answered) return;
 
