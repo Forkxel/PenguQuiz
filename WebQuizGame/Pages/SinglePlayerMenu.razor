@@ -20,9 +20,12 @@
 
         <!-- Počet otázek slider -->
         <label>
-            Number of questions: @((QuestionCount == MaxQuestionCount) ? "Infinite" : QuestionCount.ToString())
+            Number of questions: @(QuestionCount == MaxQuestionCount ? "∞" : QuestionCount.ToString())
         </label>
-        <input type="range" min="5" max="@MaxQuestionCount" step="1" @bind="QuestionCount" />
+        <input type="range" min="5" max="@MaxQuestionCount" step="1" 
+               @bind="QuestionCount" 
+               @bind:event="oninput" />
+
 
         <!-- Výběr času -->
         <label>
