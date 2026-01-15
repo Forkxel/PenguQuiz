@@ -1,0 +1,29 @@
+﻿@page "/"
+
+<h1 class="menu-title">Quiz Game</h1>
+
+<div class="menu-container">
+    <button class="menu-btn" @onclick="GoToSingleplayer">Singleplayer</button>
+    <button class="menu-btn" @onclick="GoToMultiplayer">Multiplayer</button>
+    <button class="menu-btn" @onclick="GoToProfile">Profile</button>
+    <!-- <button class="menu-btn exit" @onclick="ExitGame">Exit</button> -->
+</div>
+
+@code {
+    [Inject] NavigationManager Navigation { get; set; } = default!;
+
+    private void GoToSingleplayer()
+        => Navigation.NavigateTo("/singleplayer");
+
+    private void GoToMultiplayer()
+        => Navigation.NavigateTo("/multiplayer");
+
+    private void GoToProfile()
+        => Navigation.NavigateTo("/profile");
+    /*
+    private void ExitGame()
+    {
+        Navigation.NavigateTo("/");
+    }
+    */
+}

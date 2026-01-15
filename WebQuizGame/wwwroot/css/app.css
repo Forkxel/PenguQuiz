@@ -109,3 +109,27 @@ code {
 .disabled {
     opacity: 0.4;
 }
+
+.menu-title {
+    text-align: center;
+    margin-top: 40px;
+}
+
+.menu-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    max-width: 300px;
+    margin: 40px auto;
+}
+
+.menu-btn {
+    padding: 15px;
+    font-size: 18px;
+    cursor: pointer;
+}
+
+.menu-btn.exit {
+    background-color: #444;
+    color: white;
+}
