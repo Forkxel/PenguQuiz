@@ -19,23 +19,27 @@ else if (CurrentQuestionIndex < Questions.Count)
     }
 
     <div>
-        <p><strong>Question @(@CurrentQuestionIndex + 1):</strong> @Questions[CurrentQuestionIndex]?.Text</p>
+        <p>
+            <strong>Question @(CurrentQuestionIndex + 1):</strong>
+            @Questions[CurrentQuestionIndex]?.Text
+        </p>
 
         @if (Questions[CurrentQuestionIndex]?.Type == "boolean")
         {
-            <button class="answer-btn @GetAnswerClass("True")"
-                    disabled="@Answered"
+            <button disabled="@Answered"
+                    class="answer-btn @GetAnswerClass("True")"
                     @onclick="CheckTrue">True</button>
-            <button class="answer-btn @GetAnswerClass("False")"
-                    disabled="@Answered"
+
+            <button disabled="@Answered"
+                    class="answer-btn @GetAnswerClass("False")"
                     @onclick="CheckFalse">False</button>
         }
         else
         {
-            @foreach(var ans in Questions[CurrentQuestionIndex]?.Answers ?? new List<string>())
+            @foreach (var ans in Questions[CurrentQuestionIndex]?.Answers ?? new())
             {
-                <button class="answer-btn @GetAnswerClass(ans)"
-                        disabled="@Answered"
+                <button disabled="@Answered"
+                        class="answer-btn @GetAnswerClass(ans)"
                         @onclick="() => CheckAnswer(ans)">
                     @ans
                 </button>
@@ -47,73 +51,92 @@ else
 {
     <div class="final-score">
         <h2>Quiz Finished!</h2>
+
         <p>Total Score: @Score</p>
         <p>Correct Answers: @AnswerRecords.Count(a => a.IsCorrect)</p>
         <p>Total Questions: @Questions.Count</p>
 
         @if (AnswerRecords.Count > 0)
         {
-            var timedAnswers = AnswerRecords.Where(a => a.TimeTaken > 0).ToList();
-            if (timedAnswers.Any())
+            var timed = AnswerRecords.Where(a => a.TimeTaken > 0).ToList();
+
+            if (timed.Any())
             {
-                <p>Average Time per Answer: @Math.Round(timedAnswers.Average(a => a.TimeTaken), 2) s</p>
-                <p>Total Time: @Math.Round((decimal)timedAnswers.Sum(a => a.TimeTaken), 2) s</p>
+                <p>Average Time per Answer: @Math.Round(timed.Average(a => a.TimeTaken), 2) s</p>
+                <p>Total Time: @Math.Round(timed.Sum(a => a.TimeTaken), 2) s</p>
             }
         }
 
         <button class="menu-btn" @onclick="RestartGame">Restart Game</button>
-        <button class="menu-btn" @onclick="GoToMenu">Menu</button>
+        <button class="menu-btn" @onclick="GoToMenu">Singleplayer Menu</button>
     </div>
 }
 
 @code {
+
     [Parameter, SupplyParameterFromQuery] public string? categories { get; set; }
     [Parameter, SupplyParameterFromQuery] public string? difficulty { get; set; }
     [Parameter, SupplyParameterFromQuery] public int amount { get; set; }
     [Parameter, SupplyParameterFromQuery] public int time { get; set; }
 
-    private List<Question>? Questions;
+    private List<Question> Questions = new();
     private int CurrentQuestionIndex = 0;
     private int Score = 0;
-    private string? SelectedAnswer;
     private bool Answered = false;
+    private string? SelectedAnswer;
+
     private int TimeLeft;
     private CancellationTokenSource? TimerCts;
+
     private List<AnswerRecord> AnswerRecords = new();
+
     private DateTime? QuestionStartTime;
+    private bool IsLoadingQuestions = false;
 
     protected override async Task OnInitializedAsync()
     {
-        Questions = new List<Question>();
-        AnswerRecords = new List<AnswerRecord>();
-        CurrentQuestionIndex = 0;
-        Score = 0;
-
         await LoadQuestionsAsync();
+
         if (Questions.Count > 0)
-        {
             StartQuestionTimer();
-        }
     }
 
     private async Task LoadQuestionsAsync()
     {
+        if (IsLoadingQuestions) return;
+        IsLoadingQuestions = true;
+
+        Questions = new();
+
         if (string.IsNullOrWhiteSpace(categories))
         {
             await LoadAnyCategory();
-            return;
         }
-
-        var categoryIds = categories.Split(',').Select(int.Parse).ToList();
-        int amountPerCategory = Math.Max(1, amount / categoryIds.Count);
-
-        for (int i = 0; i < categoryIds.Count; i++)
+        else
         {
-            await LoadCategory(categoryIds[i], amountPerCategory);
+            var ids = categories.Split(',').Select(int.Parse).ToList();
+            
+            int baseAmount = amount / ids.Count;
+            int remainder = amount % ids.Count;
 
-            if (i < categoryIds.Count - 1)
-                await Task.Delay(5000);
+            for (int i = 0; i < ids.Count; i++)
+            {
+                int toLoad = baseAmount + (i < remainder ? 1 : 0);
+
+                await LoadCategory(ids[i], toLoad);
+
+                if (i < ids.Count - 1)
+                    await Task.Delay(5000);
+            }
         }
+        
+        Questions = Questions
+            .OrderBy(_ => Guid.NewGuid())
+            .ToList();
+
+        IsLoadingQuestions = false;
+
+        StateHasChanged();
     }
 
     private async Task LoadAnyCategory()
@@ -123,13 +146,14 @@ else
         if (!string.IsNullOrWhiteSpace(difficulty) && difficulty != "any")
             url += $"&difficulty={difficulty}";
 
-        var response = await Http.GetFromJsonAsync<TriviaResponse>(url);
+        var response = await Http.GetAsync(url);
+        if (!response.IsSuccessStatusCode) return;
 
-        if (response?.Results != null)
+        var data = await response.Content.ReadFromJsonAsync<TriviaResponse>();
+
+        if (data?.Results != null)
         {
-            Questions!.AddRange(ParseTrivia(response));
-            ShuffleRemainingQuestions();
-            StateHasChanged();
+            Questions.AddRange(ParseTrivia(data));
         }
     }
 
@@ -138,50 +162,53 @@ else
         var url = $"https://opentdb.com/api.php?amount={amount}&category={categoryId}";
 
         if (!string.IsNullOrWhiteSpace(difficulty) && difficulty != "any")
-            url += $"&difficulty={difficulty}";
-
-        var response = await Http.GetFromJsonAsync<TriviaResponse>(url);
-
-        if (response?.Results != null)
         {
-            Questions!.AddRange(ParseTrivia(response));
-            ShuffleRemainingQuestions();
-            StateHasChanged();
+            url += $"&difficulty={difficulty}";
         }
-    }
 
-    private void ShuffleRemainingQuestions()
-    {
-        var answered = Questions!.Take(CurrentQuestionIndex).ToList();
-        var remaining = Questions.Skip(CurrentQuestionIndex).OrderBy(_ => Guid.NewGuid()).ToList();
+        var response = await Http.GetAsync(url);
+        if (!response.IsSuccessStatusCode)
+        {
+            return;
+        }
 
-        Questions = answered.Concat(remaining).ToList();
+        var data = await response.Content.ReadFromJsonAsync<TriviaResponse>();
+
+        if (data?.Results != null)
+        {
+            Questions.AddRange(ParseTrivia(data));
+        }
     }
 
     private async Task CheckAnswer(string selected)
     {
-        if (Answered || Questions == null) return;
+        if (Answered || CurrentQuestionIndex >= Questions.Count)
+        {
+            return;
+        }
 
         Answered = true;
         SelectedAnswer = selected;
-        
+
         TimerCts?.Cancel();
-        
-        int timeTaken = 0;
+
+        double timeTaken = 0;
+
         if (QuestionStartTime.HasValue && time > 0)
         {
-            timeTaken = (int)(DateTime.UtcNow - QuestionStartTime.Value).TotalSeconds;
+            timeTaken = (DateTime.UtcNow - QuestionStartTime.Value).TotalSeconds;
         }
-        
-        var current = Questions[CurrentQuestionIndex];
+
+        var q = Questions[CurrentQuestionIndex];
+
         AnswerRecords.Add(new AnswerRecord
         {
-            Question = current,
-            IsCorrect = selected == current.CorrectAnswer,
+            Question = q,
+            IsCorrect = selected == q.CorrectAnswer,
             TimeTaken = timeTaken
         });
 
-        if (selected == current.CorrectAnswer)
+        if (selected == q.CorrectAnswer)
         {
             Score += 10;
         }
@@ -190,8 +217,8 @@ else
 
         await Task.Delay(800);
 
-        SelectedAnswer = null;
         Answered = false;
+        SelectedAnswer = null;
         CurrentQuestionIndex++;
 
         if (CurrentQuestionIndex < Questions.Count)
@@ -200,6 +227,76 @@ else
         }
 
         StateHasChanged();
+    }
+
+    private void CheckTrue() => _ = CheckAnswer("True");
+    private void CheckFalse() => _ = CheckAnswer("False");
+
+    private void StartQuestionTimer()
+    {
+        QuestionStartTime = DateTime.UtcNow;
+
+        if (time <= 0) return;
+
+        TimerCts?.Cancel();
+        TimerCts = new CancellationTokenSource();
+
+        TimeLeft = time;
+
+        _ = RunTimer(TimerCts.Token);
+    }
+
+    private async Task RunTimer(CancellationToken token)
+    {
+        try
+        {
+            while (TimeLeft > 0 && !token.IsCancellationRequested)
+            {
+                await Task.Delay(1000, token);
+                TimeLeft--;
+                StateHasChanged();
+            }
+
+            if (TimeLeft == 0 && !Answered)
+                await CheckAnswer("TIMEOUT");
+        }
+        catch { }
+    }
+
+    private string GetAnswerClass(string answer)
+    {
+        if (!Answered || CurrentQuestionIndex >= Questions.Count)
+            return "";
+
+        var correct = Questions[CurrentQuestionIndex].CorrectAnswer;
+
+        if (answer == correct) return "correct";
+        if (answer == SelectedAnswer) return "wrong";
+
+        return "disabled";
+    }
+
+    private async Task RestartGame()
+    {
+        TimerCts?.Cancel();
+        TimerCts = null;
+
+        Questions = new();
+        AnswerRecords = new();
+        CurrentQuestionIndex = 0;
+        Score = 0;
+        SelectedAnswer = null;
+        Answered = false;
+
+        await LoadQuestionsAsync();
+
+        if (Questions.Count > 0)
+            StartQuestionTimer();
+    }
+
+    private void GoToMenu()
+    {
+        Navigation.NavigateTo("/singleplayerMenu");
     }
 
     private List<Question> ParseTrivia(TriviaResponse response)
@@ -217,101 +314,5 @@ else
                     .ToList()
                 : new List<string> { "True", "False" }
         }).ToList();
-    }
-
-    private string GetAnswerClass(string answer)
-    {
-        if (!Answered || Questions == null || CurrentQuestionIndex >= Questions.Count)
-        {
-            return "";
-        }
-          
-        var correct = Questions[CurrentQuestionIndex].CorrectAnswer;
-        if (answer == correct)
-        {
-            return "correct";
-        }
-
-        if (answer == SelectedAnswer)
-        {
-            return "wrong";
-        }
-        return "disabled";
-    }
-
-
-    private void CheckTrue()
-    {
-        CheckAnswer("True"); 
-    }
-
-    private void CheckFalse()
-    {
-        CheckAnswer("False");
-    }
-    
-    private void StartTimer()
-    {
-        if (time == 0)
-        {
-            return;
-        }
-           
-        TimerCts?.Cancel();
-        TimerCts = new CancellationTokenSource();
-
-        TimeLeft = time;
-        QuestionStartTime = DateTime.Now;
-        _ = RunTimer(TimerCts.Token);
-    }
-    
-    private async Task RunTimer(CancellationToken token)
-    {
-        while (TimeLeft > 0 && !token.IsCancellationRequested)
-        {
-            await Task.Delay(1000, token);
-            TimeLeft--;
-
-            StateHasChanged();
-        }
-
-        if (TimeLeft == 0 && !Answered)
-        {
-            await CheckAnswer("TIMEOUT");
-        }
-    }
-    
-    private async Task RestartGame()
-    {
-        TimerCts?.Cancel();
-        TimerCts = null;
-
-        Questions = new List<Question>();
-        AnswerRecords = new List<AnswerRecord>();
-        CurrentQuestionIndex = 0;
-        Score = 0;
-        SelectedAnswer = null;
-        Answered = false;
-
-        StateHasChanged();
-
-        await LoadQuestionsAsync();
-
-        if (Questions.Count > 0)
-            StartQuestionTimer();
-    }
-
-    private void StartQuestionTimer()
-    {
-        QuestionStartTime = DateTime.UtcNow;
-        if (time > 0)
-        {
-            StartTimer();
-        }
-    }
-
-    private void GoToMenu()
-    {
-        Navigation.NavigateTo("/singleplayerMenu");
     }
 }
