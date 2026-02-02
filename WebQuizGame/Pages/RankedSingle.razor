@@ -1,0 +1,209 @@
+﻿@page "/RankedSingle"
+@using WebQuizGame.Classes
+@inject NavigationManager Navigation
+@inject HttpClient Http
+
+<h2>Ranked Quiz</h2>
+
+@if (Questions == null || Questions.Count == 0)
+{
+    <p>Loading questions...</p>
+}
+else if (CurrentQuestionIndex < Questions.Count)
+{
+    <p>Score: @Score</p>
+    <p>Time left: @TimeLeft s</p>
+
+    <div>
+        <p>
+            <strong>Question @(@CurrentQuestionIndex + 1):</strong>
+            @Questions[CurrentQuestionIndex].Text
+        </p>
+
+        @if (Questions[CurrentQuestionIndex].Type == "boolean")
+        {
+            <button class="answer-btn @GetAnswerClass("True")"
+                    disabled="@Answered"
+                    @onclick="CheckTrue">True</button>
+
+            <button class="answer-btn @GetAnswerClass("False")"
+                    disabled="@Answered"
+                    @onclick="CheckFalse">False</button>
+        }
+        else
+        {
+            @foreach (var ans in Questions[CurrentQuestionIndex].Answers)
+            {
+                <button class="answer-btn @GetAnswerClass(ans)"
+                        disabled="@Answered"
+                        @onclick="() => CheckAnswer(ans)">
+                    @ans
+                </button>
+            }
+        }
+    </div>
+}
+else
+{
+    <div class="final-score">
+        <h2>Ranked Finished</h2>
+        <p>Total Score: @Score</p>
+        <p>Correct Answers: @CorrectAnswers</p>
+        <p>Total Questions: 15</p>
+
+        <button class="menu-btn" @onclick="RestartGame">Play Again</button>
+        <button class="menu-btn" @onclick="GoToMenu">Menu</button>
+    </div>
+}
+
+@code {
+
+    private const int Amount = 15;
+    private const int TimePerQuestion = 15;
+
+    private List<Question>? Questions;
+    private int CurrentQuestionIndex = 0;
+    private int Score = 0;
+    private int CorrectAnswers = 0;
+
+    private string? SelectedAnswer;
+    private bool Answered = false;
+
+    private int TimeLeft;
+    private CancellationTokenSource? TimerCts;
+
+    private DateTime QuestionStartTime;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Questions = new List<Question>();
+
+        await LoadQuestions();
+
+        if (Questions.Count > 0)
+            StartTimer();
+    }
+
+    private async Task LoadQuestions()
+    {
+        var url = $"https://opentdb.com/api.php?amount={Amount}";
+
+        var response = await Http.GetFromJsonAsync<TriviaResponse>(url);
+
+        if (response?.Results != null)
+        {
+            Questions = ParseTrivia(response);
+        }
+    }
+
+    private async Task CheckAnswer(string selected)
+    {
+        if (Answered || Questions == null) return;
+
+        Answered = true;
+        SelectedAnswer = selected;
+
+        TimerCts?.Cancel();
+
+        var current = Questions[CurrentQuestionIndex];
+
+        if (selected == current.CorrectAnswer)
+        {
+            Score += 10;
+            CorrectAnswers++;
+        }
+
+        StateHasChanged();
+        await Task.Delay(600);
+
+        SelectedAnswer = null;
+        Answered = false;
+        CurrentQuestionIndex++;
+
+        if (CurrentQuestionIndex < Questions.Count)
+            StartTimer();
+
+        StateHasChanged();
+    }
+
+    private void StartTimer()
+    {
+        TimerCts?.Cancel();
+        TimerCts = new CancellationTokenSource();
+
+        TimeLeft = TimePerQuestion;
+        QuestionStartTime = DateTime.UtcNow;
+
+        _ = RunTimer(TimerCts.Token);
+    }
+
+    private async Task RunTimer(CancellationToken token)
+    {
+        while (TimeLeft > 0 && !token.IsCancellationRequested)
+        {
+            await Task.Delay(1000, token);
+            TimeLeft--;
+            StateHasChanged();
+        }
+
+        if (TimeLeft == 0 && !Answered)
+        {
+            await CheckAnswer("TIMEOUT");
+        }
+    }
+
+    private List<Question> ParseTrivia(TriviaResponse response)
+    {
+        return response.Results.Select(r => new Question
+        {
+            Text = System.Net.WebUtility.HtmlDecode(r.Question),
+            CorrectAnswer = System.Net.WebUtility.HtmlDecode(r.CorrectAnswer),
+            Type = r.Type,
+            Answers = r.Type == "multiple"
+                ? r.IncorrectAnswers
+                    .Select(a => System.Net.WebUtility.HtmlDecode(a))
+                    .Append(System.Net.WebUtility.HtmlDecode(r.CorrectAnswer))
+                    .OrderBy(_ => Guid.NewGuid())
+                    .ToList()
+                : new List<string> { "True", "False" }
+        }).ToList();
+    }
+
+    private string GetAnswerClass(string answer)
+    {
+        if (!Answered || Questions == null) return "";
+
+        var correct = Questions[CurrentQuestionIndex].CorrectAnswer;
+
+        if (answer == correct)
+            return "correct";
+
+        if (answer == SelectedAnswer)
+            return "wrong";
+
+        return "disabled";
+    }
+
+    private void CheckTrue() => CheckAnswer("True");
+    private void CheckFalse() => CheckAnswer("False");
+
+    private async Task RestartGame()
+    {
+        TimerCts?.Cancel();
+
+        Questions = new List<Question>();
+        CurrentQuestionIndex = 0;
+        Score = 0;
+        CorrectAnswers = 0;
+
+        await LoadQuestions();
+
+        if (Questions.Count > 0)
+            StartTimer();
+    }
+
+    private void GoToMenu()
+    {
+        Navigation.NavigateTo("/singleplayerMenu");
+    }
+}
