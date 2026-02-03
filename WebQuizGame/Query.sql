@@ -1,0 +1,9 @@
+use halik;
+
+CREATE TABLE Users
+(
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+    Username NVARCHAR(50) UNIQUE NOT NULL,
+    PasswordHash NVARCHAR(255) NOT NULL,
+    CreatedAt DATETIME DEFAULT GETDATE()
+);
