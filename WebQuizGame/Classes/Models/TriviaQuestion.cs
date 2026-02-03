@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace WebQuizGame.Classes;
+namespace WebQuizGame.Classes.Models;
 
 public class TriviaQuestion
 {

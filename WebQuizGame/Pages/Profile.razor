@@ -1,0 +1,42 @@
+﻿@page "/profile"
+@using WebQuizGame.Classes.Database
+@inject NavigationManager Navigation
+
+<h3>Login / Register</h3>
+
+<input placeholder="Username" @bind="Username" />
+<input placeholder="Password" type="password" @bind="Password" />
+
+<button @onclick="Login">Login</button>
+<button @onclick="Register">Register</button>
+
+<p>@Message</p>
+
+@code {
+    private string Username = "";
+    private string Password = "";
+    private string Message = "";
+
+    private DatabaseServices db = new();
+
+    private void Login()
+    {
+        if (db.LoginUser(Username, Password))
+        {
+            Message = "Login successful!";
+            Navigation.NavigateTo("/profileMenu?username=" + Username);
+        }
+        else
+        {
+            Message = "Invalid credentials!";
+        }
+    }
+
+    private void Register()
+    {
+        if (db.RegisterUser(Username, Password))
+            Message = "Registration successful! Now log in.";
+        else
+            Message = "Username already exists!";
+    }
+}

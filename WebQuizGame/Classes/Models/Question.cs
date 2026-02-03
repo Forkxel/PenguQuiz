@@ -1,4 +1,4 @@
-﻿namespace WebQuizGame.Classes;
+﻿namespace WebQuizGame.Classes.Models;
 
 public class Question
 {

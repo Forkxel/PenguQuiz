@@ -1,5 +1,5 @@
 ﻿@page "/singleplayerMenu"
-@using WebQuizGame.Classes
+@using WebQuizGame.Classes.Models
 
 <h2>Singleplayer</h2>
 
@@ -88,7 +88,7 @@
 
     private void StartRanked()
     {
-        Navigation.NavigateTo("/RankedSingle");
+        Navigation.NavigateTo("/singleplayerRanked");
     }
 
     private void StartCasual()
@@ -107,7 +107,7 @@
 
         var queryString = string.Join("&", query);
 
-        Navigation.NavigateTo($"/singleplayer?mode=casual&{queryString}");
+        Navigation.NavigateTo($"/singleplayer?{queryString}");
     }
 
 
