@@ -1,12 +1,20 @@
 ﻿@page "/singleplayerMenu"
 @using WebQuizGame.Classes.Models
+@inject Authorization Auth
 
 <h2>Singleplayer</h2>
 
 <div class="sp-menu">
-    <button class="menu-btn" @onclick="StartRanked">
+    <button class="menu-btn"
+            @onclick="StartRanked"
+            disabled="@(!Auth.IsLoggedIn)">
         Ranked Singleplayer
     </button>
+
+    @if (!Auth.IsLoggedIn)
+    {
+        <p>You must be logged in to play Ranked.</p>
+    }
 
     <button class="menu-btn" @onclick="ShowCasualSetupClicked">
         Casual Singleplayer
@@ -85,9 +93,20 @@
 
     private int QuestionCount = 10;
     private int TimePerQuestion = 10;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await Auth.InitializeAsync();
+    }
 
     private void StartRanked()
     {
+        if (!Auth.IsLoggedIn)
+        {
+            Navigation.NavigateTo("/profile", true);
+            return;
+        }
+
         Navigation.NavigateTo("/singleplayerRanked");
     }
 
@@ -109,9 +128,6 @@
 
         Navigation.NavigateTo($"/singleplayer?{queryString}");
     }
-
-
-
     
     private void ShowCasualSetupClicked()
     {

@@ -2,6 +2,7 @@
 @using WebQuizGame.Classes.Models
 @inject NavigationManager Navigation
 @inject HttpClient Http
+@inject Authorization Auth
 
 <h2>Ranked Quiz</h2>
 
@@ -76,8 +77,15 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        Questions = new List<Question>();
+        await Auth.InitializeAsync();
 
+        if (!Auth.IsLoggedIn)
+        {
+            Navigation.NavigateTo("/profile", true);
+            return;
+        }
+
+        Questions = new List<Question>();
         await LoadQuestions();
 
         if (Questions.Count > 0)

@@ -1,6 +1,9 @@
 ﻿@page "/profile"
-@using WebQuizGame.Classes.Database
+@using WebQuizGame.Classes.Models
 @inject NavigationManager Navigation
+@inject HttpClient Http
+@inject Authorization Auth
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
 
 <h3>Login / Register</h3>
 
@@ -10,6 +13,12 @@
 <button @onclick="Login">Login</button>
 <button @onclick="Register">Register</button>
 
+@if (Auth.IsLoggedIn)
+{
+    <p>Logged as: @Auth.Username</p>
+    <button @onclick="Logout">Logout</button>
+}
+
 <p>@Message</p>
 
 @code {
@@ -17,26 +26,48 @@
     private string Password = "";
     private string Message = "";
 
-    private DatabaseServices db = new();
-
-    private void Login()
+    private async Task Login()
     {
-        if (db.LoginUser(Username, Password))
-        {
-            Message = "Login successful!";
-            Navigation.NavigateTo("/profileMenu?username=" + Username);
-        }
-        else
+        var response = await Http.PostAsJsonAsync(
+            "api/auth/login",
+            new UserDto
+            {
+                Username = Username,
+                Password = Password
+            });
+
+        if (!response.IsSuccessStatusCode)
         {
             Message = "Invalid credentials!";
+            return;
         }
+
+        var result = await response.Content
+            .ReadFromJsonAsync<LoginResponse>();
+
+        await Auth.Login(Username, result!.Token);
+
+        Navigation.NavigateTo("/profileMenu");
     }
 
-    private void Register()
+    private async Task Logout()
     {
-        if (db.RegisterUser(Username, Password))
-            Message = "Registration successful! Now log in.";
-        else
-            Message = "Username already exists!";
+        await Auth.Logout();
+        Navigation.NavigateTo("/", true);
+    }
+
+    private async Task Register()
+    {
+        var response = await Http.PostAsJsonAsync(
+            "api/auth/register",
+            new UserDto
+            {
+                Username = Username,
+                Password = Password
+            });
+
+        Message = response.IsSuccessStatusCode
+            ? "Registration successful! Now log in."
+            : "Username already exists!";
     }
 }
