@@ -94,14 +94,15 @@ else
 
     private async Task LoadQuestions()
     {
-        var url = $"https://opentdb.com/api.php?amount={Amount}";
+        var url = $"api/trivia?amount={Amount}&difficulty=any";
 
-        var response = await Http.GetFromJsonAsync<TriviaResponse>(url);
+        var response = await Http.GetAsync(url);
+        if (!response.IsSuccessStatusCode) return;
 
-        if (response?.Results != null)
-        {
-            Questions = ParseTrivia(response);
-        }
+        var data = await response.Content.ReadFromJsonAsync<TriviaResponse>();
+
+        if (data?.Results != null)
+            Questions = ParseTrivia(data);
     }
 
     private async Task CheckAnswer(string selected)

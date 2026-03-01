@@ -19,6 +19,14 @@ builder.Services.AddCors(options =>
         });
 });
 
+builder.Services.AddMemoryCache();
+
+builder.Services.AddHttpClient("OpenTdb", client =>
+{
+    client.BaseAddress = new Uri("https://opentdb.com/");
+    client.Timeout = TimeSpan.FromSeconds(15);
+});
+
 builder.Services.AddScoped<JwtService>();
 
 builder.Services.AddAuthentication()

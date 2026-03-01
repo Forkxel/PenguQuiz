@@ -84,6 +84,7 @@ else
     private int Score = 0;
     private bool Answered = false;
     private string? SelectedAnswer;
+    private bool ForceFreshOnNextLoad = false;
 
     private int TimeLeft;
     private CancellationTokenSource? TimerCts;
@@ -107,77 +108,42 @@ else
         IsLoadingQuestions = true;
 
         Questions = new();
-
-        if (string.IsNullOrWhiteSpace(categories))
-        {
-            await LoadAnyCategory();
-        }
-        else
-        {
-            var ids = categories.Split(',').Select(int.Parse).ToList();
-            
-            int baseAmount = amount / ids.Count;
-            int remainder = amount % ids.Count;
-
-            for (int i = 0; i < ids.Count; i++)
-            {
-                int toLoad = baseAmount + (i < remainder ? 1 : 0);
-
-                await LoadCategory(ids[i], toLoad);
-
-                if (i < ids.Count - 1)
-                    await Task.Delay(5000);
-            }
-        }
         
-        Questions = Questions
-            .OrderBy(_ => Guid.NewGuid())
-            .ToList();
-
-        IsLoadingQuestions = false;
-
-        StateHasChanged();
-    }
-
-    private async Task LoadAnyCategory()
-    {
-        var url = $"https://opentdb.com/api.php?amount={amount}";
-
-        if (!string.IsNullOrWhiteSpace(difficulty) && difficulty != "any")
-            url += $"&difficulty={difficulty}";
-
-        var response = await Http.GetAsync(url);
-        if (!response.IsSuccessStatusCode) return;
-
-        var data = await response.Content.ReadFromJsonAsync<TriviaResponse>();
-
-        if (data?.Results != null)
+        var query = new List<string>
         {
-            Questions.AddRange(ParseTrivia(data));
-        }
-    }
+            $"amount={amount}"
+        };
 
-    private async Task LoadCategory(int categoryId, int amount)
-    {
-        var url = $"https://opentdb.com/api.php?amount={amount}&category={categoryId}";
+        if (!string.IsNullOrWhiteSpace(difficulty))
+            query.Add($"difficulty={difficulty}");
 
-        if (!string.IsNullOrWhiteSpace(difficulty) && difficulty != "any")
+        if (!string.IsNullOrWhiteSpace(categories))
+            query.Add($"categories={categories}");
+
+        if (ForceFreshOnNextLoad)
         {
-            url += $"&difficulty={difficulty}";
+            query.Add("fresh=true");
+            ForceFreshOnNextLoad = false;
         }
+
+        var url = "api/trivia?" + string.Join("&", query);
 
         var response = await Http.GetAsync(url);
         if (!response.IsSuccessStatusCode)
         {
+            IsLoadingQuestions = false;
             return;
         }
 
         var data = await response.Content.ReadFromJsonAsync<TriviaResponse>();
 
-        if (data?.Results != null)
-        {
+        if (data?.Results != null && data.Results.Count > 0)
             Questions.AddRange(ParseTrivia(data));
-        }
+
+        Questions = Questions.OrderBy(_ => Guid.NewGuid()).ToList();
+
+        IsLoadingQuestions = false;
+        StateHasChanged();
     }
 
     private async Task CheckAnswer(string selected)
@@ -288,6 +254,8 @@ else
         SelectedAnswer = null;
         Answered = false;
 
+        ForceFreshOnNextLoad = true;
+        
         await LoadQuestionsAsync();
 
         if (Questions.Count > 0)
