@@ -15,6 +15,11 @@ else
 {
     <p><strong>Host:</strong> @State.HostUsername</p>
     <p><strong>Players:</strong> @string.Join(", ", State.Players)</p>
+    
+    @if (!string.IsNullOrWhiteSpace(GameError))
+    {
+        <p style="color:red"><strong>@GameError</strong></p>
+    }
 
     <h3>Settings</h3>
     <p>Questions: @State.Settings.Amount</p>
@@ -83,6 +88,8 @@ else
     private int TimePerQuestion = 10;
     private string Difficulty = "any";
     private List<int> SelectedCategoryIds = new();
+    private bool _navigated = false;
+    private string? GameError;
 
     private bool IsHost => State != null && State.HostUsername == (Auth.Username ?? "Guest");
 
@@ -97,6 +104,12 @@ else
             {
                 State = s;
                 
+                if (State.IsStarted && !_navigated)
+                {
+                    _navigated = true;
+                    Nav.NavigateTo($"/multiplayerGame/{Code}");
+                }
+                
                 Amount = s.Settings.Amount;
                 TimePerQuestion = s.Settings.TimePerQuestion;
                 Difficulty = s.Settings.Difficulty;
@@ -105,14 +118,26 @@ else
                 InvokeAsync(StateHasChanged);
             }
         };
-
-        Mp.OnGameStarted += s =>
+        
+        Mp.OnGameError += msg =>
         {
-            if (s.Code == Code)
-            {
-                InvokeAsync(StateHasChanged);
-            }
+            GameError = msg;
+            InvokeAsync(StateHasChanged);
         };
+
+        Mp.OnNewQuestion += async q =>
+        {
+            if (_navigated) return;
+            _navigated = true;
+            await Task.Delay(100);
+            Nav.NavigateTo($"/multiplayerGame/{Code}");
+        };
+        
+        State = await Mp.GetLobbyStateAsync(Code);
+        Amount = State.Settings.Amount;
+        TimePerQuestion = State.Settings.TimePerQuestion;
+        Difficulty = State.Settings.Difficulty;
+        SelectedCategoryIds = State.Settings.CategoryIds.ToList();
     }
 
     private async Task ApplySettings()

@@ -25,31 +25,11 @@
 
 <hr />
 
-<h3>Quick Match – max 3 kategorie</h3>
-<div>
-    @foreach (var cat in Categories)
-    {
-        <label style="display:block;">
-            <input type="checkbox"
-                   @onchange="() => ToggleCategory(cat.Id)"
-                   checked="@SelectedCategoryIds.Contains(cat.Id)"
-                   disabled="@(!SelectedCategoryIds.Contains(cat.Id) && SelectedCategoryIds.Count >= 3)" />
-            @cat.Name
-        </label>
-    }
-</div>
-
-<button class="menu-btn" @onclick="QuickMatchWithCats">
-    Quick Match (Selected)
-</button>
-
 <p>@Message</p>
 
 @code {
     private string JoinCode = "";
     private string Message = "";
-
-    private List<int> SelectedCategoryIds = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -69,14 +49,6 @@
     {
         Message = "";
         var prefs = new LobbySettings(10, 10, "any", new List<int>());
-        var state = await Mp.QuickMatchAsync(new QuickMatchRequest(GetUsername(), prefs));
-        Nav.NavigateTo($"/lobby/{state.Code}");
-    }
-
-    private async Task QuickMatchWithCats()
-    {
-        Message = "";
-        var prefs = new LobbySettings(10, 10, "any", SelectedCategoryIds.ToList());
         var state = await Mp.QuickMatchAsync(new QuickMatchRequest(GetUsername(), prefs));
         Nav.NavigateTo($"/lobby/{state.Code}");
     }
@@ -104,25 +76,4 @@
 
         Nav.NavigateTo($"/lobby/{state.Code}");
     }
-
-    private void ToggleCategory(int id)
-    {
-        if (SelectedCategoryIds.Contains(id))
-            SelectedCategoryIds.Remove(id);
-        else
-            SelectedCategoryIds.Add(id);
-    }
-
-    private List<Category> Categories = new()
-    {
-        new Category { Id = 9,  Name = "General Knowledge" },
-        new Category { Id = 17, Name = "Science & Nature" },
-        new Category { Id = 18, Name = "Science: Computers" },
-        new Category { Id = 21, Name = "Sports" },
-        new Category { Id = 22, Name = "Geography" },
-        new Category { Id = 23, Name = "History" },
-        new Category { Id = 24, Name = "Politics" },
-        new Category { Id = 27, Name = "Animals" },
-        new Category { Id = 32, Name = "Cartoon & Animations" }
-    };
 }

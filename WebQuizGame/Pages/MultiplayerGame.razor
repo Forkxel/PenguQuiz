@@ -1,0 +1,105 @@
+﻿@page "/multiplayerGame/{Code}"
+@using WebQuizGame.Classes.Models
+@using WebQuizGame.Classes.Services
+@inject MultiplayerClient Mp
+
+<h2>Multiplayer Game</h2>
+
+@if (Finished)
+{
+    <h3>Game Over</h3>
+    @foreach (var s in Scores.OrderByDescending(x => x.Value))
+    {
+        <p>@s.Key : @s.Value</p>
+    }
+}
+else if (Current == null)
+{
+    <p>Waiting for question...</p>
+}
+else
+{
+    <h3>@Current.Question</h3>
+
+    @foreach (var a in Answers)
+    {
+        <button @onclick="() => Answer(a)"
+                disabled="@Locked">
+            @a
+        </button>
+    }
+
+    <p>@Message</p>
+}
+
+@code {
+    [Parameter] public string Code { get; set; } = "";
+
+    private TriviaQuestion? Current;
+    private List<string> Answers = new();
+    private bool Locked = false;
+    private string Message = "";
+    private bool Finished = false;
+
+    private Dictionary<string,int> Scores = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Mp.ConnectAsync("http://localhost:5237");
+
+        Mp.OnNewQuestion += q =>
+        {
+            Current = q;
+            Answers = q.IncorrectAnswers
+                .Append(q.CorrectAnswer)
+                .OrderBy(_ => Guid.NewGuid())
+                .ToList();
+            Locked = false;
+            Message = "";
+            InvokeAsync(StateHasChanged);
+        };
+
+        Mp.OnQuestionWon += winner =>
+        {
+            Locked = true;
+            Message = $"{winner} answered correctly!";
+            InvokeAsync(StateHasChanged);
+        };
+        
+        Mp.OnQuestionResolved += (who, chosen, correct) =>
+        {
+            Locked = true;
+            Message = who == "TIMEOUT"
+                ? "Time's up! Nobody answered."
+                : $"{who} clicked \"{chosen}\" -> {(correct ? "CORRECT" : "WRONG")}";
+            InvokeAsync(StateHasChanged);
+        };
+
+        Mp.OnGameFinished += scores =>
+        {
+            Finished = true;
+            Scores = scores;
+            InvokeAsync(StateHasChanged);
+        };
+        
+        var q = await Mp.GetCurrentQuestionAsync(Code);
+        if (q != null)
+        {
+            Current = q;
+            Answers = q.IncorrectAnswers
+                .Append(q.CorrectAnswer)
+                .OrderBy(_ => Guid.NewGuid())
+                .ToList();
+            Locked = false;
+            Message = "";
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task Answer(string ans)
+    {
+        if (Locked) return;
+        Locked = true;
+        await Mp.AnswerQuestionAsync(Code, ans);
+    }
+}

@@ -116,24 +116,13 @@ public class MultiplayerManager
                 if (lobby.IsStarted) continue;
                 if (lobby.MaxPlayers > 0 && lobby.Players.Count >= lobby.MaxPlayers)
                     continue;
-
-                bool diffMatch =
-                    string.Equals(lobby.Settings.Difficulty, prefs.Difficulty, StringComparison.OrdinalIgnoreCase)
-                    || (lobby.Settings.Difficulty == "any" && prefs.Difficulty == "any");
-
-                bool catsMatch =
-                    (lobby.Settings.CategoryIds.Count == 0 && prefs.CategoryIds.Count == 0) ||
-                    lobby.Settings.CategoryIds.OrderBy(x => x)
-                        .SequenceEqual(prefs.CategoryIds.OrderBy(x => x));
-
-                if (!diffMatch || !catsMatch)
-                    continue;
                 
                 var join = JoinLobby(lobby.Code, connectionId, username);
                 if (join.ok)
                 {
                     lobby.MinPlayers = minPlayers;
                     lobby.MaxPlayers = maxPlayers;
+                    lobby.IsQuickMatch = true;
                     return lobby;
                 }
             }
@@ -141,6 +130,14 @@ public class MultiplayerManager
             var created = CreateLobby(connectionId, username, prefs);
             created.MinPlayers = minPlayers;
             created.MaxPlayers = maxPlayers;
+            created.IsQuickMatch = true;
+            
+            created.Settings = new LobbySettings(
+                prefs.Amount,
+                prefs.TimePerQuestion,
+                prefs.Difficulty,
+                new List<int>()
+            );
 
             return created;
         }

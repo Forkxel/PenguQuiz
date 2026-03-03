@@ -16,4 +16,16 @@ public class Lobby
     public int MinPlayers { get; set; } = 2;
 
     public string GroupName => $"lobby:{Code}";
+    
+    public List<TriviaQuestion> Questions { get; set; } = new();
+    public int CurrentQuestionIndex { get; set; } = 0;
+    public bool QuestionLocked { get; set; } = false;
+    public Dictionary<string, int> Scores { get; } = new();
+    public bool IsQuickMatch { get; set; } = false;
+    
+    public DateTime QuestionStartedAtUtc { get; set; } = DateTime.UtcNow;
+    public string? FirstAnswerConnectionId { get; set; }
+    public string? FirstAnswerText { get; set; }
+    public bool? FirstAnswerCorrect { get; set; }
+    public CancellationTokenSource? QuestionCts { get; set; }
 }
