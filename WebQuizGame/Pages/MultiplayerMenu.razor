@@ -1,0 +1,128 @@
+﻿@page "/multiplayer"
+@using WebQuizGame.Classes.Models
+@using WebQuizGame.Classes.Services
+@inject MultiplayerClient Mp
+@inject Authorization Auth
+@inject NavigationManager Nav
+
+<h2>Multiplayer</h2>
+
+@if (!Auth.IsLoggedIn)
+{
+    <p>Pro multiplayer doporučuju být přihlášený (kvůli jménu). Jinak se použije "Guest".</p>
+}
+
+<div style="display:flex; gap:16px; flex-wrap:wrap;">
+    <button class="menu-btn" @onclick="QuickMatchAny">Quick Match (Any)</button>
+    <button class="menu-btn" @onclick="CreateLobby">Create Lobby</button>
+</div>
+
+<hr />
+
+<h3>Join Lobby</h3>
+<input placeholder="Lobby code" @bind="JoinCode" />
+<button class="menu-btn" @onclick="JoinLobby">Join</button>
+
+<hr />
+
+<h3>Quick Match – max 3 kategorie</h3>
+<div>
+    @foreach (var cat in Categories)
+    {
+        <label style="display:block;">
+            <input type="checkbox"
+                   @onchange="() => ToggleCategory(cat.Id)"
+                   checked="@SelectedCategoryIds.Contains(cat.Id)"
+                   disabled="@(!SelectedCategoryIds.Contains(cat.Id) && SelectedCategoryIds.Count >= 3)" />
+            @cat.Name
+        </label>
+    }
+</div>
+
+<button class="menu-btn" @onclick="QuickMatchWithCats">
+    Quick Match (Selected)
+</button>
+
+<p>@Message</p>
+
+@code {
+    private string JoinCode = "";
+    private string Message = "";
+
+    private List<int> SelectedCategoryIds = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Auth.InitializeAsync();
+        await Mp.ConnectAsync("http://localhost:5237");
+    }
+
+    private string GetUsername()
+    {
+        if (!string.IsNullOrWhiteSpace(Auth.Username))
+            return Auth.Username!;
+
+        return "Guest_" + Guid.NewGuid().ToString("N").Substring(0, 4);
+    }
+
+    private async Task QuickMatchAny()
+    {
+        Message = "";
+        var prefs = new LobbySettings(10, 10, "any", new List<int>());
+        var state = await Mp.QuickMatchAsync(new QuickMatchRequest(GetUsername(), prefs));
+        Nav.NavigateTo($"/lobby/{state.Code}");
+    }
+
+    private async Task QuickMatchWithCats()
+    {
+        Message = "";
+        var prefs = new LobbySettings(10, 10, "any", SelectedCategoryIds.ToList());
+        var state = await Mp.QuickMatchAsync(new QuickMatchRequest(GetUsername(), prefs));
+        Nav.NavigateTo($"/lobby/{state.Code}");
+    }
+
+    private async Task CreateLobby()
+    {
+        Message = "";
+        var settings = new LobbySettings(10, 10, "any", new List<int>());
+        var state = await Mp.CreateLobbyAsync(new CreateLobbyRequest(GetUsername(), settings));
+        Nav.NavigateTo($"/lobby/{state.Code}");
+    }
+
+    private async Task JoinLobby()
+    {
+        Message = "";
+
+        if (string.IsNullOrWhiteSpace(JoinCode))
+        {
+            Message = "Zadej kód lobby.";
+            return;
+        }
+
+        var state = await Mp.JoinLobbyAsync(
+            new JoinLobbyRequest(JoinCode.Trim().ToUpper(), GetUsername()));
+
+        Nav.NavigateTo($"/lobby/{state.Code}");
+    }
+
+    private void ToggleCategory(int id)
+    {
+        if (SelectedCategoryIds.Contains(id))
+            SelectedCategoryIds.Remove(id);
+        else
+            SelectedCategoryIds.Add(id);
+    }
+
+    private List<Category> Categories = new()
+    {
+        new Category { Id = 9,  Name = "General Knowledge" },
+        new Category { Id = 17, Name = "Science & Nature" },
+        new Category { Id = 18, Name = "Science: Computers" },
+        new Category { Id = 21, Name = "Sports" },
+        new Category { Id = 22, Name = "Geography" },
+        new Category { Id = 23, Name = "History" },
+        new Category { Id = 24, Name = "Politics" },
+        new Category { Id = 27, Name = "Animals" },
+        new Category { Id = 32, Name = "Cartoon & Animations" }
+    };
+}

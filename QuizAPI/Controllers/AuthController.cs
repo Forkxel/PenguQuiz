@@ -21,9 +21,6 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     public IActionResult Register([FromBody] UserDto user)
     {
-        Console.WriteLine("USERNAME: '" + user.Username + "'");
-        Console.WriteLine("PASSWORD: '" + user.Password + "'");
-
         bool success = _db.RegisterUser(user.Username, user.Password);
 
         if (!success)

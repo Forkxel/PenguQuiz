@@ -1,0 +1,147 @@
+﻿@page "/lobby/{Code}"
+@using WebQuizGame.Classes.Models
+@using WebQuizGame.Classes.Services
+@inject MultiplayerClient Mp
+@inject Authorization Auth
+@inject NavigationManager Nav
+
+<h2>Lobby @Code</h2>
+
+@if (State == null)
+{
+    <p>Loading lobby...</p>
+}
+else
+{
+    <p><strong>Host:</strong> @State.HostUsername</p>
+    <p><strong>Players:</strong> @string.Join(", ", State.Players)</p>
+
+    <h3>Settings</h3>
+    <p>Questions: @State.Settings.Amount</p>
+    <p>Time per question: @(State.Settings.TimePerQuestion == 0 ? "∞" : $"{State.Settings.TimePerQuestion}s")</p>
+    <p>Difficulty: @State.Settings.Difficulty</p>
+    <p>Categories: @(State.Settings.CategoryIds.Count == 0 ? "Any" : string.Join(", ", State.Settings.CategoryIds))</p>
+
+    @if (IsHost)
+    {
+        <hr />
+        <h3>Host settings</h3>
+
+        <label>Amount:</label>
+        <input type="number" min="5" max="50" @bind="Amount" />
+
+        <label>Time:</label>
+        <select @bind="TimePerQuestion">
+            <option value="5">5</option>
+            <option value="10">10</option>
+            <option value="15">15</option>
+            <option value="30">30</option>
+            <option value="0">Infinite</option>
+        </select>
+
+        <label>Difficulty:</label>
+        <select @bind="Difficulty">
+            <option value="any">any</option>
+            <option value="easy">easy</option>
+            <option value="medium">medium</option>
+            <option value="hard">hard</option>
+        </select>
+
+        <div>
+            <p>Categories (max 3):</p>
+            @foreach (var cat in Categories)
+            {
+                <label style="display:block;">
+                    <input type="checkbox"
+                           @onchange="() => ToggleCategory(cat.Id)"
+                           checked="@SelectedCategoryIds.Contains(cat.Id)"
+                           disabled="@(!SelectedCategoryIds.Contains(cat.Id) && SelectedCategoryIds.Count >= 3)" />
+                    @cat.Name
+                </label>
+            }
+        </div>
+
+        <button class="menu-btn" @onclick="ApplySettings">Apply</button>
+
+        <button class="menu-btn" @onclick="StartGame" disabled="@(State.Players.Count < 2)">
+            Start (min 2 players)
+        </button>
+    }
+
+    @if (State.IsStarted)
+    {
+        <p><strong>Game started!</strong> (teď zatím jen signal, další krok uděláme game screen)</p>
+    }
+}
+
+@code {
+    [Parameter] public string Code { get; set; } = "";
+
+    private LobbyState? State;
+
+    private int Amount = 10;
+    private int TimePerQuestion = 10;
+    private string Difficulty = "any";
+    private List<int> SelectedCategoryIds = new();
+
+    private bool IsHost => State != null && State.HostUsername == (Auth.Username ?? "Guest");
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Auth.InitializeAsync();
+        await Mp.ConnectAsync("http://localhost:5237");
+
+        Mp.OnLobbyUpdated += s =>
+        {
+            if (s.Code == Code)
+            {
+                State = s;
+                
+                Amount = s.Settings.Amount;
+                TimePerQuestion = s.Settings.TimePerQuestion;
+                Difficulty = s.Settings.Difficulty;
+                SelectedCategoryIds = s.Settings.CategoryIds.ToList();
+
+                InvokeAsync(StateHasChanged);
+            }
+        };
+
+        Mp.OnGameStarted += s =>
+        {
+            if (s.Code == Code)
+            {
+                InvokeAsync(StateHasChanged);
+            }
+        };
+    }
+
+    private async Task ApplySettings()
+    {
+        var settings = new LobbySettings(Amount, TimePerQuestion, Difficulty, SelectedCategoryIds.ToList());
+        await Mp.UpdateSettingsAsync(Code, settings);
+    }
+
+    private async Task StartGame()
+    {
+        await Mp.StartGameAsync(Code);
+    }
+
+    private void ToggleCategory(int id)
+    {
+        if (SelectedCategoryIds.Contains(id)) SelectedCategoryIds.Remove(id);
+        else SelectedCategoryIds.Add(id);
+    }
+
+    private List<Category> Categories = new()
+    {
+        new Category { Id = 9,  Name = "General Knowledge" },
+        new Category { Id = 17, Name = "Science & Nature" },
+        new Category { Id = 18, Name = "Science: Computers" },
+        new Category { Id = 21, Name = "Sports" },
+        new Category { Id = 22, Name = "Geography" },
+        new Category { Id = 23, Name = "History" },
+        new Category { Id = 24, Name = "Politics" },
+        new Category { Id = 27, Name = "Animals" },
+        new Category { Id = 32, Name = "Cartoon & Animations" }
+    };
+}

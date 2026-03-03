@@ -1,6 +1,7 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using QuizAPI;
 using QuizAPI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -15,9 +16,13 @@ builder.Services.AddCors(options =>
         {
             policy.WithOrigins("http://localhost:5019", "http://localhost:5237")
                 .AllowAnyHeader()
-                .AllowAnyMethod();
+                .AllowAnyMethod()
+                .AllowCredentials();
         });
 });
+
+builder.Services.AddSingleton<MultiplayerManager>();
+builder.Services.AddSignalR();
 
 builder.Services.AddMemoryCache();
 
@@ -60,5 +65,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.MapHub<MultiplayerHub>("/hubs/multiplayer");
 
 app.Run();
