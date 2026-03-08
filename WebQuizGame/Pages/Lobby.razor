@@ -4,6 +4,7 @@
 @inject MultiplayerClient Mp
 @inject Authorization Auth
 @inject NavigationManager Nav
+@implements IDisposable
 
 <h2>Lobby @Code</h2>
 
@@ -72,6 +73,16 @@ else
             Start (min 2 players)
         </button>
     }
+    
+    @if (State != null && State.IsMatchmaking && State.MatchmakingEndsAtUtc != null)
+    {
+        <p><strong>Matchmaking in progress...</strong></p>
+        <p>
+            Game starts in
+            @Math.Max(0, (int)(State.MatchmakingEndsAtUtc.Value - DateTime.UtcNow).TotalSeconds)
+            seconds.
+        </p>
+    }
 
     @if (State.IsStarted)
     {
@@ -89,6 +100,7 @@ else
     private string Difficulty = "any";
     private List<int> SelectedCategoryIds = new();
     private bool _navigated = false;
+    private PeriodicTimer? _timer;
     private string? GameError;
 
     private bool IsHost => State != null && State.HostUsername == (Auth.Username ?? "Guest");
@@ -97,23 +109,34 @@ else
     {
         await Auth.InitializeAsync();
         await Mp.ConnectAsync("http://localhost:5237");
+        
+        _timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
 
+        _ = Task.Run(async () =>
+        {
+            while (await _timer.WaitForNextTickAsync())
+            {
+                await InvokeAsync(StateHasChanged);
+            }
+        });
+        
         Mp.OnLobbyUpdated += s =>
         {
             if (s.Code == Code)
             {
                 State = s;
-                
-                if (State.IsStarted && !_navigated)
-                {
-                    _navigated = true;
-                    Nav.NavigateTo($"/multiplayerGame/{Code}");
-                }
-                
+
                 Amount = s.Settings.Amount;
                 TimePerQuestion = s.Settings.TimePerQuestion;
                 Difficulty = s.Settings.Difficulty;
                 SelectedCategoryIds = s.Settings.CategoryIds.ToList();
+
+                if (State.IsStarted && !_navigated)
+                {
+                    _navigated = true;
+                    Nav.NavigateTo($"/multiplayerGame/{Code}");
+                    return;
+                }
 
                 InvokeAsync(StateHasChanged);
             }
@@ -169,4 +192,10 @@ else
         new Category { Id = 27, Name = "Animals" },
         new Category { Id = 32, Name = "Cartoon & Animations" }
     };
+
+    public void Dispose()
+    {
+        _timer?.Dispose();
+    }
+
 }

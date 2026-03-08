@@ -8,10 +8,12 @@ namespace QuizAPI;
 public class MultiplayerHub : Hub
 {
     private readonly MultiplayerManager _lobbies;
+    private readonly IHubContext<MultiplayerHub> _hubContext;
 
-    public MultiplayerHub(MultiplayerManager lobbies)
+    public MultiplayerHub(MultiplayerManager lobbies, IHubContext<MultiplayerHub> hubContext)
     {
         _lobbies = lobbies;
+        _hubContext = hubContext;
     }
 
     public async Task<LobbyState> CreateLobby(CreateLobbyRequest req)
@@ -60,20 +62,72 @@ public class MultiplayerHub : Hub
 
             var state = MultiplayerManager.ToState(lobby);
             await Clients.Group(lobby.GroupName).SendCoreAsync("LobbyUpdated", new object?[] { state });
-            
+
             if (lobby.IsQuickMatch && !lobby.IsStarted && lobby.Players.Count >= lobby.MinPlayers)
             {
-                lobby.IsStarted = true;
-                await Task.Delay(200);
-                await InternalStartGame(lobby);
+                StartMatchmakingCountdownIfNeeded(lobby);
+
+                var updatedState = MultiplayerManager.ToState(lobby);
+                await Clients.Group(lobby.GroupName).SendCoreAsync("LobbyUpdated", new object?[] { updatedState });
             }
 
-            return state;
+            return MultiplayerManager.ToState(lobby);
         }
         catch (Exception ex)
         {
             Console.WriteLine("QUICKMATCH ERROR:\n" + ex);
             throw new HubException(ex.Message);
+        }
+    }
+    
+    private void StartMatchmakingCountdownIfNeeded(Lobby lobby)
+    {
+        lock (lobby)
+        {
+            if (lobby.IsStarted) return;
+            if (lobby.IsMatchmaking) return;
+
+            lobby.IsMatchmaking = true;
+            lobby.MatchmakingEndsAtUtc = DateTime.UtcNow.AddSeconds(30);
+
+            lobby.MatchmakingCts?.Cancel();
+            lobby.MatchmakingCts = new CancellationTokenSource();
+            var token = lobby.MatchmakingCts.Token;
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(30), token);
+                }
+                catch
+                {
+                    return;
+                }
+
+                if (!_lobbies.TryGetLobby(lobby.Code, out var l) || l == null)
+                    return;
+
+                bool canStart;
+                lock (l)
+                {
+                    canStart = !l.IsStarted && l.Players.Count >= l.MinPlayers;
+                    if (canStart)
+                    {
+                        l.IsStarted = true;
+                        l.IsMatchmaking = false;
+                        l.MatchmakingEndsAtUtc = null;
+                    }
+                }
+
+                if (!canStart) return;
+
+                var state = MultiplayerManager.ToState(l);
+                await _hubContext.Clients.Group(l.GroupName).SendCoreAsync("LobbyUpdated", new object[] { state });
+
+                await Task.Delay(300);
+                await InternalStartGame(l);
+            });
         }
     }
 
@@ -92,6 +146,9 @@ public class MultiplayerHub : Hub
     {
         if (!_lobbies.TryGetLobby(lobbyCode, out var lobby) || lobby == null)
             return;
+        
+        var state = MultiplayerManager.ToState(lobby);
+        await Clients.Group(lobby.GroupName).SendCoreAsync("LobbyUpdated", new object[] { state });
 
         _lobbies.StartGame(lobbyCode, Context.ConnectionId);
 
@@ -136,7 +193,7 @@ public class MultiplayerHub : Hub
             }
         }
         
-        await Clients.Group(lobby.GroupName).SendCoreAsync("QuestionResolved",
+        await _hubContext.Clients.Group(lobby.GroupName).SendCoreAsync("QuestionResolved",
             new object[] { who, chosen, correct });
 
         await Task.Delay(1200);
@@ -154,7 +211,7 @@ public class MultiplayerHub : Hub
         if (next != null)
             await SendQuestion(lobby, next);
         else
-            await Clients.Group(lobby.GroupName).SendCoreAsync("GameFinished", new object[] { finalScores! });
+            await _hubContext.Clients.Group(lobby.GroupName).SendCoreAsync("GameFinished", new object[] { finalScores! });
     }
     
     private async Task InternalStartGame(Lobby lobby)
@@ -181,8 +238,8 @@ public class MultiplayerHub : Hub
 
             if (questions.Count == 0)
             {
-                await Clients.Group(lobby.GroupName).SendCoreAsync("GameError",
-                    new object[] { "Nenačetly se žádné otázky (empty response)." });
+                await _hubContext.Clients.Group(lobby.GroupName).SendCoreAsync("GameError",
+                    new object[] { "No questions loaded (empty response)." });
                 return;
             }
 
@@ -205,7 +262,7 @@ public class MultiplayerHub : Hub
         {
             Console.WriteLine("[START ERROR]\n" + ex);
 
-            await Clients.Group(lobby.GroupName).SendCoreAsync("GameError",
+            await _hubContext.Clients.Group(lobby.GroupName).SendCoreAsync("GameError",
                 new object[] { "StartGame failed: " + ex.Message });
         }
     }
@@ -217,7 +274,9 @@ public class MultiplayerHub : Hub
 
         lock (lobby)
         {
-            if (lobby.Questions.Count == 0) return Task.FromResult<TriviaQuestion?>(null);
+            if (lobby.Questions.Count == 0)
+                return Task.FromResult<TriviaQuestion?>(null);
+
             if (lobby.CurrentQuestionIndex < 0 || lobby.CurrentQuestionIndex >= lobby.Questions.Count)
                 return Task.FromResult<TriviaQuestion?>(null);
 
@@ -239,7 +298,7 @@ public class MultiplayerHub : Hub
             lobby.QuestionCts = new CancellationTokenSource();
         }
 
-        await Clients.Group(lobby.GroupName).SendCoreAsync("NewQuestion", new object[] { q });
+        await _hubContext.Clients.Group(lobby.GroupName).SendCoreAsync("NewQuestion", new object[] { q });
         
         _ = Task.Run(async () =>
         {

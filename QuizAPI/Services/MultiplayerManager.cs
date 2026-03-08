@@ -149,7 +149,9 @@ public class MultiplayerManager
             lobby.HostUsername,
             lobby.Settings,
             lobby.Players.Select(p => p.Username).ToList(),
-            lobby.IsStarted
+            lobby.IsStarted,
+            lobby.IsMatchmaking,
+            lobby.MatchmakingEndsAtUtc
         );
 
     private static string GenerateCode()

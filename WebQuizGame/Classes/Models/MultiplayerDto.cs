@@ -24,7 +24,9 @@ public record LobbyState(
     string HostUsername,
     LobbySettings Settings,
     List<string> Players,
-    bool IsStarted
+    bool IsStarted,
+    bool IsMatchmaking,
+    DateTime? MatchmakingEndsAtUtc
 );
 
 public class MultiplayerDto

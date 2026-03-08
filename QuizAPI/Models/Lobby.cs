@@ -28,4 +28,7 @@ public class Lobby
     public string? FirstAnswerText { get; set; }
     public bool? FirstAnswerCorrect { get; set; }
     public CancellationTokenSource? QuestionCts { get; set; }
+    public bool IsMatchmaking { get; set; } = false;
+    public DateTime? MatchmakingEndsAtUtc { get; set; }
+    public CancellationTokenSource? MatchmakingCts { get; set; }
 }
