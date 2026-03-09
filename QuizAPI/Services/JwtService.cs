@@ -14,7 +14,7 @@ public class JwtService
         _config = config;
     }
 
-    public string GenerateToken(string username)
+    public string GenerateToken(int userId, string username)
     {
         var key = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(_config["Jwt:Key"]!)
@@ -27,6 +27,7 @@ public class JwtService
 
         var claims = new[]
         {
+            new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
             new Claim(ClaimTypes.Name, username)
         };
 

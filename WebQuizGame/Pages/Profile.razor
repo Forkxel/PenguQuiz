@@ -38,15 +38,22 @@
 
         if (!response.IsSuccessStatusCode)
         {
-            Message = "Invalid credentials!";
+            var errorText = await response.Content.ReadAsStringAsync();
+            Message = $"Login failed: {errorText}";
             return;
         }
 
-        var result = await response.Content
-            .ReadFromJsonAsync<LoginResponse>();
+        var result = await response.Content.ReadFromJsonAsync<LoginResponse>();
 
-        await Auth.Login(Username, result!.Token);
+        if (result == null)
+        {
+            Message = "Login failed!";
+            return;
+        }
 
+        await Auth.Login(result);
+
+        Message = "";
         Navigation.NavigateTo("/profileMenu");
     }
 

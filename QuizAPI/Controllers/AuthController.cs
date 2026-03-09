@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QuizAPI.Models;
 using QuizAPI.Services;
@@ -29,24 +30,48 @@ public class AuthController : ControllerBase
         return Ok("User registered");
     }
 
-
     [HttpPost("login")]
     public IActionResult Login([FromBody] UserDto user)
     {
-        bool success = _db.LoginUser(user.Username, user.Password);
+        try
+        {
+            var dbUser = _db.GetUserByLogin(user.Username, user.Password);
 
-        if (!success)
-            return Unauthorized("Invalid credentials");
-        
-        var token = _jwt.GenerateToken(user.Username);
+            if (dbUser == null)
+                return Unauthorized("Invalid credentials");
 
-        return Ok(new { token });
+            var token = _jwt.GenerateToken(dbUser.Id, dbUser.Username);
+
+            return Ok(new LoginResponse
+            {
+                Token = token,
+                UserId = dbUser.Id,
+                Username = dbUser.Username
+            });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("LOGIN ERROR:");
+            Console.WriteLine(ex.ToString());
+            return StatusCode(500, ex.Message);
+        }
     }
-    
+
     [Authorize]
     [HttpGet("verify")]
     public IActionResult Verify()
     {
-        return Ok();
+        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        var usernameClaim = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
+
+        if (string.IsNullOrWhiteSpace(userIdClaim) || string.IsNullOrWhiteSpace(usernameClaim))
+            return Unauthorized();
+
+        return Ok(new VerifyResponse
+        {
+            IsValid = true,
+            UserId = int.Parse(userIdClaim),
+            Username = usernameClaim
+        });
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace WebQuizGame.Classes.Models;
+﻿namespace QuizAPI.Models;
 
 public class LoginResponse
 {

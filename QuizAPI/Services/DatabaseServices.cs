@@ -1,5 +1,6 @@
 ﻿using Microsoft.Data.SqlClient;
 using QuizAPI.Helpers;
+using QuizAPI.Models;
 
 namespace QuizAPI.Services;
 
@@ -57,5 +58,32 @@ public class DatabaseServices
 
         int count = (int)cmd.ExecuteScalar()!;
         return count > 0;
+    }
+    
+    public DbUser? GetUserByLogin(string username, string password)
+    {
+        using var connection = GetConnection();
+        connection.Open();
+
+        string hashedPassword = PasswordHasher.Hash(password);
+
+        var cmd = new SqlCommand(@"
+        SELECT Id, Username
+        FROM Users
+        WHERE Username = @Username AND PasswordHash = @PasswordHash", connection);
+
+        cmd.Parameters.AddWithValue("@Username", username);
+        cmd.Parameters.AddWithValue("@PasswordHash", hashedPassword);
+
+        using var reader = cmd.ExecuteReader();
+
+        if (!reader.Read())
+            return null;
+
+        return new DbUser
+        {
+            Id = Convert.ToInt32(reader["Id"]),
+            Username = reader["Username"]?.ToString() ?? ""
+        };
     }
 }

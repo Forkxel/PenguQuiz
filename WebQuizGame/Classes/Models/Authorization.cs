@@ -1,4 +1,6 @@
 ﻿using Blazored.LocalStorage;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
 
 namespace WebQuizGame.Classes.Models;
 
@@ -7,6 +9,7 @@ public class Authorization
     private readonly ILocalStorageService _localStorage;
 
     public bool IsLoggedIn { get; private set; }
+    public int? UserId { get; private set; }
     public string? Username { get; private set; }
 
     public Authorization(ILocalStorageService localStorage)
@@ -18,32 +21,54 @@ public class Authorization
     {
         var token = await _localStorage.GetItemAsync<string>("token");
 
-        if (string.IsNullOrEmpty(token))
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            IsLoggedIn = false;
+            UserId = null;
+            Username = null;
             return;
+        }
 
-        var client = new HttpClient();
-
+        using var client = new HttpClient();
         client.DefaultRequestHeaders.Authorization =
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            new AuthenticationHeaderValue("Bearer", token);
 
         var response = await client.GetAsync("http://localhost:5237/api/auth/verify");
 
-        IsLoggedIn = response.IsSuccessStatusCode;
+        if (!response.IsSuccessStatusCode)
+        {
+            await Logout();
+            return;
+        }
+
+        var data = await response.Content.ReadFromJsonAsync<VerifyResponse>();
+
+        if (data == null || !data.IsValid)
+        {
+            await Logout();
+            return;
+        }
+
+        IsLoggedIn = true;
+        UserId = data.UserId;
+        Username = data.Username;
     }
 
-    public async Task Login(string username, string token)
+    public async Task Login(LoginResponse loginResponse)
     {
-        await _localStorage.SetItemAsync("token", token);
+        await _localStorage.SetItemAsync("token", loginResponse.Token);
 
-        Username = username;
         IsLoggedIn = true;
+        UserId = loginResponse.UserId;
+        Username = loginResponse.Username;
     }
 
     public async Task Logout()
     {
         await _localStorage.RemoveItemAsync("token");
 
-        Username = null;
         IsLoggedIn = false;
+        UserId = null;
+        Username = null;
     }
 }

@@ -1,8 +1,8 @@
 ﻿namespace WebQuizGame.Classes.Models;
 
-public class LoginResponse
+public class VerifyResponse
 {
-    public string Token { get; set; } = "";
+    public bool IsValid { get; set; }
     public int UserId { get; set; }
     public string Username { get; set; } = "";
 }
