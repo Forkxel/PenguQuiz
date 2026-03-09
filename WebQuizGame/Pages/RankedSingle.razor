@@ -3,6 +3,7 @@
 @inject NavigationManager Navigation
 @inject HttpClient Http
 @inject Authorization Auth
+@using System.Net.Http.Headers
 
 <h2>Ranked Quiz</h2>
 
@@ -51,6 +52,13 @@ else
         <p>Total Score: @Score</p>
         <p>Correct Answers: @CorrectAnswers</p>
         <p>Total Questions: 15</p>
+        
+        @if (RankedResult != null)
+        {
+            <p>Old Rating: @RankedResult.OldRating</p>
+            <p>New Rating: @RankedResult.NewRating</p>
+            <p>Rating Change: @(RankedResult.Delta >= 0 ? "+" : "")@RankedResult.Delta</p>
+        }
 
         <button class="menu-btn" @onclick="RestartGame">Play Again</button>
         <button class="menu-btn" @onclick="GoToMenu">Menu</button>
@@ -58,22 +66,20 @@ else
 }
 
 @code {
-
     private const int Amount = 15;
     private const int TimePerQuestion = 15;
-
     private List<Question>? Questions;
     private int CurrentQuestionIndex = 0;
     private int Score = 0;
     private int CorrectAnswers = 0;
-
     private string? SelectedAnswer;
     private bool Answered = false;
-
     private int TimeLeft;
     private CancellationTokenSource? TimerCts;
-
     private DateTime QuestionStartTime;
+    private double TotalAnswerTimeSeconds = 0;
+    private RankedSubmitResponse? RankedResult;
+    private bool RankedSubmitted = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -115,10 +121,13 @@ else
         TimerCts?.Cancel();
 
         var current = Questions[CurrentQuestionIndex];
+        var answerTime = (DateTime.UtcNow - QuestionStartTime).TotalSeconds;
+        TotalAnswerTimeSeconds += answerTime;
 
         if (selected == current.CorrectAnswer)
         {
-            Score += 10;
+            int timeBonus = Math.Max(0, TimePerQuestion - (int)Math.Floor(answerTime));
+            Score += 10 + timeBonus;
             CorrectAnswers++;
         }
 
@@ -130,7 +139,13 @@ else
         CurrentQuestionIndex++;
 
         if (CurrentQuestionIndex < Questions.Count)
+        {
             StartTimer();
+        }
+        else
+        {
+            await SubmitRankedResult();
+        }
 
         StateHasChanged();
     }
@@ -204,6 +219,9 @@ else
         CurrentQuestionIndex = 0;
         Score = 0;
         CorrectAnswers = 0;
+        TotalAnswerTimeSeconds = 0;
+        RankedResult = null;
+        RankedSubmitted = false;
 
         await LoadQuestions();
 
@@ -214,5 +232,40 @@ else
     private void GoToMenu()
     {
         Navigation.NavigateTo("/singleplayerMenu");
+    }
+    
+    private async Task SubmitRankedResult()
+    {
+        if (RankedSubmitted) return;
+
+        var token = await Auth.GetTokenAsync();
+        if (string.IsNullOrWhiteSpace(token)) return;
+
+        using var client = new HttpClient();
+        client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", token);
+
+        double averageTime = Questions == null || Questions.Count == 0
+            ? 0
+            : TotalAnswerTimeSeconds / Questions.Count;
+
+        var request = new SubmitSingleRankedRequest
+        {
+            Score = Score,
+            CorrectAnswers = CorrectAnswers,
+            TotalQuestions = Questions?.Count ?? 0,
+            AverageTimeSeconds = averageTime,
+            Difficulty = "any"
+        };
+
+        var response = await client.PostAsJsonAsync(
+            "http://localhost:5237/api/ranked/single/submit",
+            request);
+
+        if (!response.IsSuccessStatusCode)
+            return;
+
+        RankedResult = await response.Content.ReadFromJsonAsync<RankedSubmitResponse>();
+        RankedSubmitted = true;
     }
 }

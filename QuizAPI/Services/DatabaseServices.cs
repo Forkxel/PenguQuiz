@@ -19,27 +19,29 @@ public class DatabaseServices
         return new SqlConnection(connectionString);
     }
 
-    public bool RegisterUser(string username, string password)
+    public int? RegisterUser(string username, string password)
     {
         string hash = PasswordHasher.Hash(password);
 
         using var connection = GetConnection();
         connection.Open();
 
-        using var cmd = new SqlCommand(
-            "INSERT INTO Users (Username, PasswordHash) VALUES (@u, @p)", connection);
+        using var cmd = new SqlCommand(@"
+        INSERT INTO Users (Username, PasswordHash)
+        OUTPUT INSERTED.Id
+        VALUES (@u, @p)", connection);
 
         cmd.Parameters.AddWithValue("@u", username);
         cmd.Parameters.AddWithValue("@p", hash);
 
         try
         {
-            cmd.ExecuteNonQuery();
-            return true;
+            var insertedId = cmd.ExecuteScalar();
+            return insertedId != null ? Convert.ToInt32(insertedId) : null;
         }
         catch (SqlException ex) when (ex.Number == 2627)
         {
-            return false;
+            return null;
         }
     }
 
@@ -85,5 +87,53 @@ public class DatabaseServices
             Id = Convert.ToInt32(reader["Id"]),
             Username = reader["Username"]?.ToString() ?? ""
         };
+    }
+    
+    public void CreateDefaultRanking(int userId)
+    {
+        using var connection = GetConnection();
+        connection.Open();
+
+        using var cmd = new SqlCommand(@"
+        INSERT INTO UserRankings
+        (UserId, SingleElo, MultiElo, SingleRankedPlayed, SingleRankedWins, MultiRankedPlayed, MultiRankedWins)
+        VALUES
+        (@UserId, 1000, 1000, 0, 0, 0, 0)", connection);
+
+        cmd.Parameters.AddWithValue("@UserId", userId);
+        cmd.ExecuteNonQuery();
+    }
+
+    public int GetSingleRating(int userId)
+    {
+        using var connection = GetConnection();
+        connection.Open();
+
+        using var cmd = new SqlCommand(
+            "SELECT SingleElo FROM UserRankings WHERE UserId = @UserId", connection);
+
+        cmd.Parameters.AddWithValue("@UserId", userId);
+
+        var result = cmd.ExecuteScalar();
+        return result != null ? Convert.ToInt32(result) : 1000;
+    }
+
+    public void UpdateSingleRating(int userId, int newRating, bool win)
+    {
+        using var connection = GetConnection();
+        connection.Open();
+
+        using var cmd = new SqlCommand(@"
+        UPDATE UserRankings
+        SET SingleElo = @Rating,
+            SingleRankedPlayed = SingleRankedPlayed + 1,
+            SingleRankedWins = SingleRankedWins + @WinAdd
+        WHERE UserId = @UserId", connection);
+
+        cmd.Parameters.AddWithValue("@Rating", newRating);
+        cmd.Parameters.AddWithValue("@WinAdd", win ? 1 : 0);
+        cmd.Parameters.AddWithValue("@UserId", userId);
+
+        cmd.ExecuteNonQuery();
     }
 }

@@ -71,4 +71,9 @@ public class Authorization
         UserId = null;
         Username = null;
     }
+    
+    public async Task<string?> GetTokenAsync()
+    {
+        return await _localStorage.GetItemAsync<string>("token");
+    }
 }

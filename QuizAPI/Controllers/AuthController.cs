@@ -22,10 +22,12 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     public IActionResult Register([FromBody] UserDto user)
     {
-        bool success = _db.RegisterUser(user.Username, user.Password);
+        var userId = _db.RegisterUser(user.Username, user.Password);
 
-        if (!success)
+        if (userId == null)
             return BadRequest("Username already exists");
+
+        _db.CreateDefaultRanking(userId.Value);
 
         return Ok("User registered");
     }
