@@ -87,4 +87,14 @@ public class RankedController : ControllerBase
 
         return Ok(profile);
     }
+    
+    [HttpGet("leaderboard/single")]
+    public IActionResult GetSingleLeaderboard([FromQuery] int top = 20)
+    {
+        if (top <= 0) top = 20;
+        if (top > 100) top = 100;
+
+        var leaderboard = _db.GetSingleLeaderboard(top);
+        return Ok(leaderboard);
+    }
 }

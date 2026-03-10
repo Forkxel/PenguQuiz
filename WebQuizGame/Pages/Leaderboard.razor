@@ -1,0 +1,71 @@
+﻿@page "/leaderboard"
+@using WebQuizGame.Classes.Models
+@inject HttpClient Http
+@inject NavigationManager Navigation
+
+<h2>Singleplayer Leaderboard</h2>
+
+@if (Entries == null)
+{
+    <p>Loading leaderboard...</p>
+}
+else if (Entries.Count == 0)
+{
+    <p>No leaderboard data found.</p>
+}
+else
+{
+    <table>
+        <thead>
+        <tr>
+            <th>Rank</th>
+            <th>Username</th>
+            <th>Elo</th>
+            <th>Played</th>
+            <th>Wins</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var entry in Entries)
+        {
+            <tr>
+                <td>@entry.Rank</td>
+                <td>@entry.Username</td>
+                <td>@entry.SingleElo</td>
+                <td>@entry.SingleRankedPlayed</td>
+                <td>@entry.SingleRankedWins</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+<p>@Message</p>
+
+<button @onclick="GoBack">Back to Menu</button>
+
+@code {
+    private List<LeaderboardEntryResponse>? Entries;
+    private string Message = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var response = await Http.GetAsync("api/ranked/leaderboard/single?top=20");
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorText = await response.Content.ReadAsStringAsync();
+            Message = $"Failed to load leaderboard: {response.StatusCode} - {errorText}";
+            Entries = new List<LeaderboardEntryResponse>();
+            return;
+        }
+
+        Entries = await response.Content.ReadFromJsonAsync<List<LeaderboardEntryResponse>>()
+                  ?? new List<LeaderboardEntryResponse>();
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo("/");
+    }
+}

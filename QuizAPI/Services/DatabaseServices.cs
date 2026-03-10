@@ -200,4 +200,43 @@ public class DatabaseServices
         insertCmd.Parameters.AddWithValue("@UserId", userId);
         insertCmd.ExecuteNonQuery();
     }
+    
+    public List<LeaderboardEntryResponse> GetSingleLeaderboard(int top = 20)
+    {
+        using var connection = GetConnection();
+        connection.Open();
+
+        using var cmd = new SqlCommand(@"
+        SELECT TOP (@Top)
+            u.Id,
+            u.Username,
+            r.SingleElo,
+            r.SingleRankedPlayed,
+            r.SingleRankedWins
+        FROM Users u
+        INNER JOIN UserRankings r ON u.Id = r.UserId
+        ORDER BY r.SingleElo DESC, r.SingleRankedWins DESC, r.SingleRankedPlayed ASC", connection);
+
+        cmd.Parameters.AddWithValue("@Top", top);
+
+        using var reader = cmd.ExecuteReader();
+
+        var result = new List<LeaderboardEntryResponse>();
+        int rank = 1;
+
+        while (reader.Read())
+        {
+            result.Add(new LeaderboardEntryResponse
+            {
+                Rank = rank++,
+                UserId = Convert.ToInt32(reader["Id"]),
+                Username = reader["Username"]?.ToString() ?? "",
+                SingleElo = Convert.ToInt32(reader["SingleElo"]),
+                SingleRankedPlayed = Convert.ToInt32(reader["SingleRankedPlayed"]),
+                SingleRankedWins = Convert.ToInt32(reader["SingleRankedWins"])
+            });
+        }
+
+        return result;
+    }
 }

@@ -10,6 +10,7 @@
         <button class="menu-btn" @onclick="GoToSingleplayer">Singleplayer</button>
         <button class="menu-btn" @onclick="GoToMultiplayer">Multiplayer</button>
         <button class="menu-btn" @onclick="GoToProfile">Profile</button>
+        <button class="menu-btn" @onclick="GoToLeaderboard">Leaderboard</button>
         <!-- <button class="menu-btn exit" @onclick="ExitGame">Exit</button> -->
     </div>
 </div>
@@ -31,5 +32,10 @@
             Navigation.NavigateTo("/profileMenu");
         else
             Navigation.NavigateTo("/profile");
+    }
+    
+    private void GoToLeaderboard()
+    {
+        Navigation.NavigateTo("/leaderboard");
     }
 }
