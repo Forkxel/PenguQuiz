@@ -13,12 +13,6 @@
 <button @onclick="Login">Login</button>
 <button @onclick="Register">Register</button>
 
-@if (Auth.IsLoggedIn)
-{
-    <p>Logged as: @Auth.Username</p>
-    <button @onclick="Logout">Logout</button>
-}
-
 <p>@Message</p>
 
 @code {
@@ -57,12 +51,6 @@
         Navigation.NavigateTo("/profileMenu");
     }
 
-    private async Task Logout()
-    {
-        await Auth.Logout();
-        Navigation.NavigateTo("/", true);
-    }
-
     private async Task Register()
     {
         var response = await Http.PostAsJsonAsync(
@@ -76,5 +64,15 @@
         Message = response.IsSuccessStatusCode
             ? "Registration successful! Now log in."
             : "Username already exists!";
+    }
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await Auth.InitializeAsync();
+
+        if (Auth.IsLoggedIn)
+        {
+            Navigation.NavigateTo("/profileMenu");
+        }
     }
 }

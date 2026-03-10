@@ -1,0 +1,87 @@
+﻿@page "/profileMenu"
+@using System.Net.Http.Headers
+@using WebQuizGame.Classes.Models
+@inject Authorization Auth
+@inject NavigationManager Navigation
+
+<h2>Profile</h2>
+
+@if (!Auth.IsLoggedIn)
+{
+    <p>You are not logged in.</p>
+}
+else if (Profile == null)
+{
+    <p>Loading profile...</p>
+}
+else
+{
+    <p><strong>Username:</strong> @Profile.Username</p>
+
+    <h3>Single Ranked</h3>
+    <p>Elo: @Profile.SingleElo</p>
+    <p>Played: @Profile.SingleRankedPlayed</p>
+    <p>Wins: @Profile.SingleRankedWins</p>
+
+    <h3>Multiplayer Ranked</h3>
+    <p>Elo: @Profile.MultiElo</p>
+    <p>Played: @Profile.MultiRankedPlayed</p>
+    <p>Wins: @Profile.MultiRankedWins</p>
+
+    <button @onclick="GoBackToMenu">Back to Menu</button>
+    <button @onclick="Logout">Logout</button>
+}
+
+<p>@Message</p>
+
+@code {
+    private RankedProfileResponse? Profile;
+    private string Message = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Auth.InitializeAsync();
+
+        if (!Auth.IsLoggedIn)
+        {
+            Navigation.NavigateTo("/profile");
+            return;
+        }
+
+        var token = await Auth.GetTokenAsync();
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            Message = "Missing token.";
+            return;
+        }
+
+        using var client = new HttpClient();
+        client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", token);
+
+        var response = await client.GetAsync("http://localhost:5237/api/ranked/profile");
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorText = await response.Content.ReadAsStringAsync();
+            Message = $"Failed to load profile: {response.StatusCode} - {errorText}";
+            return;
+        }
+
+        Profile = await response.Content.ReadFromJsonAsync<RankedProfileResponse>();
+
+        if (Profile == null)
+            Message = "Profile response was empty.";
+    }
+
+    private void GoBackToMenu()
+    {
+        Navigation.NavigateTo("/");
+    }
+
+    private async Task Logout()
+    {
+        await Auth.Logout();
+        Navigation.NavigateTo("/", true);
+    }
+}

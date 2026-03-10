@@ -39,3 +39,5 @@ CREATE TABLE RankedMatchResults
     FOREIGN KEY (MatchId) REFERENCES RankedMatches(Id),
     FOREIGN KEY (UserId) REFERENCES Users(Id)
 );
+
+SELECT * FROM Users

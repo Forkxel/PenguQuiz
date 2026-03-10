@@ -136,4 +136,68 @@ public class DatabaseServices
 
         cmd.ExecuteNonQuery();
     }
+    
+    public RankedProfileResponse? GetRankedProfile(int userId)
+    {
+        using var connection = GetConnection();
+        connection.Open();
+
+        using var cmd = new SqlCommand(@"
+        SELECT 
+            u.Id,
+            u.Username,
+            r.SingleElo,
+            r.MultiElo,
+            r.SingleRankedPlayed,
+            r.SingleRankedWins,
+            r.MultiRankedPlayed,
+            r.MultiRankedWins
+        FROM Users u
+        INNER JOIN UserRankings r ON u.Id = r.UserId
+        WHERE u.Id = @UserId", connection);
+
+        cmd.Parameters.AddWithValue("@UserId", userId);
+
+        using var reader = cmd.ExecuteReader();
+
+        if (!reader.Read())
+            return null;
+
+        return new RankedProfileResponse
+        {
+            UserId = Convert.ToInt32(reader["Id"]),
+            Username = reader["Username"]?.ToString() ?? "",
+            SingleElo = Convert.ToInt32(reader["SingleElo"]),
+            MultiElo = Convert.ToInt32(reader["MultiElo"]),
+            SingleRankedPlayed = Convert.ToInt32(reader["SingleRankedPlayed"]),
+            SingleRankedWins = Convert.ToInt32(reader["SingleRankedWins"]),
+            MultiRankedPlayed = Convert.ToInt32(reader["MultiRankedPlayed"]),
+            MultiRankedWins = Convert.ToInt32(reader["MultiRankedWins"])
+        };
+    }
+    
+    public void EnsureRankingExists(int userId)
+    {
+        using var connection = GetConnection();
+        connection.Open();
+
+        using var checkCmd = new SqlCommand(
+            "SELECT COUNT(*) FROM UserRankings WHERE UserId = @UserId", connection);
+
+        checkCmd.Parameters.AddWithValue("@UserId", userId);
+
+        int count = (int)checkCmd.ExecuteScalar()!;
+
+        if (count > 0)
+            return;
+
+        using var insertCmd = new SqlCommand(@"
+        INSERT INTO UserRankings
+        (UserId, SingleElo, MultiElo, SingleRankedPlayed, SingleRankedWins, MultiRankedPlayed, MultiRankedWins)
+        VALUES
+        (@UserId, 1000, 1000, 0, 0, 0, 0)", connection);
+
+        insertCmd.Parameters.AddWithValue("@UserId", userId);
+        insertCmd.ExecuteNonQuery();
+    }
 }

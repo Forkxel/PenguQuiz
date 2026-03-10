@@ -1,4 +1,6 @@
 ﻿@page "/"
+@using WebQuizGame.Classes.Models
+@inject Authorization Auth
 
 <div class="menu-screen">
     <h1 class="menu-title">Quiz Game</h1>
@@ -21,6 +23,13 @@
     private void GoToMultiplayer()
         => Navigation.NavigateTo("/multiplayer");
 
-    private void GoToProfile()
-        => Navigation.NavigateTo("/profile");
+    private async Task GoToProfile()
+    {
+        await Auth.InitializeAsync();
+
+        if (Auth.IsLoggedIn)
+            Navigation.NavigateTo("/profileMenu");
+        else
+            Navigation.NavigateTo("/profile");
+    }
 }

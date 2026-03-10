@@ -67,4 +67,24 @@ public class RankedController : ControllerBase
 
         return delta;
     }
+    
+    [Authorize]
+    [HttpGet("profile")]
+    public IActionResult GetProfile()
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrWhiteSpace(userIdClaim))
+            return Unauthorized();
+
+        int userId = int.Parse(userIdClaim);
+
+        _db.EnsureRankingExists(userId);
+
+        var profile = _db.GetRankedProfile(userId);
+
+        if (profile == null)
+            return NotFound("Ranked profile not found.");
+
+        return Ok(profile);
+    }
 }
