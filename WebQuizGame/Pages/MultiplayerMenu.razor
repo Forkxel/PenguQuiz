@@ -15,13 +15,13 @@
 
 <div style="display:flex; gap:16px; flex-wrap:wrap;">
     <button class="menu-btn" @onclick="QuickMatchAny">Quick Match (Any)</button>
-    <button class="menu-btn" @onclick="CreateLobby">Create Lobby</button>
-    <button class="menu-btn" @onclick="GoRanked">Ranked Multiplayer</button>
+    <button class="menu-btn" @onclick="GoToCustomCreate">Create Custom Lobby</button>
+    <button class="menu-btn" @onclick="GoToRanked">Ranked Multiplayer</button>
 </div>
 
 <hr />
 
-<h3>Join Lobby</h3>
+<h3>Join Custom Lobby</h3>
 <input placeholder="Lobby code" @bind="JoinCode" />
 <button class="menu-btn" @onclick="JoinLobby">Join</button>
 
@@ -37,11 +37,6 @@
     {
         await Auth.InitializeAsync();
         await Mp.ConnectAsync("http://localhost:5237");
-    }
-    
-    private void GoRanked()
-    {
-        Nav.NavigateTo("/multiplayerRanked");
     }
 
     private string GetUsername()
@@ -60,12 +55,14 @@
         Nav.NavigateTo($"/lobby/{state.Code}");
     }
 
-    private async Task CreateLobby()
+    private void GoToCustomCreate()
     {
-        Message = "";
-        var settings = new LobbySettings(10, 10, "any", new List<int>());
-        var state = await Mp.CreateLobbyAsync(new CreateLobbyRequest(GetUsername(), settings));
-        Nav.NavigateTo($"/lobby/{state.Code}");
+        Nav.NavigateTo("/multiplayerCustomCreate");
+    }
+
+    private void GoToRanked()
+    {
+        Nav.NavigateTo("/multiplayerRanked");
     }
 
     private async Task JoinLobby()
@@ -81,6 +78,6 @@
         var state = await Mp.JoinLobbyAsync(
             new JoinLobbyRequest(JoinCode.Trim().ToUpper(), GetUsername()));
 
-        Nav.NavigateTo($"/lobby/{state.Code}");
+        Nav.NavigateTo($"/multiplayerCustomLobby/{state.Code}");
     }
 }

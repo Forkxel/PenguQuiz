@@ -15,6 +15,7 @@ public class MultiplayerClient
     public event Action<Dictionary<string,int>>? OnGameFinished;
     public event Action<string>? OnGameError;
     public event Action<string,string,bool>? OnQuestionResolved;
+    public string? LocalUsername { get; private set; }
 
     public async Task ConnectAsync(string apiBaseUrl)
     {
@@ -47,13 +48,22 @@ public class MultiplayerClient
         => await _conn!.InvokeAsync("AnswerQuestion", lobbyCode, answer);
 
     public async Task<LobbyState> CreateLobbyAsync(CreateLobbyRequest req)
-        => await _conn!.InvokeAsync<LobbyState>("CreateLobby", req);
+    {
+        LocalUsername = req.HostUsername;
+        return await _conn!.InvokeAsync<LobbyState>("CreateLobby", req);
+    }
 
     public async Task<LobbyState> JoinLobbyAsync(JoinLobbyRequest req)
-        => await _conn!.InvokeAsync<LobbyState>("JoinLobby", req);
+    {
+        LocalUsername = req.Username;
+        return await _conn!.InvokeAsync<LobbyState>("JoinLobby", req);
+    }
 
     public async Task<LobbyState> QuickMatchAsync(QuickMatchRequest req)
-        => await _conn!.InvokeAsync<LobbyState>("QuickMatch", req);
+    {
+        LocalUsername = req.Username;
+        return await _conn!.InvokeAsync<LobbyState>("QuickMatch", req);
+    }
 
     public async Task UpdateSettingsAsync(string lobbyCode, LobbySettings settings)
         => await _conn!.InvokeAsync("UpdateSettings", lobbyCode, settings);
