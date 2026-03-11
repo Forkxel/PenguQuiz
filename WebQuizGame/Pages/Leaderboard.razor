@@ -3,13 +3,23 @@
 @inject HttpClient Http
 @inject NavigationManager Navigation
 
-<h2>Singleplayer Leaderboard</h2>
+<h2>@(ShowMulti ? "Multiplayer Ranked Leaderboard" : "Singleplayer Ranked Leaderboard")</h2>
 
-@if (Entries == null)
+<div style="display:flex; gap:12px; margin-bottom:16px;">
+    <button class="menu-btn" @onclick="ShowSingleLeaderboard" disabled="@(!ShowMulti)">
+        Single Ranked
+    </button>
+
+    <button class="menu-btn" @onclick="ShowMultiLeaderboard" disabled="@(ShowMulti)">
+        Multi Ranked
+    </button>
+</div>
+
+@if (IsLoading)
 {
     <p>Loading leaderboard...</p>
 }
-else if (Entries.Count == 0)
+else if (Entries == null || Entries.Count == 0)
 {
     <p>No leaderboard data found.</p>
 }
@@ -31,9 +41,9 @@ else
             <tr>
                 <td>@entry.Rank</td>
                 <td>@entry.Username</td>
-                <td>@entry.SingleElo</td>
-                <td>@entry.SingleRankedPlayed</td>
-                <td>@entry.SingleRankedWins</td>
+                <td>@(ShowMulti ? entry.MultiElo : entry.SingleElo)</td>
+                <td>@(ShowMulti ? entry.MultiRankedPlayed : entry.SingleRankedPlayed)</td>
+                <td>@(ShowMulti ? entry.MultiRankedWins : entry.SingleRankedWins)</td>
             </tr>
         }
         </tbody>
@@ -42,26 +52,62 @@ else
 
 <p>@Message</p>
 
-<button @onclick="GoBack">Back to Menu</button>
+<button class="menu-btn" @onclick="GoBack">Back to Menu</button>
 
 @code {
     private List<LeaderboardEntryResponse>? Entries;
     private string Message = "";
+    private bool ShowMulti = false;
+    private bool IsLoading = true;
 
     protected override async Task OnInitializedAsync()
     {
-        var response = await Http.GetAsync("api/ranked/leaderboard/single?top=20");
+        await LoadLeaderboard();
+    }
+
+    private async Task ShowSingleLeaderboard()
+    {
+        if (!ShowMulti)
+            return;
+
+        ShowMulti = false;
+        await LoadLeaderboard();
+    }
+
+    private async Task ShowMultiLeaderboard()
+    {
+        if (ShowMulti)
+            return;
+
+        ShowMulti = true;
+        await LoadLeaderboard();
+    }
+
+    private async Task LoadLeaderboard()
+    {
+        IsLoading = true;
+        Message = "";
+        Entries = null;
+
+        var url = ShowMulti
+            ? "api/ranked/leaderboard/multi?top=20"
+            : "api/ranked/leaderboard/single?top=20";
+
+        var response = await Http.GetAsync(url);
 
         if (!response.IsSuccessStatusCode)
         {
             var errorText = await response.Content.ReadAsStringAsync();
             Message = $"Failed to load leaderboard: {response.StatusCode} - {errorText}";
             Entries = new List<LeaderboardEntryResponse>();
+            IsLoading = false;
             return;
         }
 
         Entries = await response.Content.ReadFromJsonAsync<List<LeaderboardEntryResponse>>()
                   ?? new List<LeaderboardEntryResponse>();
+
+        IsLoading = false;
     }
 
     private void GoBack()
