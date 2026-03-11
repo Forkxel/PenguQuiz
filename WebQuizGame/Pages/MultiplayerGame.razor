@@ -3,34 +3,62 @@
 @using WebQuizGame.Classes.Services
 @inject MultiplayerClient Mp
 
-<h2>Multiplayer Game</h2>
+<div class="multiplayer-game-page">
+    <div class="multiplayer-game-screen">
+        <h1 class="multiplayer-game-title">Multiplayer Game</h1>
+        <p class="multiplayer-game-subtitle">Lobby code: @Code</p>
 
-@if (Finished)
-{
-    <h3>Game Over</h3>
-    @foreach (var s in Scores.OrderByDescending(x => x.Value))
-    {
-        <p>@s.Key : @s.Value</p>
-    }
-}
-else if (Current == null)
-{
-    <p>Waiting for question...</p>
-}
-else
-{
-    <h3>@Current.Question</h3>
+        @if (Finished)
+        {
+            <div class="multiplayer-game-card multiplayer-game-finish-card">
+                <h2 class="multiplayer-game-finish-title">Game Over</h2>
 
-    @foreach (var a in Answers)
-    {
-        <button @onclick="() => Answer(a)"
-                disabled="@Locked">
-            @a
-        </button>
-    }
+                <div class="multiplayer-game-scoreboard">
+                    @foreach (var s in Scores.OrderByDescending(x => x.Value))
+                    {
+                        <div class="multiplayer-game-score-row">
+                            <span class="multiplayer-game-player">@s.Key</span>
+                            <span class="multiplayer-game-points">@s.Value</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+        else if (Current == null)
+        {
+            <div class="multiplayer-game-card">
+                <p class="multiplayer-game-message">Waiting for question...</p>
+            </div>
+        }
+        else
+        {
+            <div class="multiplayer-game-card">
+                <div class="multiplayer-game-question-box">
+                    <p class="multiplayer-game-question-label">Current Question</p>
+                    <h2 class="multiplayer-game-question">@Current.Question</h2>
+                </div>
 
-    <p>@Message</p>
-}
+                <div class="multiplayer-game-answers">
+                    @foreach (var a in Answers)
+                    {
+                        <button class="multiplayer-game-answer-btn menu-btn"
+                                @onclick="() => Answer(a)"
+                                disabled="@Locked">
+                            @a
+                        </button>
+                    }
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(Message))
+                {
+                    <div class="multiplayer-game-info-box">
+                        <p class="multiplayer-game-message">@Message</p>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
 
 @code {
     [Parameter] public string Code { get; set; } = "";

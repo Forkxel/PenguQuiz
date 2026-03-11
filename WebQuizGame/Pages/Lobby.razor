@@ -7,89 +7,148 @@
 @inject NavigationManager Nav
 @implements IDisposable
 
-<h2>Lobby @Code</h2>
+<div class="lobby-page">
+    <div class="lobby-screen">
+        <h1 class="lobby-title">Lobby @Code</h1>
+        <p class="lobby-subtitle">Prepare your match and wait for the game to start</p>
 
-@if (State == null)
-{
-    <p>Loading lobby...</p>
-}
-else
-{
-    <p><strong>Host:</strong> @State.HostUsername</p>
-    <p><strong>Players:</strong> @string.Join(", ", State.Players)</p>
-    
-    @if (!string.IsNullOrWhiteSpace(GameError))
-    {
-        <p style="color:red"><strong>@GameError</strong></p>
-    }
+        @if (State == null)
+        {
+            <div class="lobby-card">
+                <p class="lobby-message">Loading lobby...</p>
+            </div>
+        }
+        else
+        {
+            <div class="lobby-card">
+                <div class="lobby-overview">
+                    <div class="lobby-overview-box">
+                        <span class="lobby-overview-label">Host</span>
+                        <span class="lobby-overview-value">@State.HostUsername</span>
+                    </div>
 
-    <h3>Settings</h3>
-    <p>Questions: @State.Settings.Amount</p>
-    <p>Time per question: @(State.Settings.TimePerQuestion == 0 ? "∞" : $"{State.Settings.TimePerQuestion}s")</p>
-    <p>Difficulty: @State.Settings.Difficulty</p>
-    <p>Categories: @(State.Settings.CategoryIds.Count == 0 ? "Any" : string.Join(", ", State.Settings.CategoryIds))</p>
+                    <div class="lobby-overview-box">
+                        <span class="lobby-overview-label">Players</span>
+                        <span class="lobby-overview-value">@string.Join(", ", State.Players)</span>
+                    </div>
+                </div>
 
-    @if (IsHost)
-    {
-        <hr />
-        <h3>Host settings</h3>
+                @if (!string.IsNullOrWhiteSpace(GameError))
+                {
+                    <div class="lobby-error-box">
+                        <p class="lobby-message"><strong>@GameError</strong></p>
+                    </div>
+                }
 
-        <label>Amount:</label>
-        <input type="number" min="5" max="50" @bind="Amount" />
+                <div class="lobby-section">
+                    <h2 class="lobby-section-title">Settings</h2>
 
-        <label>Time:</label>
-        <select @bind="TimePerQuestion">
-            <option value="5">5</option>
-            <option value="10">10</option>
-            <option value="15">15</option>
-            <option value="30">30</option>
-            <option value="0">Infinite</option>
-        </select>
+                    <div class="lobby-settings-grid">
+                        <div class="lobby-setting-box">
+                            <span class="lobby-setting-label">Questions</span>
+                            <span class="lobby-setting-value">@State.Settings.Amount</span>
+                        </div>
 
-        <label>Difficulty:</label>
-        <select @bind="Difficulty">
-            <option value="any">any</option>
-            <option value="easy">easy</option>
-            <option value="medium">medium</option>
-            <option value="hard">hard</option>
-        </select>
+                        <div class="lobby-setting-box">
+                            <span class="lobby-setting-label">Time per Question</span>
+                            <span class="lobby-setting-value">@(State.Settings.TimePerQuestion == 0 ? "∞" : $"{State.Settings.TimePerQuestion}s")</span>
+                        </div>
 
-        <div>
-            <p>Categories (max 3):</p>
-            @foreach (var cat in Categories)
-            {
-                <label style="display:block;">
-                    <input type="checkbox"
-                           @onchange="() => ToggleCategory(cat.Id)"
-                           checked="@SelectedCategoryIds.Contains(cat.Id)"
-                           disabled="@(!SelectedCategoryIds.Contains(cat.Id) && SelectedCategoryIds.Count >= 3)" />
-                    @cat.Name
-                </label>
-            }
-        </div>
+                        <div class="lobby-setting-box">
+                            <span class="lobby-setting-label">Difficulty</span>
+                            <span class="lobby-setting-value">@State.Settings.Difficulty</span>
+                        </div>
 
-        <button class="menu-btn" @onclick="ApplySettings">Apply</button>
+                        <div class="lobby-setting-box lobby-setting-box-wide">
+                            <span class="lobby-setting-label">Categories</span>
+                            <span class="lobby-setting-value">@(State.Settings.CategoryIds.Count == 0 ? "Any" : string.Join(", ", State.Settings.CategoryIds))</span>
+                        </div>
+                    </div>
+                </div>
 
-        <button class="menu-btn" @onclick="StartGame" disabled="@(State.Players.Count < 2)">
-            Start (min 2 players)
-        </button>
-    }
-    
-    @if (State != null && State.IsMatchmaking && State.MatchmakingEndsAtUtc != null)
-    {
-        <p><strong>Matchmaking in progress...</strong></p>
-        <p>
-            Game starts in
-            @Math.Max(0, (int)(State.MatchmakingEndsAtUtc.Value - DateTime.UtcNow).TotalSeconds)
-            seconds.
-        </p>
-    }
+                @if (IsHost)
+                {
+                    <div class="lobby-section lobby-host-section">
+                        <h2 class="lobby-section-title">Host Settings</h2>
 
-    @if (State.IsStarted)
-    {
-        <p><strong>Game started!</strong> (teď zatím jen signal, další krok uděláme game screen)</p>
-    }
-}
+                        <div class="lobby-form-grid">
+                            <div class="lobby-field">
+                                <label class="lobby-label">Amount</label>
+                                <input class="lobby-input" type="number" min="5" max="50" @bind="Amount" />
+                            </div>
+
+                            <div class="lobby-field">
+                                <label class="lobby-label">Time</label>
+                                <select class="lobby-select" @bind="TimePerQuestion">
+                                    <option value="5">5</option>
+                                    <option value="10">10</option>
+                                    <option value="15">15</option>
+                                    <option value="30">30</option>
+                                    <option value="0">Infinite</option>
+                                </select>
+                            </div>
+
+                            <div class="lobby-field">
+                                <label class="lobby-label">Difficulty</label>
+                                <select class="lobby-select" @bind="Difficulty">
+                                    <option value="any">Any</option>
+                                    <option value="easy">Easy</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="hard">Hard</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="lobby-field">
+                            <p class="lobby-label">Categories (max 3)</p>
+                            <div class="lobby-categories">
+                                @foreach (var cat in Categories)
+                                {
+                                    <label class="lobby-check-item">
+                                        <input type="checkbox"
+                                               @onchange="() => ToggleCategory(cat.Id)"
+                                               checked="@SelectedCategoryIds.Contains(cat.Id)"
+                                               disabled="@(!SelectedCategoryIds.Contains(cat.Id) && SelectedCategoryIds.Count >= 3)" />
+                                        <span>@cat.Name</span>
+                                    </label>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="lobby-actions">
+                            <button class="menu-btn lobby-action-btn" @onclick="ApplySettings">Apply</button>
+
+                            <button class="menu-btn lobby-action-btn lobby-start-btn"
+                                    @onclick="StartGame"
+                                    disabled="@(State.Players.Count < 2)">
+                                Start (min 2 players)
+                            </button>
+                        </div>
+                    </div>
+                }
+
+                @if (State != null && State.IsMatchmaking && State.MatchmakingEndsAtUtc != null)
+                {
+                    <div class="lobby-status-box">
+                        <p class="lobby-message"><strong>Matchmaking in progress...</strong></p>
+                        <p class="lobby-message">
+                            Game starts in
+                            @Math.Max(0, (int)(State.MatchmakingEndsAtUtc.Value - DateTime.UtcNow).TotalSeconds)
+                            seconds.
+                        </p>
+                    </div>
+                }
+
+                @if (State.IsStarted)
+                {
+                    <div class="lobby-status-box">
+                        <p class="lobby-message"><strong>Game started!</strong></p>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
 
 @code {
     [Parameter] public string Code { get; set; } = "";

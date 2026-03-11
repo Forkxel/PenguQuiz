@@ -7,97 +7,182 @@
 @inject NavigationManager Nav
 @implements IDisposable
 
-<h2>Custom Lobby</h2>
+<div class="mp-custom-lobby-page">
+    <div class="mp-custom-lobby-screen">
+        <h1 class="mp-custom-lobby-title">Custom Lobby</h1>
+        <p class="mp-custom-lobby-subtitle">Manage players and game settings before the match starts</p>
 
-@if (State == null)
-{
-    <p>Loading lobby...</p>
-}
-else
-{
-    <p><strong>Lobby Code:</strong> @State.Code</p>
-    <p><strong>Host:</strong> @State.HostUsername</p>
-    <p><strong>Players (@State.Players.Count/4):</strong> @string.Join(", ", State.Players)</p>
+        @if (State == null)
+        {
+            <div class="mp-custom-lobby-card">
+                <p class="mp-custom-lobby-message">Loading lobby...</p>
+            </div>
+        }
+        else
+        {
+            <div class="mp-custom-lobby-card">
+                <div class="mp-custom-lobby-overview">
+                    <div class="mp-custom-lobby-overview-box">
+                        <span class="mp-custom-lobby-overview-label">Lobby Code</span>
+                        <span class="mp-custom-lobby-overview-value">@State.Code</span>
+                    </div>
 
-    @if (!string.IsNullOrWhiteSpace(GameError))
-    {
-        <p style="color:red"><strong>@GameError</strong></p>
-    }
+                    <div class="mp-custom-lobby-overview-box">
+                        <span class="mp-custom-lobby-overview-label">Host</span>
+                        <span class="mp-custom-lobby-overview-value">@State.HostUsername</span>
+                    </div>
+                </div>
 
-    <h3>Current Settings</h3>
-    <p>Questions: @State.Settings.Amount</p>
-    <p>Time per question: @(State.Settings.TimePerQuestion == 0 ? "∞" : $"{State.Settings.TimePerQuestion}s")</p>
-    <p>Difficulty: @State.Settings.Difficulty</p>
-    <p>Categories: @(State.Settings.CategoryIds.Count == 0 ? "Any" : string.Join(", ", State.Settings.CategoryIds))</p>
+                <div class="mp-custom-lobby-section">
+                    <h2 class="mp-custom-lobby-section-title">Players</h2>
+                    <div class="mp-custom-lobby-players-box">
+                        <p class="mp-custom-lobby-players-count">@State.Players.Count / 4 players</p>
 
-    @if (IsHost && !State.IsStarted)
-    {
-        <hr />
-        <h3>Host Settings</h3>
+                        <div class="mp-custom-lobby-players-list">
+                            @foreach (var player in State.Players)
+                            {
+                                <div class="mp-custom-lobby-player-item">@player</div>
+                            }
+                        </div>
+                    </div>
+                </div>
 
-        <label>
-            Number of questions: @(QuestionCount == MaxQuestionCount ? "∞" : QuestionCount.ToString())
-        </label>
-        <input type="range" min="5" max="@MaxQuestionCount" step="1"
-               @bind="QuestionCount"
-               @bind:event="oninput" />
+                @if (!string.IsNullOrWhiteSpace(GameError))
+                {
+                    <div class="mp-custom-lobby-error-box">
+                        <p class="mp-custom-lobby-message">@GameError</p>
+                    </div>
+                }
 
-        <label>
-            Time per question:
-            <select @bind="TimePerQuestion">
-                <option value="5">5 s</option>
-                <option value="10">10 s</option>
-                <option value="15">15 s</option>
-                <option value="30">30 s</option>
-                <option value="60">60 s</option>
-                <option value="120">120 s</option>
-                <option value="0">Infinite</option>
-            </select>
-        </label>
+                <div class="mp-custom-lobby-section">
+                    <h2 class="mp-custom-lobby-section-title">Current Settings</h2>
 
-        <div>
-            <p>Select Categories (max 3):</p>
-            @foreach (var cat in Categories)
-            {
-                <label style="display:block;">
-                    <input type="checkbox"
-                           @onchange="() => ToggleCategory(cat.Id)"
-                           checked="@SelectedCategoryIds.Contains(cat.Id)"
-                           disabled="@(!SelectedCategoryIds.Contains(cat.Id) && SelectedCategoryIds.Count >= 3)" />
-                    @cat.Name
-                </label>
-            }
-        </div>
+                    <div class="mp-custom-lobby-settings-grid">
+                        <div class="mp-custom-lobby-setting-box">
+                            <span class="mp-custom-lobby-setting-label">Questions</span>
+                            <span class="mp-custom-lobby-setting-value">@State.Settings.Amount</span>
+                        </div>
 
-        <div>
-            <p>Difficulty:</p>
-            @foreach (var diff in Difficulties)
-            {
-                <label style="display:block;">
-                    <input type="radio" name="difficulty" value="@diff"
-                           @onchange="() => SelectedDifficulty = diff"
-                           checked="@SelectedDifficulty == diff" />
-                    @diff
-                </label>
-            }
-        </div>
+                        <div class="mp-custom-lobby-setting-box">
+                            <span class="mp-custom-lobby-setting-label">Time per question</span>
+                            <span class="mp-custom-lobby-setting-value">@(State.Settings.TimePerQuestion == 0 ? "∞" : $"{State.Settings.TimePerQuestion}s")</span>
+                        </div>
 
-        <button class="menu-btn" @onclick="ApplySettings">Apply Settings</button>
-        <button class="menu-btn" @onclick="StartGame" disabled="@(State.Players.Count < 2)">
-            Start Game
-        </button>
-    }
+                        <div class="mp-custom-lobby-setting-box">
+                            <span class="mp-custom-lobby-setting-label">Difficulty</span>
+                            <span class="mp-custom-lobby-setting-value">@State.Settings.Difficulty</span>
+                        </div>
 
-    @if (!IsHost && !State.IsStarted)
-    {
-        <p>Waiting for host to start the game...</p>
-    }
+                        <div class="mp-custom-lobby-setting-box mp-custom-lobby-setting-box-wide">
+                            <span class="mp-custom-lobby-setting-label">Categories</span>
+                            <span class="mp-custom-lobby-setting-value">
+                                @(State.Settings.CategoryIds.Count == 0 ? "Any" : string.Join(", ", State.Settings.CategoryIds))
+                            </span>
+                        </div>
+                    </div>
+                </div>
 
-    @if (State.IsStarted)
-    {
-        <p><strong>Game starting...</strong></p>
-    }
-}
+                @if (IsHost && !State.IsStarted)
+                {
+                    <div class="mp-custom-lobby-host-section">
+                        <h2 class="mp-custom-lobby-section-title">Host Settings</h2>
+
+                        <div class="mp-custom-lobby-field">
+                            <label class="mp-custom-lobby-label">
+                                Number of questions:
+                                <span class="mp-custom-lobby-highlight">@(QuestionCount == MaxQuestionCount ? "∞" : QuestionCount.ToString())</span>
+                            </label>
+                            <input class="mp-custom-lobby-range"
+                                   type="range"
+                                   min="5"
+                                   max="@MaxQuestionCount"
+                                   step="1"
+                                   @bind="QuestionCount"
+                                   @bind:event="oninput" />
+                        </div>
+
+                        <div class="mp-custom-lobby-field">
+                            <label class="mp-custom-lobby-label">Time per question</label>
+                            <select class="mp-custom-lobby-select" @bind="TimePerQuestion">
+                                <option value="5">5 s</option>
+                                <option value="10">10 s</option>
+                                <option value="15">15 s</option>
+                                <option value="30">30 s</option>
+                                <option value="60">60 s</option>
+                                <option value="120">120 s</option>
+                                <option value="0">Infinite</option>
+                            </select>
+                        </div>
+
+                        <div class="mp-custom-lobby-field">
+                            <p class="mp-custom-lobby-label">
+                                Select Categories
+                                <span class="mp-custom-lobby-limit">(max 3)</span>
+                            </p>
+
+                            <div class="mp-custom-lobby-categories">
+                                @foreach (var cat in Categories)
+                                {
+                                    <label class="mp-custom-lobby-check-item">
+                                        <input type="checkbox"
+                                               @onchange="() => ToggleCategory(cat.Id)"
+                                               checked="@SelectedCategoryIds.Contains(cat.Id)"
+                                               disabled="@(!SelectedCategoryIds.Contains(cat.Id) && SelectedCategoryIds.Count >= 3)" />
+                                        <span>@cat.Name</span>
+                                    </label>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="mp-custom-lobby-field">
+                            <p class="mp-custom-lobby-label">Difficulty</p>
+
+                            <div class="mp-custom-lobby-difficulty">
+                                @foreach (var diff in Difficulties)
+                                {
+                                    <label class="mp-custom-lobby-radio-item">
+                                        <input type="radio"
+                                               name="difficulty"
+                                               value="@diff"
+                                               @onchange="() => SelectedDifficulty = diff"
+                                               checked="@SelectedDifficulty == diff" />
+                                        <span>@diff</span>
+                                    </label>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="mp-custom-lobby-actions">
+                            <button class="menu-btn mp-custom-lobby-btn" @onclick="ApplySettings">
+                                Apply Settings
+                            </button>
+
+                            <button class="menu-btn mp-custom-lobby-btn mp-custom-lobby-start-btn"
+                                    @onclick="StartGame"
+                                    disabled="@(State.Players.Count < 2)">
+                                Start Game
+                            </button>
+                        </div>
+                    </div>
+                }
+
+                @if (!IsHost && !State.IsStarted)
+                {
+                    <div class="mp-custom-lobby-status-box">
+                        <p class="mp-custom-lobby-message">Waiting for the host to start the game...</p>
+                    </div>
+                }
+
+                @if (State.IsStarted)
+                {
+                    <div class="mp-custom-lobby-status-box">
+                        <p class="mp-custom-lobby-message"><strong>Game starting...</strong></p>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
 
 @code {
     [Parameter] public string Code { get; set; } = "";
@@ -201,7 +286,7 @@ else
     {
         if (SelectedCategoryIds.Contains(id))
             SelectedCategoryIds.Remove(id);
-        else
+        else if (SelectedCategoryIds.Count < 3)
             SelectedCategoryIds.Add(id);
     }
 

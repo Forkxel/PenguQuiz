@@ -3,74 +3,119 @@
 @inject NavigationManager Navigation
 @inject HttpClient Http
 
-<h2>Quiz Game</h2>
+<div class="single-game-page">
+    <div class="single-game-screen">
+        <h1 class="single-game-title">Quiz Game</h1>
+        <p class="single-game-subtitle">Answer the questions as fast as you can</p>
 
-@if (Questions == null || Questions.Count == 0)
-{
-    <p>Loading questions...</p>
-}
-else if (CurrentQuestionIndex < Questions.Count)
-{
-    <p>Score: @Score</p>
-
-    @if (time > 0)
-    {
-        <p>Time left: @TimeLeft s</p>
-    }
-
-    <div>
-        <p>
-            <strong>Question @(CurrentQuestionIndex + 1):</strong>
-            @Questions[CurrentQuestionIndex]?.Text
-        </p>
-
-        @if (Questions[CurrentQuestionIndex]?.Type == "boolean")
+        @if (Questions == null || Questions.Count == 0)
         {
-            <button disabled="@Answered"
-                    class="answer-btn @GetAnswerClass("True")"
-                    @onclick="CheckTrue">True</button>
+            <div class="single-game-card">
+                <p class="single-game-message">Loading questions...</p>
+            </div>
+        }
+        else if (CurrentQuestionIndex < Questions.Count)
+        {
+            <div class="single-game-topbar">
+                <div class="single-game-stat">
+                    <span class="single-game-stat-label">Score</span>
+                    <span class="single-game-stat-value">@Score</span>
+                </div>
 
-            <button disabled="@Answered"
-                    class="answer-btn @GetAnswerClass("False")"
-                    @onclick="CheckFalse">False</button>
+                @if (time > 0)
+                {
+                    <div class="single-game-stat">
+                        <span class="single-game-stat-label">Time Left</span>
+                        <span class="single-game-stat-value">@TimeLeft s</span>
+                    </div>
+                }
+            </div>
+
+            <div class="single-game-card">
+                <div class="single-game-question-box">
+                    <p class="single-game-question-number">Question @(CurrentQuestionIndex + 1)</p>
+                    <p class="single-game-question-text">
+                        @Questions[CurrentQuestionIndex]?.Text
+                    </p>
+                </div>
+
+                <div class="single-game-answers">
+                    @if (Questions[CurrentQuestionIndex]?.Type == "boolean")
+                    {
+                        <button disabled="@Answered"
+                                class="answer-btn single-game-answer-btn @GetAnswerClass("True")"
+                                @onclick="CheckTrue">
+                            True
+                        </button>
+
+                        <button disabled="@Answered"
+                                class="answer-btn single-game-answer-btn @GetAnswerClass("False")"
+                                @onclick="CheckFalse">
+                            False
+                        </button>
+                    }
+                    else
+                    {
+                        @foreach (var ans in Questions[CurrentQuestionIndex]?.Answers ?? new())
+                        {
+                            <button disabled="@Answered"
+                                    class="answer-btn single-game-answer-btn @GetAnswerClass(ans)"
+                                    @onclick="() => CheckAnswer(ans)">
+                                @ans
+                            </button>
+                        }
+                    }
+                </div>
+            </div>
         }
         else
         {
-            @foreach (var ans in Questions[CurrentQuestionIndex]?.Answers ?? new())
-            {
-                <button disabled="@Answered"
-                        class="answer-btn @GetAnswerClass(ans)"
-                        @onclick="() => CheckAnswer(ans)">
-                    @ans
-                </button>
-            }
+            <div class="single-game-card single-game-finish-card">
+                <h2 class="single-game-finish-title">Quiz Finished!</h2>
+
+                <div class="single-game-summary">
+                    <div class="single-game-summary-box">
+                        <span class="single-game-summary-label">Total Score</span>
+                        <span class="single-game-summary-value">@Score</span>
+                    </div>
+
+                    <div class="single-game-summary-box">
+                        <span class="single-game-summary-label">Correct Answers</span>
+                        <span class="single-game-summary-value">@AnswerRecords.Count(a => a.IsCorrect)</span>
+                    </div>
+
+                    <div class="single-game-summary-box">
+                        <span class="single-game-summary-label">Total Questions</span>
+                        <span class="single-game-summary-value">@Questions.Count</span>
+                    </div>
+
+                    @if (AnswerRecords.Count > 0)
+                    {
+                        var timed = AnswerRecords.Where(a => a.TimeTaken > 0).ToList();
+
+                        if (timed.Any())
+                        {
+                            <div class="single-game-summary-box">
+                                <span class="single-game-summary-label">Average Time</span>
+                                <span class="single-game-summary-value">@Math.Round(timed.Average(a => a.TimeTaken), 2) s</span>
+                            </div>
+
+                            <div class="single-game-summary-box">
+                                <span class="single-game-summary-label">Total Time</span>
+                                <span class="single-game-summary-value">@Math.Round(timed.Sum(a => a.TimeTaken), 2) s</span>
+                            </div>
+                        }
+                    }
+                </div>
+
+                <div class="single-game-actions">
+                    <button class="menu-btn single-game-menu-btn" @onclick="RestartGame">Restart Game</button>
+                    <button class="menu-btn single-game-menu-btn single-game-secondary-btn" @onclick="GoToMenu">Singleplayer Menu</button>
+                </div>
+            </div>
         }
     </div>
-}
-else
-{
-    <div class="final-score">
-        <h2>Quiz Finished!</h2>
-
-        <p>Total Score: @Score</p>
-        <p>Correct Answers: @AnswerRecords.Count(a => a.IsCorrect)</p>
-        <p>Total Questions: @Questions.Count</p>
-
-        @if (AnswerRecords.Count > 0)
-        {
-            var timed = AnswerRecords.Where(a => a.TimeTaken > 0).ToList();
-
-            if (timed.Any())
-            {
-                <p>Average Time per Answer: @Math.Round(timed.Average(a => a.TimeTaken), 2) s</p>
-                <p>Total Time: @Math.Round(timed.Sum(a => a.TimeTaken), 2) s</p>
-            }
-        }
-
-        <button class="menu-btn" @onclick="RestartGame">Restart Game</button>
-        <button class="menu-btn" @onclick="GoToMenu">Singleplayer Menu</button>
-    </div>
-}
+</div>
 
 @code {
 

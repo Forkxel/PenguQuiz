@@ -5,15 +5,29 @@
 @inject Authorization Auth
 @inject Blazored.LocalStorage.ILocalStorageService LocalStorage
 
-<h3>Login / Register</h3>
+<div class="profile-page">
+    <div class="profile-screen">
+        <h1 class="profile-title">Account</h1>
+        <p class="profile-subtitle">Login or create a new account</p>
 
-<input placeholder="Username" @bind="Username" />
-<input placeholder="Password" type="password" @bind="Password" />
+        <div class="profile-container">
+            <div class="profile-form">
+                <input class="profile-input" placeholder="Username" @bind="Username" />
+                <input class="profile-input" placeholder="Password" type="password" @bind="Password" />
 
-<button @onclick="Login">Login</button>
-<button @onclick="Register">Register</button>
+                <div class="profile-actions">
+                    <button class="profile-btn" @onclick="Login">Login</button>
+                    <button class="profile-btn profile-btn-secondary" @onclick="Register">Register</button>
+                </div>
 
-<p>@Message</p>
+                @if (!string.IsNullOrWhiteSpace(Message))
+                {
+                    <p class="profile-message">@Message</p>
+                }
+            </div>
+        </div>
+    </div>
+</div>
 
 @code {
     private string Username = "";
@@ -65,7 +79,7 @@
             ? "Registration successful! Now log in."
             : "Username already exists!";
     }
-    
+
     protected override async Task OnInitializedAsync()
     {
         await Auth.InitializeAsync();

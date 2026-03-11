@@ -6,28 +6,43 @@
 @inject Authorization Auth
 @inject NavigationManager Nav
 
-<h2>Multiplayer</h2>
+<div class="multiplayer-page">
+    <div class="multiplayer-screen">
+        <h1 class="multiplayer-title">Multiplayer</h1>
+        <p class="multiplayer-subtitle">Choose how you want to play online</p>
 
-@if (!Auth.IsLoggedIn)
-{
-    <p>Pro multiplayer doporučuju být přihlášený (kvůli jménu). Jinak se použije "Guest".</p>
-}
+        @if (!Auth.IsLoggedIn)
+        {
+            <div class="multiplayer-info-box">
+                <p class="multiplayer-message">
+                    For multiplayer, it is recommended to be logged in so your username is used. Otherwise, "Guest" will be used.
+                </p>
+            </div>
+        }
 
-<div style="display:flex; gap:16px; flex-wrap:wrap;">
-    <button class="menu-btn" @onclick="QuickMatchAny">Quick Match (Any)</button>
-    <button class="menu-btn" @onclick="GoToCustomCreate">Create Custom Lobby</button>
-    <button class="menu-btn" @onclick="GoToRanked">Ranked Multiplayer</button>
+        <div class="multiplayer-main-actions">
+            <button class="menu-btn" @onclick="QuickMatchAny">Quick Match (Any)</button>
+            <button class="menu-btn" @onclick="GoToCustomCreate">Create Custom Lobby</button>
+            <button class="menu-btn" @onclick="GoToRanked">Ranked Multiplayer</button>
+        </div>
+
+        <div class="multiplayer-join-card">
+            <h2 class="multiplayer-join-title">Join Custom Lobby</h2>
+
+            <div class="multiplayer-join-form">
+                <input class="multiplayer-input" placeholder="Lobby code" @bind="JoinCode" />
+                <button class="menu-btn multiplayer-join-btn" @onclick="JoinLobby">Join</button>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(Message))
+        {
+            <div class="multiplayer-info-box multiplayer-error-box">
+                <p class="multiplayer-message">@Message</p>
+            </div>
+        }
+    </div>
 </div>
-
-<hr />
-
-<h3>Join Custom Lobby</h3>
-<input placeholder="Lobby code" @bind="JoinCode" />
-<button class="menu-btn" @onclick="JoinLobby">Join</button>
-
-<hr />
-
-<p>@Message</p>
 
 @code {
     private string JoinCode = "";
@@ -71,7 +86,7 @@
 
         if (string.IsNullOrWhiteSpace(JoinCode))
         {
-            Message = "Zadej kód lobby.";
+            Message = "Enter a lobby code";
             return;
         }
 

@@ -4,35 +4,93 @@
 @inject Authorization Auth
 @inject NavigationManager Navigation
 
-<h2>Profile</h2>
+<div class="profile-menu-page">
+    <div class="profile-menu-screen">
+        <h1 class="profile-menu-title">Profile</h1>
+        <p class="profile-menu-subtitle">Your ranked statistics and account overview</p>
 
-@if (!Auth.IsLoggedIn)
-{
-    <p>You are not logged in.</p>
-}
-else if (Profile == null)
-{
-    <p>Loading profile...</p>
-}
-else
-{
-    <p><strong>Username:</strong> @Profile.Username</p>
+        @if (!Auth.IsLoggedIn)
+        {
+            <div class="profile-menu-card">
+                <p class="profile-menu-message">You are not logged in.</p>
+            </div>
+        }
+        else if (Profile == null && string.IsNullOrWhiteSpace(Message))
+        {
+            <div class="profile-menu-card">
+                <p class="profile-menu-message">Loading profile...</p>
+            </div>
+        }
+        else if (Profile != null)
+        {
+            <div class="profile-menu-card">
+                <div class="profile-menu-user-box">
+                    <span class="profile-menu-user-label">Username</span>
+                    <span class="profile-menu-user-value">@Profile.Username</span>
+                </div>
 
-    <h3>Single Ranked</h3>
-    <p>Elo: @Profile.SingleElo</p>
-    <p>Played: @Profile.SingleRankedPlayed</p>
-    <p>Wins: @Profile.SingleRankedWins</p>
+                <div class="profile-menu-section">
+                    <h2 class="profile-menu-section-title">Single Ranked</h2>
 
-    <h3>Multiplayer Ranked</h3>
-    <p>Elo: @Profile.MultiElo</p>
-    <p>Played: @Profile.MultiRankedPlayed</p>
-    <p>Wins: @Profile.MultiRankedWins</p>
+                    <div class="profile-menu-stats">
+                        <div class="profile-menu-stat-box">
+                            <span class="profile-menu-stat-label">Elo</span>
+                            <span class="profile-menu-stat-value">@Profile.SingleElo</span>
+                        </div>
 
-    <button @onclick="GoBackToMenu">Back to Menu</button>
-    <button @onclick="Logout">Logout</button>
-}
+                        <div class="profile-menu-stat-box">
+                            <span class="profile-menu-stat-label">Played</span>
+                            <span class="profile-menu-stat-value">@Profile.SingleRankedPlayed</span>
+                        </div>
 
-<p>@Message</p>
+                        <div class="profile-menu-stat-box">
+                            <span class="profile-menu-stat-label">Wins</span>
+                            <span class="profile-menu-stat-value">@Profile.SingleRankedWins</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="profile-menu-section">
+                    <h2 class="profile-menu-section-title">Multiplayer Ranked</h2>
+
+                    <div class="profile-menu-stats">
+                        <div class="profile-menu-stat-box">
+                            <span class="profile-menu-stat-label">Elo</span>
+                            <span class="profile-menu-stat-value">@Profile.MultiElo</span>
+                        </div>
+
+                        <div class="profile-menu-stat-box">
+                            <span class="profile-menu-stat-label">Played</span>
+                            <span class="profile-menu-stat-value">@Profile.MultiRankedPlayed</span>
+                        </div>
+
+                        <div class="profile-menu-stat-box">
+                            <span class="profile-menu-stat-label">Wins</span>
+                            <span class="profile-menu-stat-value">@Profile.MultiRankedWins</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="profile-menu-actions">
+                    <button class="profile-menu-btn profile-menu-btn-secondary" @onclick="GoBackToMenu">
+                        Back to Menu
+                    </button>
+
+                    <button class="profile-menu-btn profile-menu-btn-danger" @onclick="Logout">
+                        Logout
+                    </button>
+                </div>
+            </div>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(Message))
+        {
+            <div class="profile-menu-error-box">
+                <p class="profile-menu-message">@Message</p>
+            </div>
+        }
+    </div>
+</div>
 
 @code {
     private RankedProfileResponse? Profile;

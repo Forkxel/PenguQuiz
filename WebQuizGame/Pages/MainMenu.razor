@@ -2,17 +2,19 @@
 @using WebQuizGame.Classes.Models
 @inject Authorization Auth
 
-<div class="menu-screen">
-    <h1 class="menu-title">Quiz Game</h1>
-    <p class="menu-subtitle">Choose your mode and start playing</p>
+<div class="home-page">
+    <div class="menu-screen">
+        <h1 class="menu-title">Quiz Game</h1>
+        <p class="menu-subtitle">Choose your mode and start playing</p>
 
-    <div class="menu-container">
-        <button class="menu-btn" @onclick="GoToSingleplayer">Singleplayer</button>
-        <button class="menu-btn" @onclick="GoToMultiplayer">Multiplayer</button>
-        <button class="menu-btn" @onclick="GoToProfile">Profile</button>
-        <button class="menu-btn" @onclick="GoToLeaderboard">Leaderboard</button>
-        <!-- <button class="menu-btn exit" @onclick="ExitGame">Exit</button> -->
-    </div>
+        <div class="menu-container">
+            <button class="menu-btn" @onclick="GoToSingleplayer">Singleplayer</button>
+            <button class="menu-btn" @onclick="GoToMultiplayer">Multiplayer</button>
+            <button class="menu-btn" @onclick="GoToProfile">Profile</button>
+            <button class="menu-btn" @onclick="GoToLeaderboard">Leaderboard</button>
+            <!-- <button class="menu-btn exit" @onclick="ExitGame">Exit</button> -->
+        </div>
+    </div> 
 </div>
 
 @code {

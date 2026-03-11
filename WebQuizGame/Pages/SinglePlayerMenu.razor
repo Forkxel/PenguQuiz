@@ -2,89 +2,100 @@
 @using WebQuizGame.Classes.Models
 @inject Authorization Auth
 
-<h2>Singleplayer</h2>
+<div class="single-menu-page">
+    <div class="single-menu-screen">
+        <h1 class="single-menu-title">Singleplayer</h1>
+        <p class="single-menu-subtitle">Choose ranked or customize your casual game</p>
 
-<div class="sp-menu">
-    <button class="menu-btn"
-            @onclick="StartRanked"
-            disabled="@(!Auth.IsLoggedIn)">
-        Ranked Singleplayer
-    </button>
+        <div class="single-menu-main">
+            <button class="menu-btn"
+                    @onclick="StartRanked"
+                    disabled="@(!Auth.IsLoggedIn)">
+                Ranked Singleplayer
+            </button>
 
-    @if (!Auth.IsLoggedIn)
-    {
-        <p>You must be logged in to play Ranked.</p>
-    }
-
-    <button class="menu-btn" @onclick="ShowCasualSetupClicked">
-        Casual Singleplayer
-    </button>
-</div>
-
-@if (ShowCasualSetup)
-{
-    <div class="casual-setup">
-        <h3>Casual Settings</h3>
-
-        <!-- Počet otázek slider -->
-        <label>
-            Number of questions: @(QuestionCount == MaxQuestionCount ? "∞" : QuestionCount.ToString())
-        </label>
-        <input type="range" min="5" max="@MaxQuestionCount" step="1" 
-               @bind="QuestionCount" 
-               @bind:event="oninput" />
-
-
-        <!-- Výběr času -->
-        <label>
-            Time per question:
-            <select @bind="TimePerQuestion">
-                <option value="5">5 s</option>
-                <option value="10">10 s</option>
-                <option value="15">15 s</option>
-                <option value="30">30 s</option>
-                <option value="60">60 s</option>
-                <option value="120"> 120 s</option>
-                <option value="0">Infinite</option>
-            </select>
-        </label>
-
-        <!-- Kategorie multi-select -->
-        <div>
-            <p>Select Categories (max 3):</p>
-            @foreach(var cat in Categories)
+            @if (!Auth.IsLoggedIn)
             {
-                <label>
-                    <input type="checkbox"
-                           value="@cat.Id"
-                           @onchange="() => ToggleCategory(cat.Id)"
-                           checked="@SelectedCategoryIds.Contains(cat.Id)"
-                           disabled="@(!SelectedCategoryIds.Contains(cat.Id) && SelectedCategoryIds.Count >= 3)" />
-                    @cat.Name
-                </label>
+                <p class="single-menu-warning">You must be logged in to play ranked.</p>
             }
+
+            <button class="menu-btn" @onclick="ShowCasualSetupClicked">
+                Casual Singleplayer
+            </button>
         </div>
 
-        <!-- Difficulty radio -->
-        <div>
-            <p>Difficulty:</p>
-            @foreach(var diff in Difficulties)
-            {
-                <label>
-                    <input type="radio" name="difficulty" value="@diff" 
-                           @onchange="() => SelectedDifficulty = diff"
-                           checked="@SelectedDifficulty == diff" />
-                    @diff
-                </label>
-            }
-        </div>
+        @if (ShowCasualSetup)
+        {
+            <div class="single-menu-setup">
+                <h2 class="single-menu-setup-title">Casual Settings</h2>
 
-        <button class="menu-btn" @onclick="StartCasual">
-            Start Casual Game
-        </button>
+                <div class="single-menu-field">
+                    <label class="single-menu-label">
+                        Number of Questions: @(QuestionCount == MaxQuestionCount ? "∞" : QuestionCount.ToString())
+                    </label>
+                    <input class="single-menu-range"
+                           type="range"
+                           min="5"
+                           max="@MaxQuestionCount"
+                           step="1"
+                           @bind="QuestionCount"
+                           @bind:event="oninput" />
+                </div>
+
+                <div class="single-menu-field">
+                    <label class="single-menu-label">Time per Question</label>
+                    <select class="single-menu-select" @bind="TimePerQuestion">
+                        <option value="5">5 s</option>
+                        <option value="10">10 s</option>
+                        <option value="15">15 s</option>
+                        <option value="30">30 s</option>
+                        <option value="60">60 s</option>
+                        <option value="120">120 s</option>
+                        <option value="0">Infinite</option>
+                    </select>
+                </div>
+
+                <div class="single-menu-field">
+                    <p class="single-menu-label">Select Categories (max 3)</p>
+                    <div class="single-menu-categories">
+                        @foreach (var cat in Categories)
+                        {
+                            <label class="single-menu-check-item">
+                                <input type="checkbox"
+                                       value="@cat.Id"
+                                       @onchange="() => ToggleCategory(cat.Id)"
+                                       checked="@SelectedCategoryIds.Contains(cat.Id)"
+                                       disabled="@(!SelectedCategoryIds.Contains(cat.Id) && SelectedCategoryIds.Count >= 3)" />
+                                <span>@cat.Name</span>
+                            </label>
+                        }
+                    </div>
+                </div>
+
+                <div class="single-menu-field">
+                    <p class="single-menu-label">Difficulty</p>
+                    <div class="single-menu-difficulty">
+                        @foreach (var diff in Difficulties)
+                        {
+                            <label class="single-menu-radio-item">
+                                <input type="radio"
+                                       name="difficulty"
+                                       value="@diff"
+                                       @onchange="() => SelectedDifficulty = diff"
+                                       checked="@SelectedDifficulty == diff" />
+                                <span>@diff</span>
+                            </label>
+                        }
+                    </div>
+                </div>
+
+                <button class="menu-btn single-menu-start-btn" @onclick="StartCasual">
+                    Start Casual Game
+                </button>
+            </div>
+        }
     </div>
-}
-
+</div>
 
 @code {
     [Inject] NavigationManager Navigation { get; set; } = default!;

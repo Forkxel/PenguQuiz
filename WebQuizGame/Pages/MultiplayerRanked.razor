@@ -5,24 +5,70 @@
 @inject RankedMultiplayerClient RankedMp
 @inject NavigationManager Nav
 
-<h2>Ranked Multiplayer</h2>
+<div class="ranked-multi-page">
+    <div class="ranked-multi-screen">
+        <h1 class="ranked-multi-title">Ranked Multiplayer</h1>
+        <p class="ranked-multi-subtitle">Queue up for a fast 1v1 ranked match</p>
 
-@if (!Auth.IsLoggedIn)
-{
-    <p>Pro Ranked Multiplayer musíš být přihlášený.</p>
-    <button class="menu-btn" @onclick="GoLogin">Login</button>
-}
-else
-{
-    <p>Ranked je 1v1 quickmatch. Nastavení jsou pevně daná:</p>
-    <p>15 otázek, 15 sekund, difficulty any.</p>
+        <div class="ranked-multi-card">
+            @if (!Auth.IsLoggedIn)
+            {
+                <div class="ranked-multi-info-box">
+                    <p class="ranked-multi-message">
+                        You must be logged in to play Ranked Multiplayer.
+                    </p>
+                </div>
 
-    <button class="menu-btn" @onclick="FindMatch" disabled="@Searching">
-        @(Searching ? "Searching..." : "Find Ranked Match")
-    </button>
+                <div class="ranked-multi-actions">
+                    <button class="menu-btn ranked-multi-btn" @onclick="GoLogin">Login</button>
+                </div>
+            }
+            else
+            {
+                <div class="ranked-multi-info-box">
+                    <h2 class="ranked-multi-section-title">Match Rules</h2>
 
-    <p>@Message</p>
-}
+                    <div class="ranked-multi-rules">
+                        <div class="ranked-multi-rule-box">
+                            <span class="ranked-multi-rule-label">Mode</span>
+                            <span class="ranked-multi-rule-value">1v1 Quick Match</span>
+                        </div>
+
+                        <div class="ranked-multi-rule-box">
+                            <span class="ranked-multi-rule-label">Questions</span>
+                            <span class="ranked-multi-rule-value">15</span>
+                        </div>
+
+                        <div class="ranked-multi-rule-box">
+                            <span class="ranked-multi-rule-label">Time</span>
+                            <span class="ranked-multi-rule-value">15 s</span>
+                        </div>
+
+                        <div class="ranked-multi-rule-box">
+                            <span class="ranked-multi-rule-label">Difficulty</span>
+                            <span class="ranked-multi-rule-value">Any</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ranked-multi-actions">
+                    <button class="menu-btn ranked-multi-btn"
+                            @onclick="FindMatch"
+                            disabled="@Searching">
+                        @(Searching ? "Searching..." : "Find Ranked Match")
+                    </button>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(Message))
+                {
+                    <div class="ranked-multi-status-box">
+                        <p class="ranked-multi-message">@Message</p>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>
 
 @code {
     private bool Searching = false;
@@ -49,7 +95,7 @@ else
         var token = await Auth.GetTokenAsync();
         if (string.IsNullOrWhiteSpace(token))
         {
-            Message = "Chybí auth token.";
+            Message = "Missing authentication token.";
             return;
         }
 

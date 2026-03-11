@@ -3,56 +3,74 @@
 @inject HttpClient Http
 @inject NavigationManager Navigation
 
-<h2>@(ShowMulti ? "Multiplayer Ranked Leaderboard" : "Singleplayer Ranked Leaderboard")</h2>
+<div class="leaderboard-page">
+    <div class="leaderboard-screen">
+        <h1 class="leaderboard-title">@(ShowMulti ? "Multiplayer Ranked Leaderboard" : "Singleplayer Ranked Leaderboard")</h1>
+        <p class="leaderboard-subtitle">Top ranked players overview</p>
 
-<div style="display:flex; gap:12px; margin-bottom:16px;">
-    <button class="menu-btn" @onclick="ShowSingleLeaderboard" disabled="@(!ShowMulti)">
-        Single Ranked
-    </button>
+        <div class="leaderboard-switch">
+            <button class="menu-btn" @onclick="ShowSingleLeaderboard" disabled="@(!ShowMulti)">
+                Single Ranked
+            </button>
 
-    <button class="menu-btn" @onclick="ShowMultiLeaderboard" disabled="@(ShowMulti)">
-        Multi Ranked
-    </button>
-</div>
+            <button class="menu-btn" @onclick="ShowMultiLeaderboard" disabled="@(ShowMulti)">
+                Multi Ranked
+            </button>
+        </div>
 
-@if (IsLoading)
-{
-    <p>Loading leaderboard...</p>
-}
-else if (Entries == null || Entries.Count == 0)
-{
-    <p>No leaderboard data found.</p>
-}
-else
-{
-    <table>
-        <thead>
-        <tr>
-            <th>Rank</th>
-            <th>Username</th>
-            <th>Elo</th>
-            <th>Played</th>
-            <th>Wins</th>
-        </tr>
-        </thead>
-        <tbody>
-        @foreach (var entry in Entries)
+        @if (IsLoading)
         {
-            <tr>
-                <td>@entry.Rank</td>
-                <td>@entry.Username</td>
-                <td>@(ShowMulti ? entry.MultiElo : entry.SingleElo)</td>
-                <td>@(ShowMulti ? entry.MultiRankedPlayed : entry.SingleRankedPlayed)</td>
-                <td>@(ShowMulti ? entry.MultiRankedWins : entry.SingleRankedWins)</td>
-            </tr>
+            <div class="leaderboard-card">
+                <p class="leaderboard-message">Loading leaderboard...</p>
+            </div>
         }
-        </tbody>
-    </table>
-}
+        else if (Entries == null || Entries.Count == 0)
+        {
+            <div class="leaderboard-card">
+                <p class="leaderboard-message">No leaderboard data found.</p>
+            </div>
+        }
+        else
+        {
+            <div class="leaderboard-card leaderboard-table-wrap">
+                <table class="leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Username</th>
+                            <th>Elo</th>
+                            <th>Played</th>
+                            <th>Wins</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var entry in Entries)
+                        {
+                            <tr>
+                                <td>@entry.Rank</td>
+                                <td>@entry.Username</td>
+                                <td>@(ShowMulti ? entry.MultiElo : entry.SingleElo)</td>
+                                <td>@(ShowMulti ? entry.MultiRankedPlayed : entry.SingleRankedPlayed)</td>
+                                <td>@(ShowMulti ? entry.MultiRankedWins : entry.SingleRankedWins)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
 
-<p>@Message</p>
+        @if (!string.IsNullOrWhiteSpace(Message))
+        {
+            <div class="leaderboard-error-box">
+                <p class="leaderboard-message">@Message</p>
+            </div>
+        }
 
-<button class="menu-btn" @onclick="GoBack">Back to Menu</button>
+        <div class="leaderboard-actions">
+            <button class="menu-btn leaderboard-back-btn" @onclick="GoBack">Back to Menu</button>
+        </div>
+    </div>
+</div>
 
 @code {
     private List<LeaderboardEntryResponse>? Entries;

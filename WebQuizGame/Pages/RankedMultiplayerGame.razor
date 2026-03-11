@@ -7,43 +7,93 @@
 @inject NavigationManager Nav
 @implements IDisposable
 
-<h2>Ranked Multiplayer</h2>
+<div class="ranked-mp-game-page">
+    <div class="ranked-mp-game-screen">
+        <h1 class="ranked-mp-game-title">Ranked Multiplayer</h1>
+        <p class="ranked-mp-game-subtitle">Answer quickly and climb the ladder</p>
 
-@if (Finished && FinalResult != null)
-{
-    <h3>Match Finished</h3>
+        @if (Finished && FinalResult != null)
+        {
+            <div class="ranked-mp-game-card ranked-mp-game-finish-card">
+                <h2 class="ranked-mp-game-finish-title">Match Finished</h2>
 
-    @foreach (var r in FinalResult.Results.OrderBy(x => x.Place).ThenBy(x => x.Username))
-    {
-        <div style="margin-bottom:12px; padding:10px; border:1px solid #555;">
-            <p><strong>#@r.Place - @r.Username</strong> @(r.IsWinner ? "(Winner)" : "")</p>
-            <p>Score: @r.Score</p>
-            <p>Old Rating: @r.OldRating</p>
-            <p>New Rating: @r.NewRating</p>
-            <p>Change: @(r.Delta >= 0 ? "+" : "")@r.Delta</p>
-        </div>
-    }
+                <div class="ranked-mp-game-results">
+                    @foreach (var r in FinalResult.Results.OrderBy(x => x.Place).ThenBy(x => x.Username))
+                    {
+                        <div class="ranked-mp-game-result-item">
+                            <div class="ranked-mp-game-result-header">
+                                <span class="ranked-mp-game-result-name">
+                                    #@r.Place - @r.Username @(r.IsWinner ? "(Winner)" : "")
+                                </span>
+                            </div>
 
-    <button class="menu-btn" @onclick="BackToMenu">Back</button>
-}
-else if (Current == null)
-{
-    <p>Waiting for question...</p>
-}
-else
-{
-    <p>@Message</p>
-    <h3>@Current.Question</h3>
+                            <div class="ranked-mp-game-result-stats">
+                                <div class="ranked-mp-game-result-box">
+                                    <span class="ranked-mp-game-result-label">Score</span>
+                                    <span class="ranked-mp-game-result-value">@r.Score</span>
+                                </div>
 
-    @foreach (var a in Answers)
-    {
-        <button class="answer-btn"
-                @onclick="() => Answer(a)"
-                disabled="@Locked">
-            @a
-        </button>
-    }
-}
+                                <div class="ranked-mp-game-result-box">
+                                    <span class="ranked-mp-game-result-label">Old Rating</span>
+                                    <span class="ranked-mp-game-result-value">@r.OldRating</span>
+                                </div>
+
+                                <div class="ranked-mp-game-result-box">
+                                    <span class="ranked-mp-game-result-label">New Rating</span>
+                                    <span class="ranked-mp-game-result-value">@r.NewRating</span>
+                                </div>
+
+                                <div class="ranked-mp-game-result-box">
+                                    <span class="ranked-mp-game-result-label">Change</span>
+                                    <span class="ranked-mp-game-result-value">
+                                        @(r.Delta >= 0 ? "+" : "")@r.Delta
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <div class="ranked-mp-game-actions">
+                    <button class="menu-btn ranked-mp-game-menu-btn" @onclick="BackToMenu">Back</button>
+                </div>
+            </div>
+        }
+        else if (Current == null)
+        {
+            <div class="ranked-mp-game-card">
+                <p class="ranked-mp-game-message">Waiting for question...</p>
+            </div>
+        }
+        else
+        {
+            <div class="ranked-mp-game-card">
+                @if (!string.IsNullOrWhiteSpace(Message))
+                {
+                    <div class="ranked-mp-game-info-box">
+                        <p class="ranked-mp-game-message">@Message</p>
+                    </div>
+                }
+
+                <div class="ranked-mp-game-question-box">
+                    <p class="ranked-mp-game-question-label">Current Question</p>
+                    <h2 class="ranked-mp-game-question">@Current.Question</h2>
+                </div>
+
+                <div class="ranked-mp-game-answers">
+                    @foreach (var a in Answers)
+                    {
+                        <button class="menu-btn ranked-mp-game-answer-btn"
+                                @onclick="() => Answer(a)"
+                                disabled="@Locked">
+                            @a
+                        </button>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>
 
 @code {
     [Parameter] public string Code { get; set; } = "";

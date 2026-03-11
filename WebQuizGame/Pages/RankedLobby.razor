@@ -7,39 +7,94 @@
 @inject NavigationManager Nav
 @implements IDisposable
 
-<h2>Ranked Lobby @Code</h2>
+<div class="ranked-lobby-page">
+    <div class="ranked-lobby-screen">
+        <h1 class="ranked-lobby-title">Ranked Lobby</h1>
+        <p class="ranked-lobby-subtitle">Preparing your ranked 1v1 match</p>
 
-@if (State == null)
-{
-    <p>Loading lobby...</p>
-}
-else
-{
-    <p><strong>Players:</strong> @string.Join(", ", State.Players)</p>
-    <p><strong>Mode:</strong> Ranked 1v1</p>
-    <p><strong>Questions:</strong> @State.Settings.Amount</p>
-    <p><strong>Time per question:</strong> @State.Settings.TimePerQuestion s</p>
-    <p><strong>Difficulty:</strong> @State.Settings.Difficulty</p>
+        <div class="ranked-lobby-card">
+            @if (State == null)
+            {
+                <div class="ranked-lobby-status-box">
+                    <p class="ranked-lobby-message">Loading lobby...</p>
+                </div>
+            }
+            else
+            {
+                <div class="ranked-lobby-overview">
+                    <div class="ranked-lobby-overview-box">
+                        <span class="ranked-lobby-overview-label">Lobby Code</span>
+                        <span class="ranked-lobby-overview-value">@Code</span>
+                    </div>
 
-    @if (!string.IsNullOrWhiteSpace(GameError))
-    {
-        <p style="color:red"><strong>@GameError</strong></p>
-    }
+                    <div class="ranked-lobby-overview-box">
+                        <span class="ranked-lobby-overview-label">Mode</span>
+                        <span class="ranked-lobby-overview-value">Ranked 1v1</span>
+                    </div>
+                </div>
 
-    @if (State.IsMatchmaking && State.MatchmakingEndsAtUtc != null)
-    {
-        <p><strong>Opponent found.</strong></p>
-        <p>
-            Game starts in
-            @Math.Max(0, (int)(State.MatchmakingEndsAtUtc.Value - DateTime.UtcNow).TotalSeconds)
-            seconds.
-        </p>
-    }
-    else if (!State.IsStarted)
-    {
-        <p>Waiting for opponent...</p>
-    }
-}
+                <div class="ranked-lobby-section">
+                    <h2 class="ranked-lobby-section-title">Players</h2>
+                    <div class="ranked-lobby-players-box">
+                        <div class="ranked-lobby-players-list">
+                            @foreach (var player in State.Players)
+                            {
+                                <div class="ranked-lobby-player-item">@player</div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ranked-lobby-section">
+                    <h2 class="ranked-lobby-section-title">Match Settings</h2>
+                    <div class="ranked-lobby-settings-grid">
+                        <div class="ranked-lobby-setting-box">
+                            <span class="ranked-lobby-setting-label">Questions</span>
+                            <span class="ranked-lobby-setting-value">@State.Settings.Amount</span>
+                        </div>
+
+                        <div class="ranked-lobby-setting-box">
+                            <span class="ranked-lobby-setting-label">Time per question</span>
+                            <span class="ranked-lobby-setting-value">@State.Settings.TimePerQuestion s</span>
+                        </div>
+
+                        <div class="ranked-lobby-setting-box">
+                            <span class="ranked-lobby-setting-label">Difficulty</span>
+                            <span class="ranked-lobby-setting-value">@State.Settings.Difficulty</span>
+                        </div>
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(GameError))
+                {
+                    <div class="ranked-lobby-error-box">
+                        <p class="ranked-lobby-message">@GameError</p>
+                    </div>
+                }
+
+                @if (State.IsMatchmaking && State.MatchmakingEndsAtUtc != null)
+                {
+                    <div class="ranked-lobby-status-box">
+                        <p class="ranked-lobby-message"><strong>Opponent found.</strong></p>
+                        <p class="ranked-lobby-message">
+                            Game starts in
+                            <span class="ranked-lobby-highlight">
+                                @Math.Max(0, (int)(State.MatchmakingEndsAtUtc.Value - DateTime.UtcNow).TotalSeconds)
+                            </span>
+                            seconds.
+                        </p>
+                    </div>
+                }
+                else if (!State.IsStarted)
+                {
+                    <div class="ranked-lobby-status-box">
+                        <p class="ranked-lobby-message">Waiting for opponent...</p>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>
 
 @code {
     [Parameter] public string Code { get; set; } = "";
