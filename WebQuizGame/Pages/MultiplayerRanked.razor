@@ -1,0 +1,64 @@
+﻿@page "/multiplayerRanked"
+@using WebQuizGame.Classes.Models
+@using WebQuizGame.Classes.Services
+@inject Authorization Auth
+@inject RankedMultiplayerClient RankedMp
+@inject NavigationManager Nav
+
+<h2>Ranked Multiplayer</h2>
+
+@if (!Auth.IsLoggedIn)
+{
+    <p>Pro Ranked Multiplayer musíš být přihlášený.</p>
+    <button class="menu-btn" @onclick="GoLogin">Login</button>
+}
+else
+{
+    <p>Ranked je 1v1 quickmatch. Nastavení jsou pevně daná:</p>
+    <p>15 otázek, 15 sekund, difficulty any.</p>
+
+    <button class="menu-btn" @onclick="FindMatch" disabled="@Searching">
+        @(Searching ? "Searching..." : "Find Ranked Match")
+    </button>
+
+    <p>@Message</p>
+}
+
+@code {
+    private bool Searching = false;
+    private string Message = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Auth.InitializeAsync();
+    }
+
+    private void GoLogin()
+    {
+        Nav.NavigateTo("/profile", true);
+    }
+
+    private async Task FindMatch()
+    {
+        if (!Auth.IsLoggedIn)
+        {
+            Nav.NavigateTo("/profile", true);
+            return;
+        }
+
+        var token = await Auth.GetTokenAsync();
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            Message = "Chybí auth token.";
+            return;
+        }
+
+        Searching = true;
+        Message = "";
+
+        await RankedMp.ConnectAsync("http://localhost:5237", token);
+        var state = await RankedMp.QuickMatchRankedAsync();
+
+        Nav.NavigateTo($"/rankedLobby/{state.Code}");
+    }
+}

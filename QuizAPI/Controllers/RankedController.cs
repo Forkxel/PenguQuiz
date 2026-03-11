@@ -97,4 +97,14 @@ public class RankedController : ControllerBase
         var leaderboard = _db.GetSingleLeaderboard(top);
         return Ok(leaderboard);
     }
+    
+    [HttpGet("leaderboard/multi")]
+    public IActionResult GetMultiLeaderboard([FromQuery] int top = 20)
+    {
+        if (top <= 0) top = 20;
+        if (top > 100) top = 100;
+
+        var leaderboard = _db.GetMultiLeaderboard(top);
+        return Ok(leaderboard);
+    }
 }

@@ -1,0 +1,152 @@
+﻿@page "/rankedMultiplayerGame/{Code}"
+@using WebQuizGame.Classes.Models
+@using WebQuizGame.Classes.Models.Multiplayer.MultiplayerRanked
+@using WebQuizGame.Classes.Services
+@inject RankedMultiplayerClient RankedMp
+@inject Authorization Auth
+@inject NavigationManager Nav
+@implements IDisposable
+
+<h2>Ranked Multiplayer</h2>
+
+@if (Finished && FinalResult != null)
+{
+    <h3>Match Finished</h3>
+
+    @foreach (var r in FinalResult.Results.OrderBy(x => x.Place).ThenBy(x => x.Username))
+    {
+        <div style="margin-bottom:12px; padding:10px; border:1px solid #555;">
+            <p><strong>#@r.Place - @r.Username</strong> @(r.IsWinner ? "(Winner)" : "")</p>
+            <p>Score: @r.Score</p>
+            <p>Old Rating: @r.OldRating</p>
+            <p>New Rating: @r.NewRating</p>
+            <p>Change: @(r.Delta >= 0 ? "+" : "")@r.Delta</p>
+        </div>
+    }
+
+    <button class="menu-btn" @onclick="BackToMenu">Back</button>
+}
+else if (Current == null)
+{
+    <p>Waiting for question...</p>
+}
+else
+{
+    <p>@Message</p>
+    <h3>@Current.Question</h3>
+
+    @foreach (var a in Answers)
+    {
+        <button class="answer-btn"
+                @onclick="() => Answer(a)"
+                disabled="@Locked">
+            @a
+        </button>
+    }
+}
+
+@code {
+    [Parameter] public string Code { get; set; } = "";
+
+    private TriviaQuestion? Current;
+    private List<string> Answers = new();
+    private bool Locked = false;
+    private string Message = "";
+    private bool Finished = false;
+    private RankedGameFinishedDto? FinalResult;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Auth.InitializeAsync();
+
+        if (!Auth.IsLoggedIn)
+        {
+            Nav.NavigateTo("/profile", true);
+            return;
+        }
+
+        var token = await Auth.GetTokenAsync();
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            Nav.NavigateTo("/profile", true);
+            return;
+        }
+
+        await RankedMp.ConnectAsync("http://localhost:5237", token);
+
+        RankedMp.OnNewQuestion += HandleNewQuestion;
+        RankedMp.OnQuestionResolved += HandleQuestionResolved;
+        RankedMp.OnGameFinished += HandleGameFinished;
+        RankedMp.OnGameError += HandleGameError;
+
+        var q = await RankedMp.GetCurrentRankedQuestionAsync(Code);
+        if (q != null)
+            SetQuestion(q);
+    }
+
+    private void HandleNewQuestion(TriviaQuestion q)
+    {
+        SetQuestion(q);
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void SetQuestion(TriviaQuestion q)
+    {
+        Current = q;
+        Answers = q.IncorrectAnswers
+            .Append(q.CorrectAnswer)
+            .OrderBy(_ => Guid.NewGuid())
+            .ToList();
+
+        Locked = false;
+        Message = "";
+    }
+
+    private void HandleQuestionResolved(string who, string chosen, bool correct)
+    {
+        Locked = true;
+        Message = who == "TIMEOUT"
+            ? "Time's up! Nobody answered."
+            : $"{who} clicked \"{chosen}\" -> {(correct ? "CORRECT" : "WRONG")}";
+
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void HandleGameFinished(RankedGameFinishedDto dto)
+    {
+        if (dto.LobbyCode != Code) return;
+
+        Finished = true;
+        FinalResult = dto;
+        Locked = true;
+
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void HandleGameError(string msg)
+    {
+        Message = msg;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task Answer(string ans)
+    {
+        if (Locked) return;
+
+        Locked = true;
+        await RankedMp.AnswerRankedQuestionAsync(Code, ans);
+    }
+
+    private void BackToMenu()
+    {
+        Nav.NavigateTo("/multiplayerRanked");
+    }
+
+    public void Dispose()
+    {
+        RankedMp.OnNewQuestion -= HandleNewQuestion;
+        RankedMp.OnQuestionResolved -= HandleQuestionResolved;
+        RankedMp.OnGameFinished -= HandleGameFinished;
+        RankedMp.OnGameError -= HandleGameError;
+    }
+}

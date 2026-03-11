@@ -22,6 +22,7 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddSingleton<MultiplayerManager>();
+builder.Services.AddSingleton<RankedMultiplayerManager>();
 builder.Services.AddSignalR();
 
 builder.Services.AddMemoryCache();
@@ -67,5 +68,6 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.MapHub<MultiplayerHub>("/hubs/multiplayer");
+app.MapHub<RankedMultiplayerHub>("/hubs/ranked-multiplayer");
 
 app.Run();

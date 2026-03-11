@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using QuizAPI.Models;
+using QuizAPI.Models.Multiplayer;
 
 namespace QuizAPI.Services;
 

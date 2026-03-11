@@ -1,4 +1,4 @@
-﻿namespace QuizAPI.Models;
+﻿namespace WebQuizGame.Classes.Models.Multiplayer;
 
 public record PlayerInfo(string ConnectionId, string Username);
 

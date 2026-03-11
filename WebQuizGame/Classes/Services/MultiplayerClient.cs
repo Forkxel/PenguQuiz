@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.SignalR.Client;
 using WebQuizGame.Classes.Models;
+using WebQuizGame.Classes.Models.Multiplayer;
 
 namespace WebQuizGame.Classes.Services;
 

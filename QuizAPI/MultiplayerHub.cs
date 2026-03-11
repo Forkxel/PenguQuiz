@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using QuizAPI.Models;
 using QuizAPI.Services;
-using System.Net.Http.Json;
+using QuizAPI.Models.Multiplayer;
 
 namespace QuizAPI;
 

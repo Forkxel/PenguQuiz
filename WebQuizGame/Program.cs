@@ -13,6 +13,7 @@ builder.Services.AddScoped<Authorization>();
 builder.Services.AddBlazoredLocalStorage();
 
 builder.Services.AddScoped<MultiplayerClient>();
+builder.Services.AddScoped<RankedMultiplayerClient>();
 
 builder.Services.AddScoped(sp => new HttpClient
 {

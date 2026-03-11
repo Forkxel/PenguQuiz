@@ -1,5 +1,6 @@
 ﻿@page "/multiplayer"
 @using WebQuizGame.Classes.Models
+@using WebQuizGame.Classes.Models.Multiplayer
 @using WebQuizGame.Classes.Services
 @inject MultiplayerClient Mp
 @inject Authorization Auth
@@ -15,6 +16,7 @@
 <div style="display:flex; gap:16px; flex-wrap:wrap;">
     <button class="menu-btn" @onclick="QuickMatchAny">Quick Match (Any)</button>
     <button class="menu-btn" @onclick="CreateLobby">Create Lobby</button>
+    <button class="menu-btn" @onclick="GoRanked">Ranked Multiplayer</button>
 </div>
 
 <hr />
@@ -35,6 +37,11 @@
     {
         await Auth.InitializeAsync();
         await Mp.ConnectAsync("http://localhost:5237");
+    }
+    
+    private void GoRanked()
+    {
+        Nav.NavigateTo("/multiplayerRanked");
     }
 
     private string GetUsername()

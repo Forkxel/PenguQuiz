@@ -1,0 +1,123 @@
+﻿@page "/rankedLobby/{Code}"
+@using WebQuizGame.Classes.Models
+@using WebQuizGame.Classes.Models.Multiplayer.MultiplayerRanked
+@using WebQuizGame.Classes.Services
+@inject RankedMultiplayerClient RankedMp
+@inject Authorization Auth
+@inject NavigationManager Nav
+@implements IDisposable
+
+<h2>Ranked Lobby @Code</h2>
+
+@if (State == null)
+{
+    <p>Loading lobby...</p>
+}
+else
+{
+    <p><strong>Players:</strong> @string.Join(", ", State.Players)</p>
+    <p><strong>Mode:</strong> Ranked 1v1</p>
+    <p><strong>Questions:</strong> @State.Settings.Amount</p>
+    <p><strong>Time per question:</strong> @State.Settings.TimePerQuestion s</p>
+    <p><strong>Difficulty:</strong> @State.Settings.Difficulty</p>
+
+    @if (!string.IsNullOrWhiteSpace(GameError))
+    {
+        <p style="color:red"><strong>@GameError</strong></p>
+    }
+
+    @if (State.IsMatchmaking && State.MatchmakingEndsAtUtc != null)
+    {
+        <p><strong>Opponent found.</strong></p>
+        <p>
+            Game starts in
+            @Math.Max(0, (int)(State.MatchmakingEndsAtUtc.Value - DateTime.UtcNow).TotalSeconds)
+            seconds.
+        </p>
+    }
+    else if (!State.IsStarted)
+    {
+        <p>Waiting for opponent...</p>
+    }
+}
+
+@code {
+    [Parameter] public string Code { get; set; } = "";
+
+    private RankedLobbyState? State;
+    private bool _navigated = false;
+    private PeriodicTimer? _timer;
+    private string? GameError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Auth.InitializeAsync();
+
+        if (!Auth.IsLoggedIn)
+        {
+            Nav.NavigateTo("/profile", true);
+            return;
+        }
+
+        var token = await Auth.GetTokenAsync();
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            Nav.NavigateTo("/profile", true);
+            return;
+        }
+
+        await RankedMp.ConnectAsync("http://localhost:5237", token);
+
+        _timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
+        _ = Task.Run(async () =>
+        {
+            while (await _timer.WaitForNextTickAsync())
+            {
+                await InvokeAsync(StateHasChanged);
+            }
+        });
+
+        RankedMp.OnLobbyUpdated += HandleLobbyUpdated;
+        RankedMp.OnGameError += HandleGameError;
+        RankedMp.OnNewQuestion += HandleNewQuestion;
+
+        State = await RankedMp.GetRankedLobbyStateAsync(Code);
+    }
+
+    private void HandleLobbyUpdated(RankedLobbyState s)
+    {
+        if (s.Code != Code) return;
+
+        State = s;
+
+        if (State.IsStarted && !_navigated)
+        {
+            _navigated = true;
+            Nav.NavigateTo($"/rankedMultiplayerGame/{Code}");
+            return;
+        }
+
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void HandleGameError(string msg)
+    {
+        GameError = msg;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void HandleNewQuestion(TriviaQuestion q)
+    {
+        if (_navigated) return;
+        _navigated = true;
+        Nav.NavigateTo($"/rankedMultiplayerGame/{Code}");
+    }
+
+    public void Dispose()
+    {
+        _timer?.Dispose();
+        RankedMp.OnLobbyUpdated -= HandleLobbyUpdated;
+        RankedMp.OnGameError -= HandleGameError;
+        RankedMp.OnNewQuestion -= HandleNewQuestion;
+    }
+}

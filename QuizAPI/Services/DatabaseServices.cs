@@ -239,4 +239,119 @@ public class DatabaseServices
 
         return result;
     }
+    
+    public int GetMultiRating(int userId)
+    {
+        using var connection = GetConnection();
+        connection.Open();
+
+        using var cmd = new SqlCommand(
+            "SELECT MultiElo FROM UserRankings WHERE UserId = @UserId", connection);
+
+        cmd.Parameters.AddWithValue("@UserId", userId);
+
+        var result = cmd.ExecuteScalar();
+        return result != null ? Convert.ToInt32(result) : 1000;
+    }
+
+    public void UpdateMultiRating(int userId, int newRating, bool win)
+    {
+        using var connection = GetConnection();
+        connection.Open();
+
+        using var cmd = new SqlCommand(@"
+        UPDATE UserRankings
+        SET MultiElo = @Rating,
+            MultiRankedPlayed = MultiRankedPlayed + 1,
+            MultiRankedWins = MultiRankedWins + @WinAdd
+        WHERE UserId = @UserId", connection);
+
+        cmd.Parameters.AddWithValue("@Rating", newRating);
+        cmd.Parameters.AddWithValue("@WinAdd", win ? 1 : 0);
+        cmd.Parameters.AddWithValue("@UserId", userId);
+
+        cmd.ExecuteNonQuery();
+    }
+
+    public List<LeaderboardEntryResponse> GetMultiLeaderboard(int top = 20)
+    {
+        using var connection = GetConnection();
+        connection.Open();
+
+        using var cmd = new SqlCommand(@"
+        SELECT TOP (@Top)
+            u.Id,
+            u.Username,
+            r.MultiElo,
+            r.MultiRankedPlayed,
+            r.MultiRankedWins
+        FROM Users u
+        INNER JOIN UserRankings r ON u.Id = r.UserId
+        ORDER BY r.MultiElo DESC, r.MultiRankedWins DESC, r.MultiRankedPlayed ASC", connection);
+
+        cmd.Parameters.AddWithValue("@Top", top);
+
+        using var reader = cmd.ExecuteReader();
+
+        var result = new List<LeaderboardEntryResponse>();
+        int rank = 1;
+
+        while (reader.Read())
+        {
+            result.Add(new LeaderboardEntryResponse
+            {
+                Rank = rank++,
+                UserId = Convert.ToInt32(reader["Id"]),
+                Username = reader["Username"]?.ToString() ?? "",
+                MultiElo = Convert.ToInt32(reader["MultiElo"]),
+                MultiRankedPlayed = Convert.ToInt32(reader["MultiRankedPlayed"]),
+                MultiRankedWins = Convert.ToInt32(reader["MultiRankedWins"])
+            });
+        }
+
+        return result;
+    }
+
+    public int CreateRankedMatch(string mode)
+    {
+        using var connection = GetConnection();
+        connection.Open();
+
+        using var cmd = new SqlCommand(@"
+        INSERT INTO RankedMatches (Mode)
+        OUTPUT INSERTED.Id
+        VALUES (@Mode)", connection);
+
+        cmd.Parameters.AddWithValue("@Mode", mode);
+
+        var result = cmd.ExecuteScalar();
+        return Convert.ToInt32(result);
+    }
+
+    public void CreateRankedMatchResult(
+        int matchId,
+        int userId,
+        int score,
+        int placement,
+        int eloBefore,
+        int eloAfter)
+    {
+        using var connection = GetConnection();
+        connection.Open();
+
+        using var cmd = new SqlCommand(@"
+    INSERT INTO RankedMatchResults
+    (MatchId, UserId, Score, Placement, EloBefore, EloAfter)
+    VALUES
+    (@MatchId, @UserId, @Score, @Placement, @EloBefore, @EloAfter)", connection);
+
+        cmd.Parameters.AddWithValue("@MatchId", matchId);
+        cmd.Parameters.AddWithValue("@UserId", userId);
+        cmd.Parameters.AddWithValue("@Score", score);
+        cmd.Parameters.AddWithValue("@Placement", placement);
+        cmd.Parameters.AddWithValue("@EloBefore", eloBefore);
+        cmd.Parameters.AddWithValue("@EloAfter", eloAfter);
+
+        cmd.ExecuteNonQuery();
+    }
 }
