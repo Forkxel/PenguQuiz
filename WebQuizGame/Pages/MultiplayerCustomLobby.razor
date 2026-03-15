@@ -76,7 +76,12 @@
                         <div class="mp-custom-lobby-setting-box mp-custom-lobby-setting-box-wide">
                             <span class="mp-custom-lobby-setting-label">Categories</span>
                             <span class="mp-custom-lobby-setting-value">
-                                @(State.Settings.CategoryIds.Count == 0 ? "Any" : string.Join(", ", State.Settings.CategoryIds))
+                                @(State.Settings.CategoryIds.Count == 0
+                                    ? "Any"
+                                    : string.Join(", ",
+                                        Categories
+                                            .Where(c => State.Settings.CategoryIds.Contains(c.Id))
+                                            .Select(c => c.Name)))
                             </span>
                         </div>
                     </div>
@@ -115,23 +120,48 @@
                         </div>
 
                         <div class="mp-custom-lobby-field">
-                            <p class="mp-custom-lobby-label">
+                            <label class="mp-custom-lobby-label">
                                 Select Categories
                                 <span class="mp-custom-lobby-limit">(max 3)</span>
-                            </p>
+                            </label>
 
-                            <div class="mp-custom-lobby-categories">
-                                @foreach (var cat in Categories)
+                            <div class="mp-custom-lobby-category-dropdown">
+                                <button type="button"
+                                        class="mp-custom-lobby-category-dropdown-toggle"
+                                        @onclick="ToggleCategoryDropdown">
+                                    <span>@CategoryDropdownText</span>
+                                    <span class="mp-custom-lobby-category-dropdown-arrow @(IsCategoryDropdownOpen ? "open" : "")">⌄</span>
+                                </button>
+
+                                @if (IsCategoryDropdownOpen)
                                 {
-                                    <label class="mp-custom-lobby-check-item">
-                                        <input type="checkbox"
-                                               @onchange="() => ToggleCategory(cat.Id)"
-                                               checked="@SelectedCategoryIds.Contains(cat.Id)"
-                                               disabled="@(!SelectedCategoryIds.Contains(cat.Id) && SelectedCategoryIds.Count >= 3)" />
-                                        <span>@cat.Name</span>
-                                    </label>
+                                    <div class="mp-custom-lobby-category-dropdown-menu">
+                                        @foreach (var cat in Categories)
+                                        {
+                                            <label class="mp-custom-lobby-category-dropdown-item">
+                                                <input type="checkbox"
+                                                       @onchange="() => ToggleCategory(cat.Id)"
+                                                       checked="@SelectedCategoryIds.Contains(cat.Id)"
+                                                       disabled="@(!SelectedCategoryIds.Contains(cat.Id) && SelectedCategoryIds.Count >= 3)" />
+                                                <span>@cat.Name</span>
+                                            </label>
+                                        }
+                                    </div>
                                 }
                             </div>
+
+                            @if (SelectedCategoryIds.Any())
+                            {
+                                <div class="mp-custom-lobby-selected-category-tags">
+                                    @foreach (var cat in Categories.Where(c => SelectedCategoryIds.Contains(c.Id)))
+                                    {
+                                        <div class="mp-custom-lobby-selected-category-tag">
+                                            <span>@cat.Name</span>
+                                            <button type="button" @onclick="() => ToggleCategory(cat.Id)">×</button>
+                                        </div>
+                                    }
+                                </div>
+                            }
                         </div>
 
                         <div class="mp-custom-lobby-field">
@@ -311,5 +341,20 @@
         Mp.OnLobbyUpdated -= HandleLobbyUpdated;
         Mp.OnGameError -= HandleGameError;
         Mp.OnNewQuestion -= HandleNewQuestion;
+    }
+    
+    private bool IsCategoryDropdownOpen = false;
+
+    private string CategoryDropdownText =>
+        SelectedCategoryIds.Count == 0
+            ? "Choose categories"
+            : string.Join(", ",
+                Categories
+                    .Where(c => SelectedCategoryIds.Contains(c.Id))
+                    .Select(c => c.Name));
+
+    private void ToggleCategoryDropdown()
+    {
+        IsCategoryDropdownOpen = !IsCategoryDropdownOpen;
     }
 }

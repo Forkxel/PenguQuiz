@@ -56,20 +56,46 @@
                 </div>
 
                 <div class="single-menu-field">
-                    <p class="single-menu-label">Select Categories (max 3)</p>
-                    <div class="single-menu-categories">
-                        @foreach (var cat in Categories)
+                    <label class="single-menu-label">Select Categories (max 3)</label>
+
+                    <div class="category-dropdown">
+                        <button type="button"
+                                class="category-dropdown-toggle"
+                                @onclick="ToggleCategoryDropdown">
+                            <span>@CategoryDropdownText</span>
+                            <span class="category-dropdown-arrow @(IsCategoryDropdownOpen ? "open" : "")">⌄</span>
+                        </button>
+
+                        @if (IsCategoryDropdownOpen)
                         {
-                            <label class="single-menu-check-item">
-                                <input type="checkbox"
-                                       value="@cat.Id"
-                                       @onchange="() => ToggleCategory(cat.Id)"
-                                       checked="@SelectedCategoryIds.Contains(cat.Id)"
-                                       disabled="@(!SelectedCategoryIds.Contains(cat.Id) && SelectedCategoryIds.Count >= 3)" />
-                                <span>@cat.Name</span>
-                            </label>
+                            <div class="category-dropdown-menu">
+                                @foreach (var cat in Categories)
+                                {
+                                    <label class="category-dropdown-item">
+                                        <input type="checkbox"
+                                               value="@cat.Id"
+                                               @onchange="() => ToggleCategory(cat.Id)"
+                                               checked="@SelectedCategoryIds.Contains(cat.Id)"
+                                               disabled="@(!SelectedCategoryIds.Contains(cat.Id) && SelectedCategoryIds.Count >= 3)" />
+                                        <span>@cat.Name</span>
+                                    </label>
+                                }
+                            </div>
                         }
                     </div>
+
+                    @if (SelectedCategoryIds.Any())
+                    {
+                        <div class="selected-category-tags">
+                            @foreach (var cat in Categories.Where(c => SelectedCategoryIds.Contains(c.Id)))
+                            {
+                                <div class="selected-category-tag">
+                                    <span>@cat.Name</span>
+                                    <button type="button" @onclick="() => ToggleCategory(cat.Id)">×</button>
+                                </div>
+                            }
+                        </div>
+                    }
                 </div>
 
                 <div class="single-menu-field">
@@ -182,8 +208,27 @@
     private void ToggleCategory(int id)
     {
         if (SelectedCategoryIds.Contains(id))
+        {
             SelectedCategoryIds.Remove(id);
-        else
+        }
+        else if (SelectedCategoryIds.Count < 3)
+        {
             SelectedCategoryIds.Add(id);
+        }
     }
+    
+    private bool IsCategoryDropdownOpen = false;
+
+    private void ToggleCategoryDropdown()
+    {
+        IsCategoryDropdownOpen = !IsCategoryDropdownOpen;
+    }
+
+    private string CategoryDropdownText =>
+        SelectedCategoryIds.Count == 0
+            ? "Choose categories"
+            : string.Join(", ",
+                Categories
+                    .Where(c => SelectedCategoryIds.Contains(c.Id))
+                    .Select(c => c.Name));
 }
