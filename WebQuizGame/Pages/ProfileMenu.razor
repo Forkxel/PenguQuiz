@@ -72,6 +72,9 @@
                 </div>
 
                 <div class="profile-menu-actions">
+                    <button class="profile-menu-btn" @onclick="GoToSettings">
+                        Account Settings
+                    </button>
                     <button class="profile-menu-btn profile-menu-btn-secondary" @onclick="GoBackToMenu">
                         Back to Menu
                     </button>
@@ -141,5 +144,10 @@
     {
         await Auth.Logout();
         Navigation.NavigateTo("/", true);
+    }
+    
+    private void GoToSettings()
+    {
+        Navigation.NavigateTo("/accountSettings");
     }
 }

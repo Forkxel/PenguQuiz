@@ -1,0 +1,230 @@
+﻿@page "/accountSettings"
+@using System.Net.Http.Headers
+@using WebQuizGame.Classes.Models
+@inject Authorization Auth
+@inject NavigationManager Navigation
+
+<div class="account-settings-page">
+    <div class="account-settings-screen">
+        <h1 class="account-settings-title">Account Settings</h1>
+        <p class="account-settings-subtitle">Manage your username and avatar</p>
+
+        @if (!Auth.IsLoggedIn)
+        {
+            <div class="account-settings-card">
+                <p class="account-settings-message">You must be logged in.</p>
+            </div>
+        }
+        else if (Settings == null && string.IsNullOrWhiteSpace(Message))
+        {
+            <div class="account-settings-card">
+                <p class="account-settings-message">Loading...</p>
+            </div>
+        }
+        else if (Settings != null)
+        {
+            <div class="account-settings-card">
+                <div class="account-settings-overview">
+                    <div class="account-settings-overview-box">
+                        <span class="account-settings-overview-label">Current Username</span>
+                        <span class="account-settings-overview-value">@Settings.Username</span>
+                    </div>
+
+                    <div class="account-settings-overview-box">
+                        <span class="account-settings-overview-label">Current Avatar</span>
+                        <span class="account-settings-overview-value">@Settings.AvatarKey</span>
+                    </div>
+                </div>
+
+                <div class="account-settings-section">
+                    <h2 class="account-settings-section-title">Change Username</h2>
+
+                    <div class="account-settings-field">
+                        <label class="account-settings-label">New username</label>
+                        <input class="account-settings-input"
+                               @bind="NewUsername"
+                               placeholder="Enter new username" />
+                    </div>
+
+                    <div class="account-settings-actions">
+                        <button class="menu-btn account-settings-btn" @onclick="SaveUsername">
+                            Save Username
+                        </button>
+                    </div>
+                </div>
+
+                <div class="account-settings-section">
+                    <h2 class="account-settings-section-title">Choose Avatar</h2>
+
+                    <div class="account-settings-avatar-grid">
+                        @foreach (var avatar in Avatars)
+                        {
+                            <button class="account-settings-avatar-btn @(avatar == Settings.AvatarKey ? "active" : "")"
+                                    @onclick="() => SaveAvatar(avatar)">
+                                <span class="account-settings-avatar-name">@avatar</span>
+                                @if (avatar == Settings.AvatarKey)
+                                {
+                                    <span class="account-settings-avatar-check">✓ Selected</span>
+                                }
+                            </button>
+                        }
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(Message))
+                {
+                    <div class="account-settings-message-box">
+                        <p class="account-settings-message">@Message</p>
+                    </div>
+                }
+
+                <div class="account-settings-actions account-settings-actions-bottom">
+                    <button class="menu-btn account-settings-btn account-settings-btn-secondary" @onclick="Back">
+                        Back
+                    </button>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private AccountSettingsResponse? Settings;
+    private string NewUsername = "";
+    private string Message = "";
+
+    private List<string> Avatars = new()
+    {
+        "default_1",
+        "default_2",
+        "default_3",
+        "cat_blue",
+        "cat_red",
+        "robot_green",
+        "fox_purple",
+        "wizard_gold"
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Auth.InitializeAsync();
+
+        if (!Auth.IsLoggedIn)
+        {
+            Navigation.NavigateTo("/profile", true);
+            return;
+        }
+
+        await LoadSettings();
+    }
+
+    private async Task LoadSettings()
+    {
+        Message = "";
+
+        var token = await Auth.GetTokenAsync();
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            Message = "Missing token.";
+            return;
+        }
+
+        using var client = new HttpClient();
+        client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", token);
+
+        var response = await client.GetAsync("http://localhost:5237/api/account/settings");
+
+        if (!response.IsSuccessStatusCode)
+        {
+            Message = await response.Content.ReadAsStringAsync();
+            return;
+        }
+
+        Settings = await response.Content.ReadFromJsonAsync<AccountSettingsResponse>();
+        NewUsername = Settings?.Username ?? "";
+    }
+
+    private async Task SaveUsername()
+    {
+        Message = "";
+
+        var token = await Auth.GetTokenAsync();
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            Message = "Missing token.";
+            return;
+        }
+
+        using var client = new HttpClient();
+        client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", token);
+
+        var response = await client.PostAsJsonAsync(
+            "http://localhost:5237/api/account/change-username",
+            new ChangeUsernameRequest
+            {
+                NewUsername = NewUsername
+            });
+
+        if (!response.IsSuccessStatusCode)
+        {
+            Message = await response.Content.ReadAsStringAsync();
+            return;
+        }
+
+        var result = await response.Content.ReadFromJsonAsync<ChangeUsernameResponse>();
+        if (result == null)
+        {
+            Message = "Invalid response.";
+            return;
+        }
+
+        await Auth.Login(new LoginResponse
+        {
+            Token = result.Token,
+            UserId = result.UserId,
+            Username = result.Username
+        });
+
+        Message = "Username changed successfully.";
+        await LoadSettings();
+    }
+
+    private async Task SaveAvatar(string avatarKey)
+    {
+        Message = "";
+
+        var token = await Auth.GetTokenAsync();
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            Message = "Missing token.";
+            return;
+        }
+
+        using var client = new HttpClient();
+        client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", token);
+
+        var response = await client.PostAsJsonAsync(
+            "http://localhost:5237/api/account/change-avatar",
+            new ChangeAvatarRequest
+            {
+                AvatarKey = avatarKey
+            });
+
+        if (!response.IsSuccessStatusCode)
+        {
+            Message = await response.Content.ReadAsStringAsync();
+            return;
+        }
+
+        Message = "Avatar changed successfully.";
+        await LoadSettings();
+    }
+
+    private void Back()
+    {
+        Navigation.NavigateTo("/profileMenu");
+    }
+}

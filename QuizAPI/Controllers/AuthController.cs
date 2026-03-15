@@ -12,17 +12,23 @@ public class AuthController : ControllerBase
 {
     private readonly DatabaseServices _db;
     private readonly JwtService _jwt;
+    private readonly UsernameValidatorService _usernameValidator;
 
-    public AuthController(DatabaseServices db, JwtService jwt)
+    public AuthController(DatabaseServices db, JwtService jwt,  UsernameValidatorService userValidator)
     {
         _db = db;
         _jwt = jwt;
+        _usernameValidator = userValidator;
     }
 
     [HttpPost("register")]
     public IActionResult Register([FromBody] UserDto user)
     {
-        var userId = _db.RegisterUser(user.Username, user.Password);
+        var usernameError = _usernameValidator.Validate(user.Username);
+        if (usernameError != null)
+            return BadRequest(usernameError);
+
+        var userId = _db.RegisterUser(user.Username.Trim(), user.Password);
 
         if (userId == null)
             return BadRequest("Username already exists");

@@ -23,6 +23,7 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddSingleton<MultiplayerManager>();
 builder.Services.AddSingleton<RankedMultiplayerManager>();
+builder.Services.AddSingleton<UsernameValidatorService>();
 builder.Services.AddSignalR();
 
 builder.Services.AddMemoryCache();

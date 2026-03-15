@@ -27,12 +27,13 @@ public class DatabaseServices
         connection.Open();
 
         using var cmd = new SqlCommand(@"
-        INSERT INTO Users (Username, PasswordHash)
-        OUTPUT INSERTED.Id
-        VALUES (@u, @p)", connection);
+    INSERT INTO Users (Username, PasswordHash, AvatarKey)
+    OUTPUT INSERTED.Id
+    VALUES (@u, @p, @a)", connection);
 
         cmd.Parameters.AddWithValue("@u", username);
         cmd.Parameters.AddWithValue("@p", hash);
+        cmd.Parameters.AddWithValue("@a", "default_1");
 
         try
         {
@@ -43,23 +44,6 @@ public class DatabaseServices
         {
             return null;
         }
-    }
-
-    public bool LoginUser(string username, string password)
-    {
-        string hash = PasswordHasher.Hash(password);
-
-        using var connection = GetConnection();
-        connection.Open();
-
-        using var cmd = new SqlCommand(
-            "SELECT COUNT(*) FROM Users WHERE Username=@u AND PasswordHash=@p", connection);
-
-        cmd.Parameters.AddWithValue("@u", username);
-        cmd.Parameters.AddWithValue("@p", hash);
-
-        int count = (int)cmd.ExecuteScalar()!;
-        return count > 0;
     }
     
     public DbUser? GetUserByLogin(string username, string password)
@@ -353,5 +337,85 @@ public class DatabaseServices
         cmd.Parameters.AddWithValue("@EloAfter", eloAfter);
 
         cmd.ExecuteNonQuery();
+    }
+    
+    public bool UsernameExists(string username, int? excludeUserId = null)
+    {
+        using var connection = GetConnection();
+        connection.Open();
+
+        string sql = @"
+        SELECT COUNT(*)
+        FROM Users
+        WHERE LOWER(Username) = LOWER(@Username)";
+
+        if (excludeUserId.HasValue)
+            sql += " AND Id <> @ExcludeUserId";
+
+        using var cmd = new SqlCommand(sql, connection);
+        cmd.Parameters.AddWithValue("@Username", username);
+
+        if (excludeUserId.HasValue)
+            cmd.Parameters.AddWithValue("@ExcludeUserId", excludeUserId.Value);
+
+        int count = (int)cmd.ExecuteScalar()!;
+        return count > 0;
+    }
+
+    public AccountSettingsResponse? GetAccountSettings(int userId)
+    {
+        using var connection = GetConnection();
+        connection.Open();
+
+        using var cmd = new SqlCommand(@"
+        SELECT Id, Username, AvatarKey
+        FROM Users
+        WHERE Id = @UserId", connection);
+
+        cmd.Parameters.AddWithValue("@UserId", userId);
+
+        using var reader = cmd.ExecuteReader();
+
+        if (!reader.Read())
+            return null;
+
+        return new AccountSettingsResponse
+        {
+            UserId = Convert.ToInt32(reader["Id"]),
+            Username = reader["Username"]?.ToString() ?? "",
+            AvatarKey = reader["AvatarKey"]?.ToString() ?? "default_1"
+        };
+    }
+
+    public bool UpdateUsername(int userId, string newUsername)
+    {
+        using var connection = GetConnection();
+        connection.Open();
+
+        using var cmd = new SqlCommand(@"
+        UPDATE Users
+        SET Username = @Username
+        WHERE Id = @UserId", connection);
+
+        cmd.Parameters.AddWithValue("@Username", newUsername);
+        cmd.Parameters.AddWithValue("@UserId", userId);
+
+        return cmd.ExecuteNonQuery() > 0;
+    }
+
+    public bool UpdateAvatar(int userId, string avatarKey)
+    {
+        using var connection = GetConnection();
+        connection.Open();
+
+        using var cmd = new SqlCommand(@"
+        UPDATE Users
+        SET AvatarKey = @AvatarKey
+        WHERE Id = @UserId", connection);
+
+        cmd.Parameters.AddWithValue("@AvatarKey", avatarKey);
+        cmd.Parameters.AddWithValue("@UserId", userId);
+
+        return cmd.ExecuteNonQuery() > 0;
     }
 }
