@@ -25,6 +25,10 @@
         {
             <div class="profile-menu-card">
                 <div class="profile-menu-user-box">
+                    <img class="profile-menu-avatar"
+                         src="@GetAvatarUrl(Profile.AvatarKey)"
+                         alt="avatar" />
+
                     <span class="profile-menu-user-label">Username</span>
                     <span class="profile-menu-user-value">@Profile.Username</span>
                 </div>
@@ -149,5 +153,11 @@
     private void GoToSettings()
     {
         Navigation.NavigateTo("/accountSettings");
+    }
+    
+    private string GetAvatarUrl(string? avatarKey)
+    {
+        var key = string.IsNullOrWhiteSpace(avatarKey) ? "default_1" : avatarKey;
+        return $"/images/avatars/{key}.png";
     }
 }

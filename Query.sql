@@ -40,4 +40,11 @@ CREATE TABLE RankedMatchResults
     FOREIGN KEY (UserId) REFERENCES Users(Id)
 );
 
+ALTER TABLE Users
+ADD AvatarKey NVARCHAR(50) NOT NULL
+CONSTRAINT DF_Users_AvatarKey DEFAULT 'default_1';
+
+CREATE UNIQUE INDEX IX_Users_Username_CI
+ON Users (Username);
+
 SELECT * FROM Users

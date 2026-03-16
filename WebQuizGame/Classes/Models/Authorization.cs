@@ -11,6 +11,7 @@ public class Authorization
     public bool IsLoggedIn { get; private set; }
     public int? UserId { get; private set; }
     public string? Username { get; private set; }
+    public string? AvatarKey { get; private set; }
 
     public Authorization(ILocalStorageService localStorage)
     {
@@ -52,6 +53,7 @@ public class Authorization
         IsLoggedIn = true;
         UserId = data.UserId;
         Username = data.Username;
+        AvatarKey = data.AvatarKey;
     }
 
     public async Task Login(LoginResponse loginResponse)
@@ -61,6 +63,7 @@ public class Authorization
         IsLoggedIn = true;
         UserId = loginResponse.UserId;
         Username = loginResponse.Username;
+        AvatarKey = loginResponse.AvatarKey;
     }
 
     public async Task Logout()
@@ -70,6 +73,7 @@ public class Authorization
         IsLoggedIn = false;
         UserId = null;
         Username = null;
+        AvatarKey = null;
     }
     
     public async Task<string?> GetTokenAsync()

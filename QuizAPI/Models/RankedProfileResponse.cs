@@ -4,6 +4,7 @@ public class RankedProfileResponse
 {
     public int UserId { get; set; }
     public string Username { get; set; } = "";
+    public string AvatarKey { get; set; } = "default_1";
 
     public int SingleElo { get; set; }
     public int MultiElo { get; set; }

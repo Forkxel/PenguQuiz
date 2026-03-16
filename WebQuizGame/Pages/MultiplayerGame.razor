@@ -1,62 +1,99 @@
 ﻿@page "/multiplayerGame/{Code}"
 @using WebQuizGame.Classes.Models
+@using WebQuizGame.Classes.Models.Multiplayer
 @using WebQuizGame.Classes.Services
 @inject MultiplayerClient Mp
 
 <div class="multiplayer-game-page">
-    <div class="multiplayer-game-screen">
-        <h1 class="multiplayer-game-title">Multiplayer Game</h1>
-        <p class="multiplayer-game-subtitle">Lobby code: @Code</p>
-
-        @if (Finished)
-        {
-            <div class="multiplayer-game-card multiplayer-game-finish-card">
-                <h2 class="multiplayer-game-finish-title">Game Over</h2>
-
-                <div class="multiplayer-game-scoreboard">
-                    @foreach (var s in Scores.OrderByDescending(x => x.Value))
-                    {
-                        <div class="multiplayer-game-score-row">
-                            <span class="multiplayer-game-player">@s.Key</span>
-                            <span class="multiplayer-game-points">@s.Value</span>
-                        </div>
-                    }
-                </div>
-            </div>
-        }
-        else if (Current == null)
-        {
-            <div class="multiplayer-game-card">
-                <p class="multiplayer-game-message">Waiting for question...</p>
-            </div>
-        }
-        else
-        {
-            <div class="multiplayer-game-card">
-                <div class="multiplayer-game-question-box">
-                    <p class="multiplayer-game-question-label">Current Question</p>
-                    <h2 class="multiplayer-game-question">@Current.Question</h2>
-                </div>
-
-                <div class="multiplayer-game-answers">
-                    @foreach (var a in Answers)
-                    {
-                        <button class="multiplayer-game-answer-btn menu-btn"
-                                @onclick="() => Answer(a)"
-                                disabled="@Locked">
-                            @a
-                        </button>
-                    }
-                </div>
-
-                @if (!string.IsNullOrWhiteSpace(Message))
+    <div class="game-layout">
+        <aside class="game-sidebar">
+            @if (LiveScores.Any())
+            {
+                @foreach (var player in LiveScores)
                 {
-                    <div class="multiplayer-game-info-box">
-                        <p class="multiplayer-game-message">@Message</p>
+                    <div class="game-player">
+                        <img class="game-avatar"
+                             src="@GetAvatarUrl(player.AvatarKey)"
+                             alt="avatar" />
+
+                        <div class="game-player-info">
+                            <span class="game-player-name">@player.Username</span>
+                            <span class="game-player-score">@player.Score</span>
+                        </div>
                     </div>
                 }
+            }
+            else if (Scores.Any())
+            {
+                @foreach (var s in Scores.OrderByDescending(x => x.Value))
+                {
+                    <div class="game-player">
+                        <img class="game-avatar"
+                             src="@GetAvatarUrl("default_1")"
+                             alt="avatar" />
+
+                        <div class="game-player-info">
+                            <span class="game-player-name">@s.Key</span>
+                            <span class="game-player-score">@s.Value</span>
+                        </div>
+                    </div>
+                }
+            }
+        </aside>
+
+        <main class="game-main">
+            <div class="multiplayer-game-card">
+
+                <h1 class="game-page-title">Multiplayer Game</h1>
+                <p class="game-page-subtitle">Lobby code: @Code</p>
+
+                @if (Finished)
+                {
+                    <div class="multiplayer-game-finish-card">
+                        <h2 class="multiplayer-game-finish-title">Game Over</h2>
+
+                        <div class="multiplayer-game-scoreboard">
+                            @foreach (var s in Scores.OrderByDescending(x => x.Value))
+                            {
+                                <div class="multiplayer-game-score-row">
+                                    <span class="multiplayer-game-player">@s.Key</span>
+                                    <span class="multiplayer-game-points">@s.Value</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+                else if (Current == null)
+                {
+                    <p class="multiplayer-game-message">Waiting for question...</p>
+                }
+                else
+                {
+                    <div class="multiplayer-game-question-box">
+                        <p class="multiplayer-game-question-label">Current Question</p>
+                        <h2 class="multiplayer-game-question">@Current.Question</h2>
+                    </div>
+
+                    <div class="multiplayer-game-answers">
+                        @foreach (var a in Answers)
+                        {
+                            <button class="multiplayer-game-answer-btn menu-btn"
+                                    @onclick="() => Answer(a)"
+                                    disabled="@Locked">
+                                @a
+                            </button>
+                        }
+                    </div>
+
+                    @if (!string.IsNullOrWhiteSpace(Message))
+                    {
+                        <div class="multiplayer-game-info-box">
+                            <p class="multiplayer-game-message">@Message</p>
+                        </div>
+                    }
+                }
             </div>
-        }
+        </main>
     </div>
 </div>
 
@@ -70,6 +107,7 @@
     private bool Finished = false;
 
     private Dictionary<string,int> Scores = new();
+    private List<LivePlayerScoreDto> LiveScores = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -84,6 +122,12 @@
                 .ToList();
             Locked = false;
             Message = "";
+            InvokeAsync(StateHasChanged);
+        };
+        
+        Mp.OnScoresUpdated += scores =>
+        {
+            LiveScores = scores;
             InvokeAsync(StateHasChanged);
         };
 
@@ -110,6 +154,8 @@
             InvokeAsync(StateHasChanged);
         };
         
+        LiveScores = await Mp.GetLiveScoresAsync(Code);
+        
         var q = await Mp.GetCurrentQuestionAsync(Code);
         if (q != null)
         {
@@ -129,5 +175,11 @@
         if (Locked) return;
         Locked = true;
         await Mp.AnswerQuestionAsync(Code, ans);
+    }
+    
+    private string GetAvatarUrl(string? avatarKey)
+    {
+        var key = string.IsNullOrWhiteSpace(avatarKey) ? "default_1" : avatarKey;
+        return $"/images/avatars/{key}.png";
     }
 }

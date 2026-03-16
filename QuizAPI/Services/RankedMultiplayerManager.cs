@@ -10,7 +10,7 @@ public class RankedMultiplayerManager
     private readonly ConcurrentDictionary<string, RankedLobby> _lobbies = new();
     private readonly object _lock = new();
 
-    public RankedLobby QuickMatch(int userId, string connectionId, string username)
+    public RankedLobby QuickMatch(int userId, string connectionId, string username, string avatarKey)
     {
         lock (_lock)
         {
@@ -26,7 +26,7 @@ public class RankedMultiplayerManager
                 if (lobby.Players.Count >= 2) continue;
                 if (lobby.Players.Any(p => p.UserId == userId)) continue;
 
-                lobby.Players.Add(new RankedPlayerInfo(userId, connectionId, username));
+                lobby.Players.Add(new RankedPlayerInfo(userId, connectionId, username, avatarKey));
                 return lobby;
             }
 
@@ -38,7 +38,7 @@ public class RankedMultiplayerManager
                 IsMatchmaking = false
             };
 
-            created.Players.Add(new RankedPlayerInfo(userId, connectionId, username));
+            created.Players.Add(new RankedPlayerInfo(userId, connectionId, username, avatarKey));
             _lobbies[created.Code] = created;
 
             return created;
@@ -76,6 +76,7 @@ public class RankedMultiplayerManager
             lobby.Code,
             lobby.Settings,
             lobby.Players.Select(p => p.Username).ToList(),
+            lobby.Players.Select(p => new RankedLobbyPlayerView(p.Username, p.AvatarKey)).ToList(),
             lobby.IsStarted,
             lobby.IsMatchmaking,
             lobby.MatchmakingEndsAtUtc

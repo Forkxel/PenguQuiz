@@ -190,7 +190,10 @@
             SelectedCategoryIds.ToList());
 
         var state = await Mp.CreateLobbyAsync(
-            new CreateLobbyRequest(GetUsername(), settings));
+            new CreateLobbyRequest(
+                GetUsername(),
+                settings,
+                Auth.AvatarKey ?? "default_1"));
 
         Nav.NavigateTo($"/multiplayerCustomLobby/{state.Code}");
     }

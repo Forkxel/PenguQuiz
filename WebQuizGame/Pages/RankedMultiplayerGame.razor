@@ -1,5 +1,6 @@
 ﻿@page "/rankedMultiplayerGame/{Code}"
 @using WebQuizGame.Classes.Models
+@using WebQuizGame.Classes.Models.Multiplayer
 @using WebQuizGame.Classes.Models.Multiplayer.MultiplayerRanked
 @using WebQuizGame.Classes.Services
 @inject RankedMultiplayerClient RankedMp
@@ -8,91 +9,120 @@
 @implements IDisposable
 
 <div class="ranked-mp-game-page">
-    <div class="ranked-mp-game-screen">
-        <h1 class="ranked-mp-game-title">Ranked Multiplayer</h1>
-        <p class="ranked-mp-game-subtitle">Answer quickly and climb the ladder</p>
 
-        @if (Finished && FinalResult != null)
-        {
-            <div class="ranked-mp-game-card ranked-mp-game-finish-card">
-                <h2 class="ranked-mp-game-finish-title">Match Finished</h2>
+    <div class="game-layout">
 
-                <div class="ranked-mp-game-results">
-                    @foreach (var r in FinalResult.Results.OrderBy(x => x.Place).ThenBy(x => x.Username))
+        <aside class="game-sidebar">
+            @if (LiveScores.Any())
+            {
+                @foreach (var player in LiveScores)
+                {
+                    <div class="game-player">
+                        <img class="game-avatar"
+                             src="@GetAvatarUrl(player.AvatarKey)"
+                             alt="avatar" />
+
+                        <div class="game-player-info">
+                            <span class="game-player-name">@player.Username</span>
+                            <span class="game-player-score">@player.Score</span>
+                        </div>
+                    </div>
+                }
+            }
+        </aside>
+
+        <main class="game-main">
+            <div class="ranked-mp-game-card">
+
+                <h1 class="game-page-title">Ranked Multiplayer</h1>
+                <p class="game-page-subtitle">Answer quickly and climb the ladder</p>
+
+                @if (Finished && FinalResult != null)
+                {
+                    <div class="ranked-mp-game-finish-card">
+                        <h2 class="ranked-mp-game-finish-title">Match Finished</h2>
+
+                        <div class="ranked-mp-game-results">
+                            @foreach (var r in FinalResult.Results.OrderBy(x => x.Place).ThenBy(x => x.Username))
+                            {
+                                <div class="ranked-mp-game-result-item">
+                                    <div class="ranked-mp-game-result-header-row">
+                                        <img class="ranked-mp-game-result-avatar"
+                                             src="@GetAvatarUrl(r.AvatarKey)"
+                                             alt="avatar" />
+
+                                        <span class="ranked-mp-game-result-name">
+                                            #@r.Place - @r.Username @(r.IsWinner ? "(Winner)" : "")
+                                        </span>
+                                    </div>
+
+                                    <div class="ranked-mp-game-result-stats">
+                                        <div class="ranked-mp-game-result-box">
+                                            <span class="ranked-mp-game-result-label">Score</span>
+                                            <span class="ranked-mp-game-result-value">@r.Score</span>
+                                        </div>
+
+                                        <div class="ranked-mp-game-result-box">
+                                            <span class="ranked-mp-game-result-label">Old Rating</span>
+                                            <span class="ranked-mp-game-result-value">@r.OldRating</span>
+                                        </div>
+
+                                        <div class="ranked-mp-game-result-box">
+                                            <span class="ranked-mp-game-result-label">New Rating</span>
+                                            <span class="ranked-mp-game-result-value">@r.NewRating</span>
+                                        </div>
+
+                                        <div class="ranked-mp-game-result-box">
+                                            <span class="ranked-mp-game-result-label">Change</span>
+                                            <span class="ranked-mp-game-result-value">
+                                                @(r.Delta >= 0 ? "+" : "")@r.Delta
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="ranked-mp-game-actions">
+                            <button class="menu-btn ranked-mp-game-menu-btn" @onclick="BackToMenu">Back</button>
+                        </div>
+                    </div>
+                }
+                else if (Current == null)
+                {
+                    <p class="ranked-mp-game-message">Waiting for question...</p>
+                }
+                else
+                {
+                    @if (!string.IsNullOrWhiteSpace(Message))
                     {
-                        <div class="ranked-mp-game-result-item">
-                            <div class="ranked-mp-game-result-header">
-                                <span class="ranked-mp-game-result-name">
-                                    #@r.Place - @r.Username @(r.IsWinner ? "(Winner)" : "")
-                                </span>
-                            </div>
-
-                            <div class="ranked-mp-game-result-stats">
-                                <div class="ranked-mp-game-result-box">
-                                    <span class="ranked-mp-game-result-label">Score</span>
-                                    <span class="ranked-mp-game-result-value">@r.Score</span>
-                                </div>
-
-                                <div class="ranked-mp-game-result-box">
-                                    <span class="ranked-mp-game-result-label">Old Rating</span>
-                                    <span class="ranked-mp-game-result-value">@r.OldRating</span>
-                                </div>
-
-                                <div class="ranked-mp-game-result-box">
-                                    <span class="ranked-mp-game-result-label">New Rating</span>
-                                    <span class="ranked-mp-game-result-value">@r.NewRating</span>
-                                </div>
-
-                                <div class="ranked-mp-game-result-box">
-                                    <span class="ranked-mp-game-result-label">Change</span>
-                                    <span class="ranked-mp-game-result-value">
-                                        @(r.Delta >= 0 ? "+" : "")@r.Delta
-                                    </span>
-                                </div>
-                            </div>
+                        <div class="ranked-mp-game-info-box">
+                            <p class="ranked-mp-game-message">@Message</p>
                         </div>
                     }
-                </div>
 
-                <div class="ranked-mp-game-actions">
-                    <button class="menu-btn ranked-mp-game-menu-btn" @onclick="BackToMenu">Back</button>
-                </div>
-            </div>
-        }
-        else if (Current == null)
-        {
-            <div class="ranked-mp-game-card">
-                <p class="ranked-mp-game-message">Waiting for question...</p>
-            </div>
-        }
-        else
-        {
-            <div class="ranked-mp-game-card">
-                @if (!string.IsNullOrWhiteSpace(Message))
-                {
-                    <div class="ranked-mp-game-info-box">
-                        <p class="ranked-mp-game-message">@Message</p>
+                    <div class="ranked-mp-game-question-box">
+                        <p class="ranked-mp-game-question-label">Current Question</p>
+                        <h2 class="ranked-mp-game-question">@Current.Question</h2>
+                    </div>
+
+                    <div class="ranked-mp-game-answers">
+                        @foreach (var a in Answers)
+                        {
+                            <button class="menu-btn ranked-mp-game-answer-btn"
+                                    @onclick="() => Answer(a)"
+                                    disabled="@Locked">
+                                @a
+                            </button>
+                        }
                     </div>
                 }
 
-                <div class="ranked-mp-game-question-box">
-                    <p class="ranked-mp-game-question-label">Current Question</p>
-                    <h2 class="ranked-mp-game-question">@Current.Question</h2>
-                </div>
-
-                <div class="ranked-mp-game-answers">
-                    @foreach (var a in Answers)
-                    {
-                        <button class="menu-btn ranked-mp-game-answer-btn"
-                                @onclick="() => Answer(a)"
-                                disabled="@Locked">
-                            @a
-                        </button>
-                    }
-                </div>
             </div>
-        }
+        </main>
+
     </div>
+
 </div>
 
 @code {
@@ -104,6 +134,7 @@
     private string Message = "";
     private bool Finished = false;
     private RankedGameFinishedDto? FinalResult;
+    private List<LivePlayerScoreDto> LiveScores = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -121,6 +152,7 @@
             Nav.NavigateTo("/profile", true);
             return;
         }
+        
 
         await RankedMp.ConnectAsync("http://localhost:5237", token);
 
@@ -128,6 +160,9 @@
         RankedMp.OnQuestionResolved += HandleQuestionResolved;
         RankedMp.OnGameFinished += HandleGameFinished;
         RankedMp.OnGameError += HandleGameError;
+        RankedMp.OnScoresUpdated += HandleScoresUpdated;
+        
+        LiveScores = await RankedMp.GetLiveScoresAsync(Code);
 
         var q = await RankedMp.GetCurrentRankedQuestionAsync(Code);
         if (q != null)
@@ -198,5 +233,18 @@
         RankedMp.OnQuestionResolved -= HandleQuestionResolved;
         RankedMp.OnGameFinished -= HandleGameFinished;
         RankedMp.OnGameError -= HandleGameError;
+        RankedMp.OnScoresUpdated -= HandleScoresUpdated;
+    }
+    
+    private string GetAvatarUrl(string? avatarKey)
+    {
+        var key = string.IsNullOrWhiteSpace(avatarKey) ? "default_1" : avatarKey;
+        return $"/images/avatars/{key}.png";
+    }
+    
+    private void HandleScoresUpdated(List<LivePlayerScoreDto> scores)
+    {
+        LiveScores = scores;
+        _ = InvokeAsync(StateHasChanged);
     }
 }

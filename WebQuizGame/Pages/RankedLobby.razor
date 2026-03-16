@@ -37,9 +37,15 @@
                     <h2 class="ranked-lobby-section-title">Players</h2>
                     <div class="ranked-lobby-players-box">
                         <div class="ranked-lobby-players-list">
-                            @foreach (var player in State.Players)
+                            @foreach (var player in State.PlayerDetails)
                             {
-                                <div class="ranked-lobby-player-item">@player</div>
+                                <div class="ranked-lobby-player-item ranked-lobby-player-row">
+                                    <img class="ranked-lobby-player-avatar"
+                                         src="@GetAvatarUrl(player.AvatarKey)"
+                                         alt="avatar" />
+
+                                    <span class="ranked-lobby-player-name">@player.Username</span>
+                                </div>
                             }
                         </div>
                     </div>
@@ -174,5 +180,11 @@
         RankedMp.OnLobbyUpdated -= HandleLobbyUpdated;
         RankedMp.OnGameError -= HandleGameError;
         RankedMp.OnNewQuestion -= HandleNewQuestion;
+    }
+    
+    private string GetAvatarUrl(string? avatarKey)
+    {
+        var key = string.IsNullOrWhiteSpace(avatarKey) ? "default_1" : avatarKey;
+        return $"/images/avatars/{key}.png";
     }
 }

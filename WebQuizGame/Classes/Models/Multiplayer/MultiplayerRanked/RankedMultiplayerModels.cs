@@ -1,9 +1,17 @@
-﻿namespace WebQuizGame.Classes.Models.Multiplayer.MultiplayerRanked;
+﻿using WebQuizGame.Classes.Models.Multiplayer;
+
+namespace WebQuizGame.Classes.Models.Multiplayer.MultiplayerRanked;
+
+public record RankedLobbyPlayerView(
+    string Username,
+    string AvatarKey
+);
 
 public record RankedLobbyState(
     string Code,
     LobbySettings Settings,
     List<string> Players,
+    List<RankedLobbyPlayerView> PlayerDetails,
     bool IsStarted,
     bool IsMatchmaking,
     DateTime? MatchmakingEndsAtUtc
@@ -13,6 +21,7 @@ public class RankedMatchPlayerResultDto
 {
     public int UserId { get; set; }
     public string Username { get; set; } = "";
+    public string AvatarKey { get; set; } = "default_1";
     public int Score { get; set; }
 
     public int OldRating { get; set; }

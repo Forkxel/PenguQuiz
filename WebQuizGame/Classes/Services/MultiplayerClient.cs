@@ -16,6 +16,7 @@ public class MultiplayerClient
     public event Action<string>? OnGameError;
     public event Action<string,string,bool>? OnQuestionResolved;
     public string? LocalUsername { get; private set; }
+    public event Action<List<LivePlayerScoreDto>>? OnScoresUpdated;
 
     public async Task ConnectAsync(string apiBaseUrl)
     {
@@ -40,6 +41,9 @@ public class MultiplayerClient
         
         _conn.On<string,string,bool>("QuestionResolved",
             (who, chosen, correct) => OnQuestionResolved?.Invoke(who, chosen, correct));
+        
+        _conn.On<List<LivePlayerScoreDto>>("ScoresUpdated",
+            scores => OnScoresUpdated?.Invoke(scores));
 
         await _conn.StartAsync();
     }
@@ -76,4 +80,6 @@ public class MultiplayerClient
     
     public async Task<TriviaQuestion?> GetCurrentQuestionAsync(string lobbyCode)
         => await _conn!.InvokeAsync<TriviaQuestion?>("GetCurrentQuestion", lobbyCode);
+    public async Task<List<LivePlayerScoreDto>> GetLiveScoresAsync(string lobbyCode)
+        => await _conn!.InvokeAsync<List<LivePlayerScoreDto>>("GetLiveScores", lobbyCode);
 }

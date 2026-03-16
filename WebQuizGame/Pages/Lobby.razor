@@ -29,7 +29,19 @@
 
                     <div class="lobby-overview-box">
                         <span class="lobby-overview-label">Players</span>
-                        <span class="lobby-overview-value">@string.Join(", ", State.Players)</span>
+
+                        <div class="lobby-overview-value lobby-player-list">
+                            @foreach (var player in State.PlayerDetails)
+                            {
+                                <div class="lobby-player-row">
+                                    <img class="lobby-player-avatar"
+                                         src="@GetAvatarUrl(player.AvatarKey)"
+                                         alt="avatar" />
+
+                                    <span class="lobby-player-name">@player.Username</span>
+                                </div>
+                            }
+                        </div>
                     </div>
                 </div>
 
@@ -163,7 +175,7 @@
     private PeriodicTimer? _timer;
     private string? GameError;
 
-    private bool IsHost => State != null && State.HostUsername == (Auth.Username ?? "Guest");
+    private bool IsHost => State != null && State.HostUsername == Mp.LocalUsername;
 
     protected override async Task OnInitializedAsync()
     {
@@ -257,5 +269,10 @@
     {
         _timer?.Dispose();
     }
-
+    
+    private string GetAvatarUrl(string? avatarKey)
+    {
+        var key = string.IsNullOrWhiteSpace(avatarKey) ? "default_1" : avatarKey;
+        return $"/images/avatars/{key}.png";
+    }
 }

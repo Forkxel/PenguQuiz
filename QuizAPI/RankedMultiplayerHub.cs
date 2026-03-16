@@ -24,15 +24,33 @@ public class RankedMultiplayerHub : Hub
         _hubContext = hubContext;
         _db = db;
     }
+    
+    public Task<List<LivePlayerScoreDto>> GetLiveScores(string lobbyCode)
+    {
+        if (!_lobbies.TryGetLobby(lobbyCode, out var lobby) || lobby == null)
+            return Task.FromResult(new List<LivePlayerScoreDto>());
+
+        lock (lobby)
+        {
+            return Task.FromResult(BuildLiveScores(lobby));
+        }
+    }
 
     public async Task<RankedLobbyState> QuickMatchRanked()
     {
         var userId = GetUserId();
-        var username = GetUsername();
+
+        var dbUser = _db.GetUserById(userId);
+        if (dbUser == null)
+            throw new HubException("User not found");
 
         _db.EnsureRankingExists(userId);
 
-        var lobby = _lobbies.QuickMatch(userId, Context.ConnectionId, username);
+        var lobby = _lobbies.QuickMatch(
+            userId,
+            Context.ConnectionId,
+            dbUser.Username,
+            dbUser.AvatarKey);
 
         await Groups.AddToGroupAsync(Context.ConnectionId, lobby.GroupName);
 
@@ -48,6 +66,18 @@ public class RankedMultiplayerHub : Hub
         }
 
         return RankedMultiplayerManager.ToState(lobby);
+    }
+    
+    private static List<LivePlayerScoreDto> BuildLiveScores(RankedLobby lobby)
+    {
+        return lobby.Players
+            .Select(p => new LivePlayerScoreDto(
+                p.Username,
+                p.AvatarKey,
+                lobby.Scores.TryGetValue(p.ConnectionId, out var score) ? score : 0))
+            .OrderByDescending(x => x.Score)
+            .ThenBy(x => x.Username)
+            .ToList();
     }
 
     public async Task<RankedLobbyState> GetRankedLobbyState(string lobbyCode)
@@ -111,6 +141,10 @@ public class RankedMultiplayerHub : Hub
                 lobby.Scores[Context.ConnectionId] += 1;
             }
         }
+
+        await _hubContext.Clients.Group(lobby.GroupName).SendCoreAsync(
+            "ScoresUpdated",
+            new object[] { BuildLiveScores(lobby) });
 
         await _hubContext.Clients.Group(lobby.GroupName).SendCoreAsync(
             "RankedQuestionResolved",
@@ -226,6 +260,10 @@ public class RankedMultiplayerHub : Hub
                     lobby.Scores[p.ConnectionId] = 0;
             }
 
+            await _hubContext.Clients.Group(lobby.GroupName).SendCoreAsync(
+                "ScoresUpdated",
+                new object[] { BuildLiveScores(lobby) });
+
             await SendQuestion(lobby, lobby.Questions[0]);
         }
         catch (Exception ex)
@@ -287,6 +325,10 @@ public class RankedMultiplayerHub : Hub
             if (lobby.CurrentQuestionIndex < lobby.Questions.Count)
                 next = lobby.Questions[lobby.CurrentQuestionIndex];
         }
+        
+        await _hubContext.Clients.Group(lobby.GroupName).SendCoreAsync(
+            "ScoresUpdated",
+            new object[] { BuildLiveScores(lobby) });
 
         await _hubContext.Clients.Group(lobby.GroupName).SendCoreAsync(
             "RankedQuestionResolved",
@@ -357,6 +399,7 @@ public class RankedMultiplayerHub : Hub
             {
                 UserId = p.UserId,
                 Username = p.Username,
+                AvatarKey = p.AvatarKey,
                 Score = scoreByUserId[p.UserId],
                 OldRating = oldRating,
                 NewRating = newRating,
@@ -427,14 +470,5 @@ public class RankedMultiplayerHub : Hub
             throw new HubException("Unauthorized");
 
         return int.Parse(userIdClaim);
-    }
-
-    private string GetUsername()
-    {
-        return
-            Context.User?.FindFirst(ClaimTypes.Name)?.Value ??
-            Context.User?.FindFirst("unique_name")?.Value ??
-            Context.User?.Identity?.Name ??
-            $"User_{GetUserId()}";
     }
 }

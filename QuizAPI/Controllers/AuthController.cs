@@ -54,7 +54,8 @@ public class AuthController : ControllerBase
             {
                 Token = token,
                 UserId = dbUser.Id,
-                Username = dbUser.Username
+                Username = dbUser.Username,
+                AvatarKey = dbUser.AvatarKey
             });
         }
         catch (Exception ex)
@@ -69,17 +70,23 @@ public class AuthController : ControllerBase
     [HttpGet("verify")]
     public IActionResult Verify()
     {
-        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        var usernameClaim = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-        if (string.IsNullOrWhiteSpace(userIdClaim) || string.IsNullOrWhiteSpace(usernameClaim))
+        if (string.IsNullOrWhiteSpace(userIdClaim))
+            return Unauthorized();
+
+        int userId = int.Parse(userIdClaim);
+
+        var dbUser = _db.GetUserById(userId);
+        if (dbUser == null)
             return Unauthorized();
 
         return Ok(new VerifyResponse
         {
             IsValid = true,
-            UserId = int.Parse(userIdClaim),
-            Username = usernameClaim
+            UserId = dbUser.Id,
+            Username = dbUser.Username,
+            AvatarKey = dbUser.AvatarKey
         });
     }
 }

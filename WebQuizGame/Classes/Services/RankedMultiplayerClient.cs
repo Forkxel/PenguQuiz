@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.SignalR.Client;
 using WebQuizGame.Classes.Models;
+using WebQuizGame.Classes.Models.Multiplayer;
 using WebQuizGame.Classes.Models.Multiplayer.MultiplayerRanked;
 
 namespace WebQuizGame.Classes.Services;
@@ -14,6 +15,7 @@ public class RankedMultiplayerClient
     public event Action<RankedGameFinishedDto>? OnGameFinished;
     public event Action<string>? OnGameError;
     public event Action<string, string, bool>? OnQuestionResolved;
+    public event Action<List<LivePlayerScoreDto>>? OnScoresUpdated;
 
     public async Task ConnectAsync(string apiBaseUrl, string token)
     {
@@ -42,6 +44,8 @@ public class RankedMultiplayerClient
         _conn.On<string>("RankedGameError", msg => OnGameError?.Invoke(msg));
         _conn.On<string, string, bool>("RankedQuestionResolved",
             (who, chosen, correct) => OnQuestionResolved?.Invoke(who, chosen, correct));
+        _conn.On<List<LivePlayerScoreDto>>("ScoresUpdated",
+            scores => OnScoresUpdated?.Invoke(scores));
 
         await _conn.StartAsync();
     }
@@ -57,4 +61,6 @@ public class RankedMultiplayerClient
 
     public async Task AnswerRankedQuestionAsync(string lobbyCode, string answer)
         => await _conn!.InvokeAsync("AnswerRankedQuestion", lobbyCode, answer);
+    public async Task<List<LivePlayerScoreDto>> GetLiveScoresAsync(string lobbyCode)
+        => await _conn!.InvokeAsync<List<LivePlayerScoreDto>>("GetLiveScores", lobbyCode);
 }

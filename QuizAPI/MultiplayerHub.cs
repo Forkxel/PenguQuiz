@@ -15,10 +15,25 @@ public class MultiplayerHub : Hub
         _lobbies = lobbies;
         _hubContext = hubContext;
     }
+    
+    public Task<List<LivePlayerScoreDto>> GetLiveScores(string lobbyCode)
+    {
+        if (!_lobbies.TryGetLobby(lobbyCode, out var lobby) || lobby == null)
+            return Task.FromResult(new List<LivePlayerScoreDto>());
+
+        lock (lobby)
+        {
+            return Task.FromResult(BuildLiveScores(lobby));
+        }
+    }
 
     public async Task<LobbyState> CreateLobby(CreateLobbyRequest req)
     {
-        var lobby = _lobbies.CreateLobby(Context.ConnectionId, req.HostUsername, req.Settings);
+        var lobby = _lobbies.CreateLobby(
+            Context.ConnectionId,
+            req.HostUsername,
+            req.AvatarKey,
+            req.Settings);
 
         await Groups.AddToGroupAsync(Context.ConnectionId, lobby.GroupName);
         var state = MultiplayerManager.ToState(lobby);
@@ -29,7 +44,11 @@ public class MultiplayerHub : Hub
 
     public async Task<LobbyState> JoinLobby(JoinLobbyRequest req)
     {
-        var (ok, error) = _lobbies.JoinLobby(req.LobbyCode, Context.ConnectionId, req.Username);
+        var (ok, error) = _lobbies.JoinLobby(
+            req.LobbyCode,
+            Context.ConnectionId,
+            req.Username,
+            req.AvatarKey);
         if (!ok) throw new HubException(error);
 
         _lobbies.TryGetLobby(req.LobbyCode, out var lobby);
@@ -56,7 +75,13 @@ public class MultiplayerHub : Hub
     {
         try
         {
-            var lobby = _lobbies.QuickMatch(Context.ConnectionId, req.Username, req.Preferences, req.MinPlayers, req.MaxPlayers);
+            var lobby = _lobbies.QuickMatch(
+                Context.ConnectionId,
+                req.Username,
+                req.AvatarKey,
+                req.Preferences,
+                req.MinPlayers,
+                req.MaxPlayers);
 
             await Groups.AddToGroupAsync(Context.ConnectionId, lobby.GroupName);
 
@@ -184,7 +209,7 @@ public class MultiplayerHub : Hub
             lobby.FirstAnswerConnectionId = Context.ConnectionId;
             lobby.FirstAnswerText = chosen;
             lobby.FirstAnswerCorrect = correct;
-            
+    
             if (correct)
             {
                 if (!lobby.Scores.ContainsKey(Context.ConnectionId))
@@ -192,7 +217,10 @@ public class MultiplayerHub : Hub
                 lobby.Scores[Context.ConnectionId] += 1;
             }
         }
-        
+
+        await _hubContext.Clients.Group(lobby.GroupName).SendCoreAsync("ScoresUpdated",
+            new object[] { BuildLiveScores(lobby) });
+
         await _hubContext.Clients.Group(lobby.GroupName).SendCoreAsync("QuestionResolved",
             new object[] { who, chosen, correct });
 
@@ -253,6 +281,9 @@ public class MultiplayerHub : Hub
                 foreach (var p in lobby.Players)
                     lobby.Scores[p.ConnectionId] = 0;
             }
+
+            await _hubContext.Clients.Group(lobby.GroupName).SendCoreAsync("ScoresUpdated",
+                new object[] { BuildLiveScores(lobby) });
 
             Console.WriteLine($"[START] questions={questions.Count} -> sending NewQuestion");
 
@@ -339,6 +370,9 @@ public class MultiplayerHub : Hub
         await Clients.Group(lobby.GroupName).SendCoreAsync("QuestionResolved",
             new object[] { "TIMEOUT", "", false });
 
+        await _hubContext.Clients.Group(lobby.GroupName).SendCoreAsync("ScoresUpdated",
+            new object[] { BuildLiveScores(lobby) });
+
         await Task.Delay(1200);
 
         if (next != null)
@@ -352,5 +386,17 @@ public class MultiplayerHub : Hub
         _lobbies.LeaveByConnection(Context.ConnectionId);
         
         await base.OnDisconnectedAsync(exception);
+    }
+    
+    private static List<LivePlayerScoreDto> BuildLiveScores(Lobby lobby)
+    {
+        return lobby.Players
+            .Select(p => new LivePlayerScoreDto(
+                p.Username,
+                p.AvatarKey,
+                lobby.Scores.TryGetValue(p.ConnectionId, out var score) ? score : 0))
+            .OrderByDescending(x => x.Score)
+            .ThenBy(x => x.Username)
+            .ToList();
     }
 }

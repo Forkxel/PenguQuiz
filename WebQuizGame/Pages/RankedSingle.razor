@@ -6,116 +6,144 @@
 @using System.Net.Http.Headers
 
 <div class="ranked-game-page">
-    <div class="ranked-game-screen">
-        <h1 class="ranked-game-title">Ranked Quiz</h1>
-        <p class="ranked-game-subtitle">Play for rating and answer as fast as possible</p>
+    <div class="ranked-game-layout">
+        <aside class="ranked-game-sidebar">
+            <img class="ranked-game-sidebar-avatar"
+                 src="@GetMyAvatarUrl()"
+                 alt="avatar" />
 
-        @if (Questions == null || Questions.Count == 0)
-        {
-            <div class="ranked-game-card">
-                <p class="ranked-game-message">Loading questions...</p>
-            </div>
-        }
-        else if (CurrentQuestionIndex < Questions.Count)
-        {
-            <div class="ranked-game-topbar">
-                <div class="ranked-game-stat">
-                    <span class="ranked-game-stat-label">Score</span>
-                    <span class="ranked-game-stat-value">@Score</span>
-                </div>
+            <div class="ranked-game-sidebar-name">@Auth.Username</div>
 
-                <div class="ranked-game-stat">
-                    <span class="ranked-game-stat-label">Time Left</span>
-                    <span class="ranked-game-stat-value">@TimeLeft s</span>
-                </div>
-
-                <div class="ranked-game-stat">
-                    <span class="ranked-game-stat-label">Question</span>
-                    <span class="ranked-game-stat-value">@(@CurrentQuestionIndex + 1) / @Questions.Count</span>
-                </div>
+            <div class="ranked-game-sidebar-stat">
+                <span class="ranked-game-sidebar-stat-label">Score</span>
+                <span class="ranked-game-sidebar-stat-value">@Score</span>
             </div>
 
-            <div class="ranked-game-card">
-                <div class="ranked-game-question-box">
-                    <p class="ranked-game-question-number">Question @(@CurrentQuestionIndex + 1)</p>
-                    <p class="ranked-game-question-text">@Questions[CurrentQuestionIndex].Text</p>
+            <div class="ranked-game-sidebar-stat">
+                <span class="ranked-game-sidebar-stat-label">Correct</span>
+                <span class="ranked-game-sidebar-stat-value">@CorrectAnswers</span>
+            </div>
+
+            @if (Questions != null && Questions.Count > 0 && CurrentQuestionIndex < Questions.Count)
+            {
+                <div class="ranked-game-sidebar-stat">
+                    <span class="ranked-game-sidebar-stat-label">Question</span>
+                    <span class="ranked-game-sidebar-stat-value">@(CurrentQuestionIndex + 1) / @Questions.Count</span>
+                </div>
+            }
+        </aside>
+
+        <div class="ranked-game-screen">
+            <h1 class="ranked-game-title">Ranked Quiz</h1>
+            <p class="ranked-game-subtitle">Play for rating and answer as fast as possible</p>
+
+            @if (Questions == null || Questions.Count == 0)
+            {
+                <div class="ranked-game-card">
+                    <p class="ranked-game-message">Loading questions...</p>
+                </div>
+            }
+            else if (CurrentQuestionIndex < Questions.Count)
+            {
+                <div class="ranked-game-topbar">
+                    <div class="ranked-game-stat">
+                        <span class="ranked-game-stat-label">Score</span>
+                        <span class="ranked-game-stat-value">@Score</span>
+                    </div>
+
+                    <div class="ranked-game-stat">
+                        <span class="ranked-game-stat-label">Time Left</span>
+                        <span class="ranked-game-stat-value">@TimeLeft s</span>
+                    </div>
+
+                    <div class="ranked-game-stat">
+                        <span class="ranked-game-stat-label">Question</span>
+                        <span class="ranked-game-stat-value">@(@CurrentQuestionIndex + 1) / @Questions.Count</span>
+                    </div>
                 </div>
 
-                <div class="ranked-game-answers">
-                    @if (Questions[CurrentQuestionIndex].Type == "boolean")
-                    {
-                        <button class="answer-btn ranked-game-answer-btn @GetAnswerClass("True")"
-                                disabled="@Answered"
-                                @onclick="CheckTrue">
-                            True
-                        </button>
+                <div class="ranked-game-card">
+                    <div class="ranked-game-question-box">
+                        <p class="ranked-game-question-number">Question @(@CurrentQuestionIndex + 1)</p>
+                        <p class="ranked-game-question-text">@Questions[CurrentQuestionIndex].Text</p>
+                    </div>
 
-                        <button class="answer-btn ranked-game-answer-btn @GetAnswerClass("False")"
-                                disabled="@Answered"
-                                @onclick="CheckFalse">
-                            False
-                        </button>
-                    }
-                    else
-                    {
-                        @foreach (var ans in Questions[CurrentQuestionIndex].Answers)
+                    <div class="ranked-game-answers">
+                        @if (Questions[CurrentQuestionIndex].Type == "boolean")
                         {
-                            <button class="answer-btn ranked-game-answer-btn @GetAnswerClass(ans)"
+                            <button class="answer-btn ranked-game-answer-btn @GetAnswerClass("True")"
                                     disabled="@Answered"
-                                    @onclick="() => CheckAnswer(ans)">
-                                @ans
+                                    @onclick="CheckTrue">
+                                True
+                            </button>
+
+                            <button class="answer-btn ranked-game-answer-btn @GetAnswerClass("False")"
+                                    disabled="@Answered"
+                                    @onclick="CheckFalse">
+                                False
                             </button>
                         }
-                    }
+                        else
+                        {
+                            @foreach (var ans in Questions[CurrentQuestionIndex].Answers)
+                            {
+                                <button class="answer-btn ranked-game-answer-btn @GetAnswerClass(ans)"
+                                        disabled="@Answered"
+                                        @onclick="() => CheckAnswer(ans)">
+                                    @ans
+                                </button>
+                            }
+                        }
+                    </div>
                 </div>
-            </div>
-        }
-        else
-        {
-            <div class="ranked-game-card ranked-game-finish-card">
-                <h2 class="ranked-game-finish-title">Ranked Finished</h2>
+            }
+            else
+            {
+                <div class="ranked-game-card ranked-game-finish-card">
+                    <h2 class="ranked-game-finish-title">Ranked Finished</h2>
 
-                <div class="ranked-game-summary">
-                    <div class="ranked-game-summary-box">
-                        <span class="ranked-game-summary-label">Total Score</span>
-                        <span class="ranked-game-summary-value">@Score</span>
-                    </div>
-
-                    <div class="ranked-game-summary-box">
-                        <span class="ranked-game-summary-label">Correct Answers</span>
-                        <span class="ranked-game-summary-value">@CorrectAnswers</span>
-                    </div>
-
-                    <div class="ranked-game-summary-box">
-                        <span class="ranked-game-summary-label">Total Questions</span>
-                        <span class="ranked-game-summary-value">15</span>
-                    </div>
-
-                    @if (RankedResult != null)
-                    {
+                    <div class="ranked-game-summary">
                         <div class="ranked-game-summary-box">
-                            <span class="ranked-game-summary-label">Old Rating</span>
-                            <span class="ranked-game-summary-value">@RankedResult.OldRating</span>
+                            <span class="ranked-game-summary-label">Total Score</span>
+                            <span class="ranked-game-summary-value">@Score</span>
                         </div>
 
                         <div class="ranked-game-summary-box">
-                            <span class="ranked-game-summary-label">New Rating</span>
-                            <span class="ranked-game-summary-value">@RankedResult.NewRating</span>
+                            <span class="ranked-game-summary-label">Correct Answers</span>
+                            <span class="ranked-game-summary-value">@CorrectAnswers</span>
                         </div>
 
                         <div class="ranked-game-summary-box">
-                            <span class="ranked-game-summary-label">Rating Change</span>
-                            <span class="ranked-game-summary-value">@(RankedResult.Delta >= 0 ? "+" : "")@RankedResult.Delta</span>
+                            <span class="ranked-game-summary-label">Total Questions</span>
+                            <span class="ranked-game-summary-value">15</span>
                         </div>
-                    }
-                </div>
 
-                <div class="ranked-game-actions">
-                    <button class="menu-btn ranked-game-menu-btn" @onclick="RestartGame">Play Again</button>
-                    <button class="menu-btn ranked-game-menu-btn ranked-game-secondary-btn" @onclick="GoToMenu">Menu</button>
+                        @if (RankedResult != null)
+                        {
+                            <div class="ranked-game-summary-box">
+                                <span class="ranked-game-summary-label">Old Rating</span>
+                                <span class="ranked-game-summary-value">@RankedResult.OldRating</span>
+                            </div>
+
+                            <div class="ranked-game-summary-box">
+                                <span class="ranked-game-summary-label">New Rating</span>
+                                <span class="ranked-game-summary-value">@RankedResult.NewRating</span>
+                            </div>
+
+                            <div class="ranked-game-summary-box">
+                                <span class="ranked-game-summary-label">Rating Change</span>
+                                <span class="ranked-game-summary-value">@(RankedResult.Delta >= 0 ? "+" : "")@RankedResult.Delta</span>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="ranked-game-actions">
+                        <button class="menu-btn ranked-game-menu-btn" @onclick="RestartGame">Play Again</button>
+                        <button class="menu-btn ranked-game-menu-btn ranked-game-secondary-btn" @onclick="GoToMenu">Menu</button>
+                    </div>
                 </div>
-            </div>
-        }
+            }
+        </div>
     </div>
 </div>
 
@@ -321,5 +349,11 @@
 
         RankedResult = await response.Content.ReadFromJsonAsync<RankedSubmitResponse>();
         RankedSubmitted = true;
+    }
+    
+    private string GetMyAvatarUrl()
+    {
+        var key = string.IsNullOrWhiteSpace(Auth.AvatarKey) ? "default_1" : Auth.AvatarKey;
+        return $"/images/avatars/{key}.png";
     }
 }

@@ -9,7 +9,7 @@ public class MultiplayerManager
     private readonly ConcurrentDictionary<string, Lobby> _lobbies = new();
     private readonly object _lock = new();
 
-    public Lobby CreateLobby(string hostConnectionId, string hostUsername, LobbySettings settings)
+    public Lobby CreateLobby(string hostConnectionId, string hostUsername, string hostAvatarKey, LobbySettings settings)
     {
         var code = GenerateCode();
 
@@ -24,14 +24,14 @@ public class MultiplayerManager
             MaxPlayers = 4
         };
 
-        lobby.Players.Add(new PlayerInfo(hostConnectionId, hostUsername));
+        lobby.Players.Add(new PlayerInfo(hostConnectionId, hostUsername, hostAvatarKey));
         _lobbies[code] = lobby;
         return lobby;
     }
 
     public bool TryGetLobby(string code, out Lobby? lobby) => _lobbies.TryGetValue(code, out lobby);
 
-    public (bool ok, string error) JoinLobby(string code, string connectionId, string username)
+    public (bool ok, string error) JoinLobby(string code, string connectionId, string username, string avatarKey)
     {
         if (!_lobbies.TryGetValue(code, out var lobby))
             return (false, "Lobby not found");
@@ -43,7 +43,7 @@ public class MultiplayerManager
             if (lobby.Players.Any(p => p.Username.Equals(username, StringComparison.OrdinalIgnoreCase)))
                 return (false, "Username already in lobby");
 
-            lobby.Players.Add(new PlayerInfo(connectionId, username));
+            lobby.Players.Add(new PlayerInfo(connectionId, username, avatarKey));
             return (true, "");
         }
     }
@@ -99,7 +99,7 @@ public class MultiplayerManager
         }
     }
     
-    public Lobby QuickMatch(string connectionId, string username, LobbySettings prefs, int minPlayers, int maxPlayers)
+    public Lobby QuickMatch(string connectionId, string username, string avatarKey, LobbySettings prefs, int minPlayers, int maxPlayers)
     {
         if (minPlayers <= 0) minPlayers = 2;
         if (maxPlayers <= 0) maxPlayers = 4;
@@ -118,7 +118,7 @@ public class MultiplayerManager
                 if (lobby.MaxPlayers > 0 && lobby.Players.Count >= lobby.MaxPlayers)
                     continue;
                 
-                var join = JoinLobby(lobby.Code, connectionId, username);
+                var join = JoinLobby(lobby.Code, connectionId, username, avatarKey);
                 if (join.ok)
                 {
                     lobby.MinPlayers = minPlayers;
@@ -128,7 +128,7 @@ public class MultiplayerManager
                 }
             }
             
-            var created = CreateLobby(connectionId, username, prefs);
+            var created = CreateLobby(connectionId, username,avatarKey, prefs);
             created.MinPlayers = minPlayers;
             created.MaxPlayers = maxPlayers;
             created.IsQuickMatch = true;
@@ -150,6 +150,7 @@ public class MultiplayerManager
             lobby.HostUsername,
             lobby.Settings,
             lobby.Players.Select(p => p.Username).ToList(),
+            lobby.Players.Select(p => new LobbyPlayerView(p.Username, p.AvatarKey)).ToList(),
             lobby.IsStarted,
             lobby.IsMatchmaking,
             lobby.MatchmakingEndsAtUtc

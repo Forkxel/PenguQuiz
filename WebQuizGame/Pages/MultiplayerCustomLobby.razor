@@ -36,12 +36,18 @@
                 <div class="mp-custom-lobby-section">
                     <h2 class="mp-custom-lobby-section-title">Players</h2>
                     <div class="mp-custom-lobby-players-box">
-                        <p class="mp-custom-lobby-players-count">@State.Players.Count / 4 players</p>
+                        <p class="mp-custom-lobby-players-count">@State.PlayerDetails.Count / 4 players</p>
 
                         <div class="mp-custom-lobby-players-list">
-                            @foreach (var player in State.Players)
+                            @foreach (var player in State.PlayerDetails)
                             {
-                                <div class="mp-custom-lobby-player-item">@player</div>
+                                <div class="mp-custom-lobby-player-item mp-custom-lobby-player-row">
+                                    <img class="mp-custom-lobby-player-avatar"
+                                         src="@GetAvatarUrl(player.AvatarKey)"
+                                         alt="avatar" />
+
+                                    <span class="mp-custom-lobby-player-name">@player.Username</span>
+                                </div>
                             }
                         </div>
                     </div>
@@ -356,5 +362,11 @@
     private void ToggleCategoryDropdown()
     {
         IsCategoryDropdownOpen = !IsCategoryDropdownOpen;
+    }
+    
+    private string GetAvatarUrl(string? avatarKey)
+    {
+        var key = string.IsNullOrWhiteSpace(avatarKey) ? "default_1" : avatarKey;
+        return $"/images/avatars/{key}.png";
     }
 }

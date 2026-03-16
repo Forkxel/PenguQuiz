@@ -54,7 +54,7 @@ public class DatabaseServices
         string hashedPassword = PasswordHasher.Hash(password);
 
         var cmd = new SqlCommand(@"
-        SELECT Id, Username
+        SELECT Id, Username, AvatarKey
         FROM Users
         WHERE Username = @Username AND PasswordHash = @PasswordHash", connection);
 
@@ -69,7 +69,33 @@ public class DatabaseServices
         return new DbUser
         {
             Id = Convert.ToInt32(reader["Id"]),
-            Username = reader["Username"]?.ToString() ?? ""
+            Username = reader["Username"]?.ToString() ?? "",
+            AvatarKey = reader["AvatarKey"]?.ToString() ?? "default_1"
+        };
+    }
+    
+    public DbUser? GetUserById(int userId)
+    {
+        using var connection = GetConnection();
+        connection.Open();
+
+        using var cmd = new SqlCommand(@"
+    SELECT Id, Username, AvatarKey
+    FROM Users
+    WHERE Id = @UserId", connection);
+
+        cmd.Parameters.AddWithValue("@UserId", userId);
+
+        using var reader = cmd.ExecuteReader();
+
+        if (!reader.Read())
+            return null;
+
+        return new DbUser
+        {
+            Id = Convert.ToInt32(reader["Id"]),
+            Username = reader["Username"]?.ToString() ?? "",
+            AvatarKey = reader["AvatarKey"]?.ToString() ?? "default_1"
         };
     }
     
@@ -130,6 +156,7 @@ public class DatabaseServices
         SELECT 
             u.Id,
             u.Username,
+            u.AvatarKey,
             r.SingleElo,
             r.MultiElo,
             r.SingleRankedPlayed,
@@ -151,6 +178,7 @@ public class DatabaseServices
         {
             UserId = Convert.ToInt32(reader["Id"]),
             Username = reader["Username"]?.ToString() ?? "",
+            AvatarKey = reader["AvatarKey"]?.ToString() ?? "default_1",
             SingleElo = Convert.ToInt32(reader["SingleElo"]),
             MultiElo = Convert.ToInt32(reader["MultiElo"]),
             SingleRankedPlayed = Convert.ToInt32(reader["SingleRankedPlayed"]),
