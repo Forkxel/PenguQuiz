@@ -11,13 +11,16 @@
             {
                 @foreach (var player in LiveScores)
                 {
-                    <div class="game-player">
+                    <div class="game-player" style="border-left: 4px solid @player.PlayerColor;">
                         <img class="game-avatar"
                              src="@GetAvatarUrl(player.AvatarKey)"
                              alt="avatar" />
 
                         <div class="game-player-info">
-                            <span class="game-player-name">@player.Username</span>
+                            <span class="game-player-name">
+                                <span class="multiplayer-player-color-dot" style="background:@player.PlayerColor;"></span>
+                                @player.Username
+                            </span>
                             <span class="game-player-score">@player.Score</span>
                         </div>
                     </div>
@@ -27,13 +30,16 @@
             {
                 @foreach (var s in Scores.OrderByDescending(x => x.Value))
                 {
-                    <div class="game-player">
+                    <div class="game-player" style="border-left: 4px solid @GetPlayerColor(s.Key);">
                         <img class="game-avatar"
                              src="@GetAvatarUrl("default_1")"
                              alt="avatar" />
 
                         <div class="game-player-info">
-                            <span class="game-player-name">@s.Key</span>
+                            <span class="game-player-name">
+                                <span class="multiplayer-player-color-dot" style="background:@GetPlayerColor(s.Key);"></span>
+                                @s.Key
+                            </span>
                             <span class="game-player-score">@s.Value</span>
                         </div>
                     </div>
@@ -77,10 +83,15 @@
                     <div class="multiplayer-game-answers">
                         @foreach (var a in Answers)
                         {
-                            <button class="multiplayer-game-answer-btn menu-btn"
+                            <button class="multiplayer-game-answer-btn menu-btn @GetAnswerHighlightClass(a)"
+                                    style="@GetAnswerStyle(a)"
                                     @onclick="() => Answer(a)"
                                     disabled="@Locked">
                                 @a
+                                @if (ResolvedAnswer == a && !string.IsNullOrWhiteSpace(ResolvedBy))
+                                {
+                                    <span class="multiplayer-answer-player-tag">@ResolvedBy</span>
+                                }
                             </button>
                         }
                     </div>
@@ -105,6 +116,8 @@
     private bool Locked = false;
     private string Message = "";
     private bool Finished = false;
+    private string? ResolvedAnswer;
+    private string? ResolvedBy;
 
     private Dictionary<string,int> Scores = new();
     private List<LivePlayerScoreDto> LiveScores = new();
@@ -122,6 +135,8 @@
                 .ToList();
             Locked = false;
             Message = "";
+            ResolvedAnswer = null;
+            ResolvedBy = null;
             InvokeAsync(StateHasChanged);
         };
         
@@ -141,6 +156,8 @@
         Mp.OnQuestionResolved += (who, chosen, correct) =>
         {
             Locked = true;
+            ResolvedAnswer = who == "TIMEOUT" ? null : chosen;
+            ResolvedBy = who == "TIMEOUT" ? null : who;
             Message = who == "TIMEOUT"
                 ? "Time's up! Nobody answered."
                 : $"{who} clicked \"{chosen}\" -> {(correct ? "CORRECT" : "WRONG")}";
@@ -166,9 +183,33 @@
                 .ToList();
             Locked = false;
             Message = "";
+            ResolvedAnswer = null;
+            ResolvedBy = null;
             await InvokeAsync(StateHasChanged);
         }
     }
+
+    private string GetPlayerColor(string username)
+    {
+        var live = LiveScores.FirstOrDefault(p => string.Equals(p.Username, username, StringComparison.OrdinalIgnoreCase));
+        if (live != null) return live.PlayerColor;
+
+        return "#6f5cff";
+    }
+
+    private string GetAnswerStyle(string answer)
+    {
+        if (ResolvedAnswer != answer || string.IsNullOrWhiteSpace(ResolvedBy))
+            return string.Empty;
+
+        var color = GetPlayerColor(ResolvedBy);
+        return $"background:{color}; border-color:{color}; color:#101323;";
+    }
+
+    private string GetAnswerHighlightClass(string answer)
+        => ResolvedAnswer == answer && !string.IsNullOrWhiteSpace(ResolvedBy)
+            ? "multiplayer-game-answer-btn--resolved"
+            : string.Empty;
 
     private async Task Answer(string ans)
     {

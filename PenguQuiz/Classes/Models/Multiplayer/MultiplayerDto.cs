@@ -1,16 +1,16 @@
-﻿namespace WebQuizGame.Classes.Models.Multiplayer;
-
-public record PlayerInfo(string ConnectionId, string Username, string AvatarKey = "default_1");
+﻿public record PlayerInfo(string ConnectionId, string Username, string AvatarKey = "default_1", string PlayerColor = "#6f5cff");
 
 public record LobbyPlayerView(
     string Username,
-    string AvatarKey
+    string AvatarKey,
+    string PlayerColor
 );
 
 public record LivePlayerScoreDto(
     string Username,
     string AvatarKey,
-    int Score
+    int Score,
+    string PlayerColor
 );
 
 public record LobbySettings(

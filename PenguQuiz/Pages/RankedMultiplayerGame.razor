@@ -3,6 +3,7 @@
 @using WebQuizGame.Classes.Models.Multiplayer
 @using WebQuizGame.Classes.Models.Multiplayer.MultiplayerRanked
 @using WebQuizGame.Classes.Services
+@using LivePlayerScoreDto = LivePlayerScoreDto
 @inject RankedMultiplayerClient RankedMp
 @inject Authorization Auth
 @inject NavigationManager Nav
@@ -17,13 +18,16 @@
             {
                 @foreach (var player in LiveScores)
                 {
-                    <div class="game-player">
+                    <div class="game-player" style="border-left: 4px solid @player.PlayerColor;">
                         <img class="game-avatar"
                              src="@GetAvatarUrl(player.AvatarKey)"
                              alt="avatar" />
 
                         <div class="game-player-info">
-                            <span class="game-player-name">@player.Username</span>
+                            <span class="game-player-name">
+                                <span class="multiplayer-player-color-dot" style="background:@player.PlayerColor;"></span>
+                                @player.Username
+                            </span>
                             <span class="game-player-score">@player.Score</span>
                         </div>
                     </div>
@@ -109,10 +113,15 @@
                     <div class="ranked-mp-game-answers">
                         @foreach (var a in Answers)
                         {
-                            <button class="menu-btn ranked-mp-game-answer-btn"
+                            <button class="menu-btn ranked-mp-game-answer-btn @GetAnswerHighlightClass(a)"
+                                    style="@GetAnswerStyle(a)"
                                     @onclick="() => Answer(a)"
                                     disabled="@Locked">
                                 @a
+                                @if (ResolvedAnswer == a && !string.IsNullOrWhiteSpace(ResolvedBy))
+                                {
+                                    <span class="multiplayer-answer-player-tag">@ResolvedBy</span>
+                                }
                             </button>
                         }
                     </div>
@@ -134,7 +143,10 @@
     private string Message = "";
     private bool Finished = false;
     private RankedGameFinishedDto? FinalResult;
-    private List<LivePlayerScoreDto> LiveScores = new();
+    private List<global::LivePlayerScoreDto> LiveScores = new();
+
+    private string? ResolvedAnswer;
+    private string? ResolvedBy;
 
     protected override async Task OnInitializedAsync()
     {
@@ -152,7 +164,6 @@
             Nav.NavigateTo("/profile", true);
             return;
         }
-        
 
         await RankedMp.ConnectAsync("http://localhost:5237", token);
 
@@ -161,7 +172,7 @@
         RankedMp.OnGameFinished += HandleGameFinished;
         RankedMp.OnGameError += HandleGameError;
         RankedMp.OnScoresUpdated += HandleScoresUpdated;
-        
+
         LiveScores = await RankedMp.GetLiveScoresAsync(Code);
 
         var q = await RankedMp.GetCurrentRankedQuestionAsync(Code);
@@ -185,11 +196,16 @@
 
         Locked = false;
         Message = "";
+        ResolvedAnswer = null;
+        ResolvedBy = null;
     }
 
     private void HandleQuestionResolved(string who, string chosen, bool correct)
     {
         Locked = true;
+        ResolvedAnswer = who == "TIMEOUT" ? null : chosen;
+        ResolvedBy = who == "TIMEOUT" ? null : who;
+
         Message = who == "TIMEOUT"
             ? "Time's up! Nobody answered."
             : $"{who} clicked \"{chosen}\" -> {(correct ? "CORRECT" : "WRONG")}";
@@ -235,16 +251,41 @@
         RankedMp.OnGameError -= HandleGameError;
         RankedMp.OnScoresUpdated -= HandleScoresUpdated;
     }
-    
+
     private string GetAvatarUrl(string? avatarKey)
     {
         var key = string.IsNullOrWhiteSpace(avatarKey) ? "default_1" : avatarKey;
         return $"/images/avatars/{key}.png";
     }
-    
+
     private void HandleScoresUpdated(List<LivePlayerScoreDto> scores)
     {
         LiveScores = scores;
         _ = InvokeAsync(StateHasChanged);
     }
+
+    private string GetPlayerColor(string username)
+    {
+        var live = LiveScores.FirstOrDefault(p =>
+            string.Equals(p.Username, username, StringComparison.OrdinalIgnoreCase));
+
+        if (live != null)
+            return live.PlayerColor;
+
+        return "#6f5cff";
+    }
+
+    private string GetAnswerStyle(string answer)
+    {
+        if (ResolvedAnswer != answer || string.IsNullOrWhiteSpace(ResolvedBy))
+            return string.Empty;
+
+        var color = GetPlayerColor(ResolvedBy);
+        return $"background:{color}; border-color:{color}; color:#101323;";
+    }
+
+    private string GetAnswerHighlightClass(string answer)
+        => ResolvedAnswer == answer && !string.IsNullOrWhiteSpace(ResolvedBy)
+            ? "multiplayer-game-answer-btn--resolved"
+            : string.Empty;
 }

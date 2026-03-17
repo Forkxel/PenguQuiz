@@ -26,7 +26,12 @@ public class RankedMultiplayerManager
                 if (lobby.Players.Count >= 2) continue;
                 if (lobby.Players.Any(p => p.UserId == userId)) continue;
 
-                lobby.Players.Add(new RankedPlayerInfo(userId, connectionId, username, avatarKey));
+                lobby.Players.Add(new RankedPlayerInfo(
+                    userId,
+                    connectionId,
+                    username,
+                    avatarKey,
+                    GetNextAvailableColor(lobby)));
                 return lobby;
             }
 
@@ -38,7 +43,12 @@ public class RankedMultiplayerManager
                 IsMatchmaking = false
             };
 
-            created.Players.Add(new RankedPlayerInfo(userId, connectionId, username, avatarKey));
+            created.Players.Add(new RankedPlayerInfo(
+                userId,
+                connectionId,
+                username,
+                avatarKey,
+                GetNextAvailableColor(created)));
             _lobbies[created.Code] = created;
 
             return created;
@@ -76,7 +86,7 @@ public class RankedMultiplayerManager
             lobby.Code,
             lobby.Settings,
             lobby.Players.Select(p => p.Username).ToList(),
-            lobby.Players.Select(p => new RankedLobbyPlayerView(p.Username, p.AvatarKey)).ToList(),
+            lobby.Players.Select(p => new RankedLobbyPlayerView(p.Username, p.AvatarKey, p.PlayerColor)).ToList(),
             lobby.IsStarted,
             lobby.IsMatchmaking,
             lobby.MatchmakingEndsAtUtc
@@ -87,5 +97,29 @@ public class RankedMultiplayerManager
         const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
         var rnd = Random.Shared;
         return new string(Enumerable.Range(0, 6).Select(_ => chars[rnd.Next(chars.Length)]).ToArray());
+    }
+    
+    private static readonly string[] PlayerColors =
+    {
+        "#ff6b6b",
+        "#4dabf7",
+        "#51cf66",
+        "#ffd43b"
+    };
+
+    private static string GetNextAvailableColor(RankedLobby lobby)
+    {
+        var used = lobby.Players
+            .Select(p => p.PlayerColor)
+            .Where(c => !string.IsNullOrWhiteSpace(c))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var color in PlayerColors)
+        {
+            if (!used.Contains(color))
+                return color;
+        }
+
+        return PlayerColors[lobby.Players.Count % PlayerColors.Length];
     }
 }

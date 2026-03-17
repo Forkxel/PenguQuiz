@@ -4791,3 +4791,32 @@ main,
         order: 2;
     }
 }
+
+.multiplayer-player-color-dot {
+    display: inline-block;
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 999px;
+    margin-right: 0.55rem;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.14);
+    vertical-align: middle;
+}
+
+.multiplayer-game-answer-btn--resolved {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.22);
+}
+
+.multiplayer-answer-player-tag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 0.75rem;
+    padding: 0.18rem 0.6rem;
+    border-radius: 999px;
+    background: rgba(16, 19, 35, 0.18);
+    color: inherit;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}

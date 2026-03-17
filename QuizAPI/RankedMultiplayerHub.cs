@@ -74,7 +74,8 @@ public class RankedMultiplayerHub : Hub
             .Select(p => new LivePlayerScoreDto(
                 p.Username,
                 p.AvatarKey,
-                lobby.Scores.TryGetValue(p.ConnectionId, out var score) ? score : 0))
+                lobby.Scores.TryGetValue(p.ConnectionId, out var score) ? score : 0,
+                p.PlayerColor))
             .OrderByDescending(x => x.Score)
             .ThenBy(x => x.Username)
             .ToList();

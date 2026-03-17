@@ -1,10 +1,20 @@
 ﻿using WebQuizGame.Classes.Models.Multiplayer;
 
+using WebQuizGame.Classes.Models.Multiplayer;
+
 namespace WebQuizGame.Classes.Models.Multiplayer.MultiplayerRanked;
 
 public record RankedLobbyPlayerView(
     string Username,
-    string AvatarKey
+    string AvatarKey,
+    string PlayerColor
+);
+
+public record LivePlayerScoreDto(
+    string Username,
+    string AvatarKey,
+    int Score,
+    string PlayerColor
 );
 
 public record RankedLobbyState(

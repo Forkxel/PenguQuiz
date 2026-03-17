@@ -4,18 +4,21 @@ public record RankedPlayerInfo(
     int UserId,
     string ConnectionId,
     string Username,
-    string AvatarKey = "default_1"
+    string AvatarKey = "default_1",
+    string PlayerColor = "#6f5cff"
 );
 
 public record RankedLobbyPlayerView(
     string Username,
-    string AvatarKey
+    string AvatarKey,
+    string PlayerColor
 );
 
 public record LivePlayerScoreDto(
     string Username,
     string AvatarKey,
-    int Score
+    int Score,
+    string PlayerColor
 );
 
 public class RankedLobby
