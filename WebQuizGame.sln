@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebQuizGame", "WebQuizGame\WebQuizGame.csproj", "{E99AB005-C44E-4B36-B526-9F8182019E9C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PenguQuiz", "PenguQuiz\PenguQuiz.csproj", "{E99AB005-C44E-4B36-B526-9F8182019E9C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuizAPI", "QuizAPI\QuizAPI.csproj", "{12174955-EF99-42C9-B249-2BED540A140C}"
 EndProject
