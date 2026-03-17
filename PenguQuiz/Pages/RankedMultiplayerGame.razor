@@ -3,7 +3,7 @@
 @using WebQuizGame.Classes.Models.Multiplayer
 @using WebQuizGame.Classes.Models.Multiplayer.MultiplayerRanked
 @using WebQuizGame.Classes.Services
-@using LivePlayerScoreDto = LivePlayerScoreDto
+@using LivePlayerScoreDto = WebQuizGame.Classes.Models.Multiplayer.MultiplayerRanked.LivePlayerScoreDto
 @inject RankedMultiplayerClient RankedMp
 @inject Authorization Auth
 @inject NavigationManager Nav
@@ -98,33 +98,47 @@
                 }
                 else
                 {
-                    @if (!string.IsNullOrWhiteSpace(Message))
+                    @if (ShowingQuestionIntro)
                     {
-                        <div class="ranked-mp-game-info-box">
-                            <p class="ranked-mp-game-message">@Message</p>
+                        <div class="question-reveal-card">
+                            <p class="question-reveal-label">Current Question</p>
+                            <h2 class="question-reveal-text">@Current.Question</h2>
+
+                            <div class="question-reveal-progress">
+                                <div class="question-reveal-progress-bar" style="animation-duration:@($"{QuestionIntroSeconds}s")"></div>
+                            </div>
                         </div>
                     }
-
-                    <div class="ranked-mp-game-question-box">
-                        <p class="ranked-mp-game-question-label">Current Question</p>
-                        <h2 class="ranked-mp-game-question">@Current.Question</h2>
-                    </div>
-
-                    <div class="ranked-mp-game-answers">
-                        @foreach (var a in Answers)
+                    else
+                    {
+                        @if (!string.IsNullOrWhiteSpace(Message))
                         {
-                            <button class="menu-btn ranked-mp-game-answer-btn @GetAnswerHighlightClass(a)"
-                                    style="@GetAnswerStyle(a)"
-                                    @onclick="() => Answer(a)"
-                                    disabled="@Locked">
-                                @a
-                                @if (ResolvedAnswer == a && !string.IsNullOrWhiteSpace(ResolvedBy))
-                                {
-                                    <span class="multiplayer-answer-player-tag">@ResolvedBy</span>
-                                }
-                            </button>
+                            <div class="ranked-mp-game-info-box">
+                                <p class="ranked-mp-game-message">@Message</p>
+                            </div>
                         }
-                    </div>
+
+                        <div class="ranked-mp-game-question-box">
+                            <p class="ranked-mp-game-question-label">Current Question</p>
+                            <h2 class="ranked-mp-game-question">@Current.Question</h2>
+                        </div>
+
+                        <div class="ranked-mp-game-answers">
+                            @foreach (var a in Answers)
+                            {
+                                <button class="menu-btn ranked-mp-game-answer-btn @GetAnswerHighlightClass(a)"
+                                        style="@GetAnswerStyle(a)"
+                                        @onclick="() => Answer(a)"
+                                        disabled="@Locked">
+                                    @a
+                                    @if (ResolvedAnswer == a && !string.IsNullOrWhiteSpace(ResolvedBy))
+                                    {
+                                        <span class="multiplayer-answer-player-tag">@ResolvedBy</span>
+                                    }
+                                </button>
+                            }
+                        </div>
+                    }
                 }
 
             </div>
@@ -143,10 +157,15 @@
     private string Message = "";
     private bool Finished = false;
     private RankedGameFinishedDto? FinalResult;
-    private List<global::LivePlayerScoreDto> LiveScores = new();
+    private List<LivePlayerScoreDto> LiveScores = new();
 
     private string? ResolvedAnswer;
     private string? ResolvedBy;
+
+    private const int QuestionIntroSeconds = 4;
+    private bool ShowingQuestionIntro = false;
+    private double IntroProgressPercent = 100;
+    private CancellationTokenSource? IntroCts;
 
     protected override async Task OnInitializedAsync()
     {
@@ -177,13 +196,16 @@
 
         var q = await RankedMp.GetCurrentRankedQuestionAsync(Code);
         if (q != null)
+        {
             SetQuestion(q);
+            await StartQuestionIntroAsync();
+        }
     }
 
     private void HandleNewQuestion(TriviaQuestion q)
     {
         SetQuestion(q);
-        InvokeAsync(StateHasChanged);
+        _ = StartQuestionIntroAsync();
     }
 
     private void SetQuestion(TriviaQuestion q)
@@ -194,10 +216,50 @@
             .OrderBy(_ => Guid.NewGuid())
             .ToList();
 
-        Locked = false;
+        Locked = true;
         Message = "";
         ResolvedAnswer = null;
         ResolvedBy = null;
+    }
+
+    private async Task StartQuestionIntroAsync()
+    {
+        IntroCts?.Cancel();
+        IntroCts = new CancellationTokenSource();
+        var token = IntroCts.Token;
+
+        ShowingQuestionIntro = true;
+        IntroProgressPercent = 100;
+        Locked = true;
+        await InvokeAsync(StateHasChanged);
+
+        var started = DateTime.UtcNow;
+        var totalMs = QuestionIntroSeconds * 1000.0;
+
+        try
+        {
+            while (!token.IsCancellationRequested)
+            {
+                var elapsed = (DateTime.UtcNow - started).TotalMilliseconds;
+                var ratio = Math.Clamp(elapsed / totalMs, 0, 1);
+                IntroProgressPercent = 100 - (ratio * 100);
+
+                await InvokeAsync(StateHasChanged);
+
+                if (ratio >= 1)
+                    break;
+
+                await Task.Delay(50, token);
+            }
+        }
+        catch (TaskCanceledException)
+        {
+            return;
+        }
+
+        ShowingQuestionIntro = false;
+        Locked = false;
+        await InvokeAsync(StateHasChanged);
     }
 
     private void HandleQuestionResolved(string who, string chosen, bool correct)
@@ -232,7 +294,7 @@
 
     private async Task Answer(string ans)
     {
-        if (Locked) return;
+        if (Locked || ShowingQuestionIntro) return;
 
         Locked = true;
         await RankedMp.AnswerRankedQuestionAsync(Code, ans);

@@ -1,7 +1,5 @@
 ﻿using WebQuizGame.Classes.Models.Multiplayer;
 
-using WebQuizGame.Classes.Models.Multiplayer;
-
 namespace WebQuizGame.Classes.Models.Multiplayer.MultiplayerRanked;
 
 public record RankedLobbyPlayerView(

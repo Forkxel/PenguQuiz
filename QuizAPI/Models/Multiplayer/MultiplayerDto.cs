@@ -1,4 +1,6 @@
-﻿public record PlayerInfo(string ConnectionId, string Username, string AvatarKey = "default_1", string PlayerColor = "#6f5cff");
+﻿namespace QuizAPI.Models.Multiplayer;
+
+public record PlayerInfo(string ConnectionId, string Username, string AvatarKey = "default_1", string PlayerColor = "#6f5cff");
 
 public record LobbyPlayerView(
     string Username,

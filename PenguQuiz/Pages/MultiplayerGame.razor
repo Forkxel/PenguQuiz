@@ -75,32 +75,46 @@
                 }
                 else
                 {
-                    <div class="multiplayer-game-question-box">
-                        <p class="multiplayer-game-question-label">Current Question</p>
-                        <h2 class="multiplayer-game-question">@Current.Question</h2>
-                    </div>
-
-                    <div class="multiplayer-game-answers">
-                        @foreach (var a in Answers)
-                        {
-                            <button class="multiplayer-game-answer-btn menu-btn @GetAnswerHighlightClass(a)"
-                                    style="@GetAnswerStyle(a)"
-                                    @onclick="() => Answer(a)"
-                                    disabled="@Locked">
-                                @a
-                                @if (ResolvedAnswer == a && !string.IsNullOrWhiteSpace(ResolvedBy))
-                                {
-                                    <span class="multiplayer-answer-player-tag">@ResolvedBy</span>
-                                }
-                            </button>
-                        }
-                    </div>
-
-                    @if (!string.IsNullOrWhiteSpace(Message))
+                    @if (ShowingQuestionIntro)
                     {
-                        <div class="multiplayer-game-info-box">
-                            <p class="multiplayer-game-message">@Message</p>
+                        <div class="question-reveal-card">
+                            <p class="question-reveal-label">Current Question</p>
+                            <h2 class="question-reveal-text">@Current.Question</h2>
+
+                            <div class="question-reveal-progress">
+                                <div class="question-reveal-progress-bar" style="animation-duration:@($"{QuestionIntroSeconds}s")"></div>
+                            </div>
                         </div>
+                    }
+                    else
+                    {
+                        <div class="multiplayer-game-question-box">
+                            <p class="multiplayer-game-question-label">Current Question</p>
+                            <h2 class="multiplayer-game-question">@Current.Question</h2>
+                        </div>
+
+                        <div class="multiplayer-game-answers">
+                            @foreach (var a in Answers)
+                            {
+                                <button class="multiplayer-game-answer-btn menu-btn @GetAnswerHighlightClass(a)"
+                                        style="@GetAnswerStyle(a)"
+                                        @onclick="() => Answer(a)"
+                                        disabled="@Locked">
+                                    @a
+                                    @if (ResolvedAnswer == a && !string.IsNullOrWhiteSpace(ResolvedBy))
+                                    {
+                                        <span class="multiplayer-answer-player-tag">@ResolvedBy</span>
+                                    }
+                                </button>
+                            }
+                        </div>
+
+                        @if (!string.IsNullOrWhiteSpace(Message))
+                        {
+                            <div class="multiplayer-game-info-box">
+                                <p class="multiplayer-game-message">@Message</p>
+                            </div>
+                        }
                     }
                 }
             </div>
@@ -119,8 +133,13 @@
     private string? ResolvedAnswer;
     private string? ResolvedBy;
 
-    private Dictionary<string,int> Scores = new();
+    private Dictionary<string, int> Scores = new();
     private List<LivePlayerScoreDto> LiveScores = new();
+
+    private const int QuestionIntroSeconds = 4;
+    private bool ShowingQuestionIntro = false;
+    private double IntroProgressPercent = 100;
+    private CancellationTokenSource? IntroCts;
 
     protected override async Task OnInitializedAsync()
     {
@@ -128,18 +147,10 @@
 
         Mp.OnNewQuestion += q =>
         {
-            Current = q;
-            Answers = q.IncorrectAnswers
-                .Append(q.CorrectAnswer)
-                .OrderBy(_ => Guid.NewGuid())
-                .ToList();
-            Locked = false;
-            Message = "";
-            ResolvedAnswer = null;
-            ResolvedBy = null;
-            InvokeAsync(StateHasChanged);
+            SetQuestion(q);
+            _ = StartQuestionIntroAsync();
         };
-        
+
         Mp.OnScoresUpdated += scores =>
         {
             LiveScores = scores;
@@ -152,7 +163,7 @@
             Message = $"{winner} answered correctly!";
             InvokeAsync(StateHasChanged);
         };
-        
+
         Mp.OnQuestionResolved += (who, chosen, correct) =>
         {
             Locked = true;
@@ -170,23 +181,69 @@
             Scores = scores;
             InvokeAsync(StateHasChanged);
         };
-        
+
         LiveScores = await Mp.GetLiveScoresAsync(Code);
-        
+
         var q = await Mp.GetCurrentQuestionAsync(Code);
         if (q != null)
         {
-            Current = q;
-            Answers = q.IncorrectAnswers
-                .Append(q.CorrectAnswer)
-                .OrderBy(_ => Guid.NewGuid())
-                .ToList();
-            Locked = false;
-            Message = "";
-            ResolvedAnswer = null;
-            ResolvedBy = null;
-            await InvokeAsync(StateHasChanged);
+            SetQuestion(q);
+            await StartQuestionIntroAsync();
         }
+    }
+
+    private void SetQuestion(TriviaQuestion q)
+    {
+        Current = q;
+        Answers = q.IncorrectAnswers
+            .Append(q.CorrectAnswer)
+            .OrderBy(_ => Guid.NewGuid())
+            .ToList();
+
+        Locked = true;
+        Message = "";
+        ResolvedAnswer = null;
+        ResolvedBy = null;
+    }
+
+    private async Task StartQuestionIntroAsync()
+    {
+        IntroCts?.Cancel();
+        IntroCts = new CancellationTokenSource();
+        var token = IntroCts.Token;
+
+        ShowingQuestionIntro = true;
+        IntroProgressPercent = 100;
+        Locked = true;
+        await InvokeAsync(StateHasChanged);
+
+        var started = DateTime.UtcNow;
+        var totalMs = QuestionIntroSeconds * 1000.0;
+
+        try
+        {
+            while (!token.IsCancellationRequested)
+            {
+                var elapsed = (DateTime.UtcNow - started).TotalMilliseconds;
+                var ratio = Math.Clamp(elapsed / totalMs, 0, 1);
+                IntroProgressPercent = 100 - (ratio * 100);
+
+                await InvokeAsync(StateHasChanged);
+
+                if (ratio >= 1)
+                    break;
+
+                await Task.Delay(50, token);
+            }
+        }
+        catch (TaskCanceledException)
+        {
+            return;
+        }
+
+        ShowingQuestionIntro = false;
+        Locked = false;
+        await InvokeAsync(StateHasChanged);
     }
 
     private string GetPlayerColor(string username)
@@ -213,11 +270,11 @@
 
     private async Task Answer(string ans)
     {
-        if (Locked) return;
+        if (Locked || ShowingQuestionIntro) return;
         Locked = true;
         await Mp.AnswerQuestionAsync(Code, ans);
     }
-    
+
     private string GetAvatarUrl(string? avatarKey)
     {
         var key = string.IsNullOrWhiteSpace(avatarKey) ? "default_1" : avatarKey;

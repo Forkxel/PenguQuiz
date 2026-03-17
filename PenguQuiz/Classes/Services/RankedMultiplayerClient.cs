@@ -2,6 +2,7 @@
 using WebQuizGame.Classes.Models;
 using WebQuizGame.Classes.Models.Multiplayer;
 using WebQuizGame.Classes.Models.Multiplayer.MultiplayerRanked;
+using LivePlayerScoreDto = WebQuizGame.Classes.Models.Multiplayer.MultiplayerRanked.LivePlayerScoreDto;
 
 namespace WebQuizGame.Classes.Services;
 

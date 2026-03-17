@@ -1,46 +1,41 @@
-﻿using System.Collections.Concurrent;
-using QuizAPI.Models;
-using QuizAPI.Models.Multiplayer;
-using QuizAPI.Models.Multiplayer.MultiplayerRanked;
+﻿using QuizAPI.Models.Multiplayer.MultiplayerRanked;
 
 namespace QuizAPI.Services;
 
 public class RankedMultiplayerManager
 {
-    private readonly ConcurrentDictionary<string, RankedLobby> _lobbies = new();
+    private readonly Dictionary<string, RankedLobby> _lobbies = new();
     private readonly object _lock = new();
 
-    public RankedLobby QuickMatch(int userId, string connectionId, string username, string avatarKey)
+    private static readonly string[] PlayerColors =
+    {
+        "#ff6b6b",
+        "#4dabf7",
+        "#51cf66",
+        "#ffd43b"
+    };
+
+    public RankedLobbyState QuickMatch(int userId, string connectionId, string username, string avatarKey = "default_1")
     {
         lock (_lock)
         {
-            foreach (var existing in _lobbies.Values)
-            {
-                if (existing.Players.Any(p => p.ConnectionId == connectionId || p.UserId == userId))
-                    return existing;
-            }
+            var lobby = _lobbies.Values.FirstOrDefault(l => !l.IsStarted && l.Players.Count < 4);
 
-            foreach (var lobby in _lobbies.Values)
+            if (lobby != null)
             {
-                if (lobby.IsStarted) continue;
-                if (lobby.Players.Count >= 2) continue;
-                if (lobby.Players.Any(p => p.UserId == userId)) continue;
-
                 lobby.Players.Add(new RankedPlayerInfo(
                     userId,
                     connectionId,
                     username,
                     avatarKey,
                     GetNextAvailableColor(lobby)));
-                return lobby;
+
+                return ToState(lobby);
             }
 
             var created = new RankedLobby
             {
-                Code = GenerateCode(),
-                Settings = new LobbySettings(15, 15, "any", new List<int>()),
-                IsStarted = false,
-                IsMatchmaking = false
+                Code = GenerateCode()
             };
 
             created.Players.Add(new RankedPlayerInfo(
@@ -49,40 +44,35 @@ public class RankedMultiplayerManager
                 username,
                 avatarKey,
                 GetNextAvailableColor(created)));
+
             _lobbies[created.Code] = created;
-
-            return created;
+            return ToState(created);
         }
     }
 
-    public bool TryGetLobby(string code, out RankedLobby? lobby)
-        => _lobbies.TryGetValue(code, out lobby);
-
-    public void LeaveByConnection(string connectionId)
+    public RankedLobby? GetLobby(string code)
     {
-        foreach (var kv in _lobbies)
+        lock (_lock)
         {
-            var lobby = kv.Value;
-
-            lock (_lock)
-            {
-                var idx = lobby.Players.FindIndex(p => p.ConnectionId == connectionId);
-                if (idx < 0) continue;
-
-                lobby.Players.RemoveAt(idx);
-
-                if (lobby.Players.Count == 0)
-                {
-                    lobby.MatchmakingCts?.Cancel();
-                    lobby.QuestionCts?.Cancel();
-                    _lobbies.TryRemove(lobby.Code, out _);
-                }
-            }
+            _lobbies.TryGetValue(code, out var lobby);
+            return lobby;
         }
     }
 
-    public static RankedLobbyState ToState(RankedLobby lobby) =>
-        new RankedLobbyState(
+    public RankedLobbyState? GetState(string code)
+    {
+        lock (_lock)
+        {
+            if (!_lobbies.TryGetValue(code, out var lobby))
+                return null;
+
+            return ToState(lobby);
+        }
+    }
+
+    private RankedLobbyState ToState(RankedLobby lobby)
+    {
+        return new RankedLobbyState(
             lobby.Code,
             lobby.Settings,
             lobby.Players.Select(p => p.Username).ToList(),
@@ -91,21 +81,7 @@ public class RankedMultiplayerManager
             lobby.IsMatchmaking,
             lobby.MatchmakingEndsAtUtc
         );
-
-    private static string GenerateCode()
-    {
-        const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-        var rnd = Random.Shared;
-        return new string(Enumerable.Range(0, 6).Select(_ => chars[rnd.Next(chars.Length)]).ToArray());
     }
-    
-    private static readonly string[] PlayerColors =
-    {
-        "#ff6b6b",
-        "#4dabf7",
-        "#51cf66",
-        "#ffd43b"
-    };
 
     private static string GetNextAvailableColor(RankedLobby lobby)
     {
@@ -121,5 +97,20 @@ public class RankedMultiplayerManager
         }
 
         return PlayerColors[lobby.Players.Count % PlayerColors.Length];
+    }
+
+    private string GenerateCode()
+    {
+        const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+        var random = new Random();
+
+        string code;
+        do
+        {
+            code = new string(Enumerable.Range(0, 6).Select(_ => chars[random.Next(chars.Length)]).ToArray());
+        }
+        while (_lobbies.ContainsKey(code));
+
+        return code;
     }
 }

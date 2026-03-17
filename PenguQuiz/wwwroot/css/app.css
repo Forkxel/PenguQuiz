@@ -4820,3 +4820,85 @@ main,
     font-weight: 700;
     letter-spacing: 0.02em;
 }
+.question-reveal-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 280px;
+    text-align: center;
+    gap: 18px;
+}
+
+.question-reveal-label {
+    margin: 0;
+    font-size: 0.92rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: rgba(255, 255, 255, 0.66);
+}
+
+.question-reveal-text {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1.35;
+    color: #ffffff;
+}
+
+.question-reveal-progress {
+    width: 100%;
+    height: 8px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.10);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.question-reveal-progress-bar {
+    height: 100%;
+    width: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #7c5cff 0%, #4cc9f0 100%);
+    transform-origin: left center;
+    animation-name: questionRevealCountdown;
+    animation-timing-function: linear;
+    animation-fill-mode: forwards;
+}
+
+@keyframes questionRevealCountdown {
+    from {
+        transform: scaleX(1);
+    }
+    to {
+        transform: scaleX(0);
+    }
+}
+
+.multiplayer-player-color-dot {
+    display: inline-block;
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 999px;
+    margin-right: 0.55rem;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.14);
+    vertical-align: middle;
+}
+
+.multiplayer-game-answer-btn--resolved {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.22);
+}
+
+.multiplayer-answer-player-tag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 0.75rem;
+    padding: 0.18rem 0.6rem;
+    border-radius: 999px;
+    background: rgba(16, 19, 35, 0.18);
+    color: inherit;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}

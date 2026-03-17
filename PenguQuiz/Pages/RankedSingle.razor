@@ -63,38 +63,52 @@
                 </div>
 
                 <div class="ranked-game-card">
-                    <div class="ranked-game-question-box">
-                        <p class="ranked-game-question-number">Question @(@CurrentQuestionIndex + 1)</p>
-                        <p class="ranked-game-question-text">@Questions[CurrentQuestionIndex].Text</p>
-                    </div>
+                    @if (ShowingQuestionIntro)
+                    {
+                        <div class="question-reveal-card">
+                            <p class="question-reveal-label">Question @(@CurrentQuestionIndex + 1)</p>
+                            <h2 class="question-reveal-text">@Questions[CurrentQuestionIndex].Text</h2>
 
-                    <div class="ranked-game-answers">
-                        @if (Questions[CurrentQuestionIndex].Type == "boolean")
-                        {
-                            <button class="answer-btn ranked-game-answer-btn @GetAnswerClass("True")"
-                                    disabled="@Answered"
-                                    @onclick="CheckTrue">
-                                True
-                            </button>
+                            <div class="question-reveal-progress">
+                                <div class="question-reveal-progress-bar" style="animation-duration:@($"{QuestionIntroSeconds}s")"></div>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="ranked-game-question-box">
+                            <p class="ranked-game-question-number">Question @(@CurrentQuestionIndex + 1)</p>
+                            <p class="ranked-game-question-text">@Questions[CurrentQuestionIndex].Text</p>
+                        </div>
 
-                            <button class="answer-btn ranked-game-answer-btn @GetAnswerClass("False")"
-                                    disabled="@Answered"
-                                    @onclick="CheckFalse">
-                                False
-                            </button>
-                        }
-                        else
-                        {
-                            @foreach (var ans in Questions[CurrentQuestionIndex].Answers)
+                        <div class="ranked-game-answers">
+                            @if (Questions[CurrentQuestionIndex].Type == "boolean")
                             {
-                                <button class="answer-btn ranked-game-answer-btn @GetAnswerClass(ans)"
+                                <button class="answer-btn ranked-game-answer-btn @GetAnswerClass("True")"
                                         disabled="@Answered"
-                                        @onclick="() => CheckAnswer(ans)">
-                                    @ans
+                                        @onclick="CheckTrue">
+                                    True
+                                </button>
+
+                                <button class="answer-btn ranked-game-answer-btn @GetAnswerClass("False")"
+                                        disabled="@Answered"
+                                        @onclick="CheckFalse">
+                                    False
                                 </button>
                             }
-                        }
-                    </div>
+                            else
+                            {
+                                @foreach (var ans in Questions[CurrentQuestionIndex].Answers)
+                                {
+                                    <button class="answer-btn ranked-game-answer-btn @GetAnswerClass(ans)"
+                                            disabled="@Answered"
+                                            @onclick="() => CheckAnswer(ans)">
+                                        @ans
+                                    </button>
+                                }
+                            }
+                        </div>
+                    }
                 </div>
             }
             else
@@ -150,6 +164,8 @@
 @code {
     private const int Amount = 15;
     private const int TimePerQuestion = 15;
+    private const int QuestionIntroSeconds = 4;
+
     private List<Question>? Questions;
     private int CurrentQuestionIndex = 0;
     private int Score = 0;
@@ -162,6 +178,10 @@
     private double TotalAnswerTimeSeconds = 0;
     private RankedSubmitResponse? RankedResult;
     private bool RankedSubmitted = false;
+
+    private bool ShowingQuestionIntro = false;
+    private double IntroProgressPercent = 100;
+    private CancellationTokenSource? IntroCts;
 
     protected override async Task OnInitializedAsync()
     {
@@ -177,7 +197,7 @@
         await LoadQuestions();
 
         if (Questions.Count > 0)
-            StartTimer();
+            await StartQuestionIntroAsync();
     }
 
     private async Task LoadQuestions()
@@ -193,9 +213,52 @@
             Questions = ParseTrivia(data);
     }
 
+    private async Task StartQuestionIntroAsync()
+    {
+        TimerCts?.Cancel();
+        IntroCts?.Cancel();
+
+        IntroCts = new CancellationTokenSource();
+        var token = IntroCts.Token;
+
+        ShowingQuestionIntro = true;
+        IntroProgressPercent = 100;
+        TimeLeft = TimePerQuestion;
+
+        await InvokeAsync(StateHasChanged);
+
+        var started = DateTime.UtcNow;
+        var totalMs = QuestionIntroSeconds * 1000.0;
+
+        try
+        {
+            while (!token.IsCancellationRequested)
+            {
+                var elapsed = (DateTime.UtcNow - started).TotalMilliseconds;
+                var ratio = Math.Clamp(elapsed / totalMs, 0, 1);
+                IntroProgressPercent = 100 - (ratio * 100);
+
+                await InvokeAsync(StateHasChanged);
+
+                if (ratio >= 1)
+                    break;
+
+                await Task.Delay(50, token);
+            }
+        }
+        catch (TaskCanceledException)
+        {
+            return;
+        }
+
+        ShowingQuestionIntro = false;
+        StartTimer();
+        await InvokeAsync(StateHasChanged);
+    }
+
     private async Task CheckAnswer(string selected)
     {
-        if (Answered || Questions == null) return;
+        if (Answered || Questions == null || ShowingQuestionIntro) return;
 
         Answered = true;
         SelectedAnswer = selected;
@@ -222,7 +285,7 @@
 
         if (CurrentQuestionIndex < Questions.Count)
         {
-            StartTimer();
+            await StartQuestionIntroAsync();
         }
         else
         {
@@ -245,14 +308,21 @@
 
     private async Task RunTimer(CancellationToken token)
     {
-        while (TimeLeft > 0 && !token.IsCancellationRequested)
+        try
         {
-            await Task.Delay(1000, token);
-            TimeLeft--;
-            StateHasChanged();
+            while (TimeLeft > 0 && !token.IsCancellationRequested)
+            {
+                await Task.Delay(1000, token);
+                TimeLeft--;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch
+        {
+            return;
         }
 
-        if (TimeLeft == 0 && !Answered)
+        if (TimeLeft == 0 && !Answered && !ShowingQuestionIntro)
         {
             await CheckAnswer("TIMEOUT");
         }
@@ -290,25 +360,31 @@
         return "disabled";
     }
 
-    private void CheckTrue() => CheckAnswer("True");
-    private void CheckFalse() => CheckAnswer("False");
+    private void CheckTrue() => _ = CheckAnswer("True");
+    private void CheckFalse() => _ = CheckAnswer("False");
 
     private async Task RestartGame()
     {
         TimerCts?.Cancel();
+        IntroCts?.Cancel();
 
         Questions = new List<Question>();
         CurrentQuestionIndex = 0;
         Score = 0;
         CorrectAnswers = 0;
+        SelectedAnswer = null;
+        Answered = false;
+        TimeLeft = TimePerQuestion;
         TotalAnswerTimeSeconds = 0;
         RankedResult = null;
         RankedSubmitted = false;
+        ShowingQuestionIntro = false;
+        IntroProgressPercent = 100;
 
         await LoadQuestions();
 
         if (Questions.Count > 0)
-            StartTimer();
+            await StartQuestionIntroAsync();
     }
 
     private void GoToMenu()

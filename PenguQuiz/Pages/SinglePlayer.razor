@@ -63,40 +63,56 @@
                 </div>
 
                 <div class="single-game-card">
-                    <div class="single-game-question-box">
-                        <p class="single-game-question-number">Question @(CurrentQuestionIndex + 1)</p>
-                        <p class="single-game-question-text">
-                            @Questions[CurrentQuestionIndex]?.Text
-                        </p>
-                    </div>
+                    @if (ShowingQuestionIntro)
+                    {
+                        <div class="question-reveal-card">
+                            <p class="question-reveal-label">Question @(CurrentQuestionIndex + 1)</p>
+                            <h2 class="question-reveal-text">
+                                @Questions[CurrentQuestionIndex]?.Text
+                            </h2>
 
-                    <div class="single-game-answers">
-                        @if (Questions[CurrentQuestionIndex]?.Type == "boolean")
-                        {
-                            <button disabled="@Answered"
-                                    class="answer-btn single-game-answer-btn @GetAnswerClass("True")"
-                                    @onclick="CheckTrue">
-                                True
-                            </button>
+                            <div class="question-reveal-progress">
+                                <div class="question-reveal-progress-bar" style="animation-duration:@($"{QuestionIntroSeconds}s")"></div>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="single-game-question-box">
+                            <p class="single-game-question-number">Question @(CurrentQuestionIndex + 1)</p>
+                            <p class="single-game-question-text">
+                                @Questions[CurrentQuestionIndex]?.Text
+                            </p>
+                        </div>
 
-                            <button disabled="@Answered"
-                                    class="answer-btn single-game-answer-btn @GetAnswerClass("False")"
-                                    @onclick="CheckFalse">
-                                False
-                            </button>
-                        }
-                        else
-                        {
-                            @foreach (var ans in Questions[CurrentQuestionIndex]?.Answers ?? new())
+                        <div class="single-game-answers">
+                            @if (Questions[CurrentQuestionIndex]?.Type == "boolean")
                             {
                                 <button disabled="@Answered"
-                                        class="answer-btn single-game-answer-btn @GetAnswerClass(ans)"
-                                        @onclick="() => CheckAnswer(ans)">
-                                    @ans
+                                        class="answer-btn single-game-answer-btn @GetAnswerClass("True")"
+                                        @onclick="CheckTrue">
+                                    True
+                                </button>
+
+                                <button disabled="@Answered"
+                                        class="answer-btn single-game-answer-btn @GetAnswerClass("False")"
+                                        @onclick="CheckFalse">
+                                    False
                                 </button>
                             }
-                        }
-                    </div>
+                            else
+                            {
+                                @foreach (var ans in Questions[CurrentQuestionIndex]?.Answers ?? new())
+                                {
+                                    <button disabled="@Answered"
+                                            class="answer-btn single-game-answer-btn @GetAnswerClass(ans)"
+                                            @onclick="() => CheckAnswer(ans)">
+                                        @ans
+                                    </button>
+                                }
+                            }
+                        </div>
+                    }
                 </div>
             }
             else
@@ -166,6 +182,11 @@
     private int TimeLeft;
     private CancellationTokenSource? TimerCts;
 
+    private const int QuestionIntroSeconds = 4;
+    private bool ShowingQuestionIntro = false;
+    private double IntroProgressPercent = 100;
+    private CancellationTokenSource? IntroCts;
+
     private List<AnswerRecord> AnswerRecords = new();
 
     private DateTime? QuestionStartTime;
@@ -177,7 +198,7 @@
         await Auth.InitializeAsync();
 
         if (Questions.Count > 0)
-            StartQuestionTimer();
+            await StartQuestionIntroAsync();
     }
 
     private async Task LoadQuestionsAsync()
@@ -224,9 +245,53 @@
         StateHasChanged();
     }
 
+    private async Task StartQuestionIntroAsync()
+    {
+        TimerCts?.Cancel();
+        IntroCts?.Cancel();
+
+        IntroCts = new CancellationTokenSource();
+        var token = IntroCts.Token;
+
+        ShowingQuestionIntro = true;
+        IntroProgressPercent = 100;
+        TimeLeft = time;
+        QuestionStartTime = null;
+
+        await InvokeAsync(StateHasChanged);
+
+        var started = DateTime.UtcNow;
+        var totalMs = QuestionIntroSeconds * 1000.0;
+
+        try
+        {
+            while (!token.IsCancellationRequested)
+            {
+                var elapsed = (DateTime.UtcNow - started).TotalMilliseconds;
+                var ratio = Math.Clamp(elapsed / totalMs, 0, 1);
+                IntroProgressPercent = 100 - (ratio * 100);
+
+                await InvokeAsync(StateHasChanged);
+
+                if (ratio >= 1)
+                    break;
+
+                await Task.Delay(50, token);
+            }
+        }
+        catch (TaskCanceledException)
+        {
+            return;
+        }
+
+        ShowingQuestionIntro = false;
+        StartQuestionTimer();
+        await InvokeAsync(StateHasChanged);
+    }
+
     private async Task CheckAnswer(string selected)
     {
-        if (Answered || CurrentQuestionIndex >= Questions.Count)
+        if (Answered || CurrentQuestionIndex >= Questions.Count || ShowingQuestionIntro)
         {
             return;
         }
@@ -267,7 +332,7 @@
 
         if (CurrentQuestionIndex < Questions.Count)
         {
-            StartQuestionTimer();
+            await StartQuestionIntroAsync();
         }
 
         StateHasChanged();
@@ -301,7 +366,7 @@
                 StateHasChanged();
             }
 
-            if (TimeLeft == 0 && !Answered)
+            if (TimeLeft == 0 && !Answered && !ShowingQuestionIntro)
                 await CheckAnswer("TIMEOUT");
         }
         catch { }
@@ -324,6 +389,8 @@
     {
         TimerCts?.Cancel();
         TimerCts = null;
+        IntroCts?.Cancel();
+        IntroCts = null;
 
         Questions = new();
         AnswerRecords = new();
@@ -331,13 +398,15 @@
         Score = 0;
         SelectedAnswer = null;
         Answered = false;
+        ShowingQuestionIntro = false;
+        IntroProgressPercent = 100;
 
         ForceFreshOnNextLoad = true;
         
         await LoadQuestionsAsync();
 
         if (Questions.Count > 0)
-            StartQuestionTimer();
+            await StartQuestionIntroAsync();
     }
 
     private void GoToMenu()

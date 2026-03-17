@@ -10,6 +10,8 @@ public class MultiplayerHub : Hub
     private readonly MultiplayerManager _lobbies;
     private readonly IHubContext<MultiplayerHub> _hubContext;
 
+    private const int QuestionIntroSeconds = 4;
+
     public MultiplayerHub(MultiplayerManager lobbies, IHubContext<MultiplayerHub> hubContext)
     {
         _lobbies = lobbies;
@@ -196,6 +198,9 @@ public class MultiplayerHub : Hub
             if (lobby.QuestionLocked) return;
             if (lobby.Questions.Count == 0) return;
 
+            if (DateTime.UtcNow < lobby.QuestionStartedAtUtc.AddSeconds(QuestionIntroSeconds))
+                return;
+
             var q = lobby.Questions[lobby.CurrentQuestionIndex];
 
             lobby.QuestionLocked = true;
@@ -336,6 +341,7 @@ public class MultiplayerHub : Hub
             CancellationToken token;
             int seconds = lobby.Settings.TimePerQuestion;
             if (seconds <= 0) seconds = 10;
+            seconds += QuestionIntroSeconds;
 
             lock (lobby) token = lobby.QuestionCts!.Token;
 
@@ -384,7 +390,6 @@ public class MultiplayerHub : Hub
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
         _lobbies.LeaveByConnection(Context.ConnectionId);
-        
         await base.OnDisconnectedAsync(exception);
     }
     
