@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.SignalR.Client;
 using WebQuizGame.Classes.Models;
-using WebQuizGame.Classes.Models.Multiplayer;
 using WebQuizGame.Classes.Models.Multiplayer.MultiplayerRanked;
 using LivePlayerScoreDto = WebQuizGame.Classes.Models.Multiplayer.MultiplayerRanked.LivePlayerScoreDto;
 
@@ -15,7 +14,7 @@ public class RankedMultiplayerClient
     public event Action<TriviaQuestion>? OnNewQuestion;
     public event Action<RankedGameFinishedDto>? OnGameFinished;
     public event Action<string>? OnGameError;
-    public event Action<string, string, bool>? OnQuestionResolved;
+    public event Action<RankedQuestionResolutionDto>? OnQuestionResolved;
     public event Action<List<LivePlayerScoreDto>>? OnScoresUpdated;
 
     public async Task ConnectAsync(string apiBaseUrl, string token)
@@ -43,10 +42,8 @@ public class RankedMultiplayerClient
         _conn.On<TriviaQuestion>("RankedNewQuestion", q => OnNewQuestion?.Invoke(q));
         _conn.On<RankedGameFinishedDto>("RankedGameFinished", dto => OnGameFinished?.Invoke(dto));
         _conn.On<string>("RankedGameError", msg => OnGameError?.Invoke(msg));
-        _conn.On<string, string, bool>("RankedQuestionResolved",
-            (who, chosen, correct) => OnQuestionResolved?.Invoke(who, chosen, correct));
-        _conn.On<List<LivePlayerScoreDto>>("ScoresUpdated",
-            scores => OnScoresUpdated?.Invoke(scores));
+        _conn.On<RankedQuestionResolutionDto>("RankedQuestionResolved", dto => OnQuestionResolved?.Invoke(dto));
+        _conn.On<List<LivePlayerScoreDto>>("ScoresUpdated", scores => OnScoresUpdated?.Invoke(scores));
 
         await _conn.StartAsync();
     }
@@ -62,6 +59,7 @@ public class RankedMultiplayerClient
 
     public async Task AnswerRankedQuestionAsync(string lobbyCode, string answer)
         => await _conn!.InvokeAsync("AnswerRankedQuestion", lobbyCode, answer);
+
     public async Task<List<LivePlayerScoreDto>> GetLiveScoresAsync(string lobbyCode)
         => await _conn!.InvokeAsync<List<LivePlayerScoreDto>>("GetLiveScores", lobbyCode);
 }

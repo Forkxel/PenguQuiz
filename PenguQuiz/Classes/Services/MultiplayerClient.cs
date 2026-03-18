@@ -11,12 +11,12 @@ public class MultiplayerClient
     public event Action<LobbyState>? OnLobbyUpdated;
     public event Action<LobbyState>? OnGameStarted;
     public event Action<TriviaQuestion>? OnNewQuestion;
-    public event Action<string>? OnQuestionWon;
-    public event Action<Dictionary<string,int>>? OnGameFinished;
+    public event Action<Dictionary<string, int>>? OnGameFinished;
     public event Action<string>? OnGameError;
-    public event Action<string,string,bool>? OnQuestionResolved;
-    public string? LocalUsername { get; private set; }
+    public event Action<QuestionResolutionDto>? OnQuestionResolved;
     public event Action<List<LivePlayerScoreDto>>? OnScoresUpdated;
+
+    public string? LocalUsername { get; private set; }
 
     public async Task ConnectAsync(string apiBaseUrl)
     {
@@ -30,24 +30,14 @@ public class MultiplayerClient
         _conn.On<LobbyState>("LobbyUpdated", state => OnLobbyUpdated?.Invoke(state));
         _conn.On<string>("GameError", msg => OnGameError?.Invoke(msg));
         _conn.On<LobbyState>("GameStarted", state => OnGameStarted?.Invoke(state));
-        _conn.On<TriviaQuestion>("NewQuestion",
-            q => OnNewQuestion?.Invoke(q));
-
-        _conn.On<string>("QuestionWon",
-            winner => OnQuestionWon?.Invoke(winner));
-
-        _conn.On<Dictionary<string,int>>("GameFinished",
-            scores => OnGameFinished?.Invoke(scores));
-        
-        _conn.On<string,string,bool>("QuestionResolved",
-            (who, chosen, correct) => OnQuestionResolved?.Invoke(who, chosen, correct));
-        
-        _conn.On<List<LivePlayerScoreDto>>("ScoresUpdated",
-            scores => OnScoresUpdated?.Invoke(scores));
+        _conn.On<TriviaQuestion>("NewQuestion", q => OnNewQuestion?.Invoke(q));
+        _conn.On<Dictionary<string, int>>("GameFinished", scores => OnGameFinished?.Invoke(scores));
+        _conn.On<QuestionResolutionDto>("QuestionResolved", dto => OnQuestionResolved?.Invoke(dto));
+        _conn.On<List<LivePlayerScoreDto>>("ScoresUpdated", scores => OnScoresUpdated?.Invoke(scores));
 
         await _conn.StartAsync();
     }
-    
+
     public async Task AnswerQuestionAsync(string lobbyCode, string answer)
         => await _conn!.InvokeAsync("AnswerQuestion", lobbyCode, answer);
 
@@ -74,12 +64,13 @@ public class MultiplayerClient
 
     public async Task StartGameAsync(string lobbyCode)
         => await _conn!.InvokeAsync("StartGame", lobbyCode);
-    
+
     public async Task<LobbyState> GetLobbyStateAsync(string lobbyCode)
         => await _conn!.InvokeAsync<LobbyState>("GetLobbyState", lobbyCode);
-    
+
     public async Task<TriviaQuestion?> GetCurrentQuestionAsync(string lobbyCode)
         => await _conn!.InvokeAsync<TriviaQuestion?>("GetCurrentQuestion", lobbyCode);
+
     public async Task<List<LivePlayerScoreDto>> GetLiveScoresAsync(string lobbyCode)
         => await _conn!.InvokeAsync<List<LivePlayerScoreDto>>("GetLiveScores", lobbyCode);
 }

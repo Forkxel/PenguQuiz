@@ -18,11 +18,10 @@ public class Lobby
     public Dictionary<string, int> Scores { get; } = new();
     public bool IsQuickMatch { get; set; } = false;
     public DateTime QuestionStartedAtUtc { get; set; } = DateTime.UtcNow;
-    public string? FirstAnswerConnectionId { get; set; }
-    public string? FirstAnswerText { get; set; }
-    public bool? FirstAnswerCorrect { get; set; }
     public CancellationTokenSource? QuestionCts { get; set; }
     public bool IsMatchmaking { get; set; } = false;
     public DateTime? MatchmakingEndsAtUtc { get; set; }
     public CancellationTokenSource? MatchmakingCts { get; set; }
+
+    public Dictionary<string, SubmittedAnswer> SubmittedAnswers { get; } = new();
 }

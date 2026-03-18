@@ -1,6 +1,5 @@
 ﻿@page "/rankedMultiplayerGame/{Code}"
 @using WebQuizGame.Classes.Models
-@using WebQuizGame.Classes.Models.Multiplayer
 @using WebQuizGame.Classes.Models.Multiplayer.MultiplayerRanked
 @using WebQuizGame.Classes.Services
 @using LivePlayerScoreDto = WebQuizGame.Classes.Models.Multiplayer.MultiplayerRanked.LivePlayerScoreDto
@@ -10,43 +9,42 @@
 @implements IDisposable
 
 <div class="ranked-mp-game-page">
+    <div class="ranked-mp-game-layout">
 
-    <div class="game-layout">
-
-        <aside class="game-sidebar">
+        <aside class="ranked-mp-game-sidebar">
             @if (LiveScores.Any())
             {
                 @foreach (var player in LiveScores)
                 {
-                    <div class="game-player" style="border-left: 4px solid @player.PlayerColor;">
-                        <img class="game-avatar"
+                    <div class="ranked-mp-game-player-card" style="border-left:4px solid @player.PlayerColor;">
+                        <img class="ranked-mp-game-player-avatar"
                              src="@GetAvatarUrl(player.AvatarKey)"
                              alt="avatar" />
 
-                        <div class="game-player-info">
-                            <span class="game-player-name">
+                        <div class="ranked-mp-game-player-meta">
+                            <span class="ranked-mp-game-player-name">
                                 <span class="multiplayer-player-color-dot" style="background:@player.PlayerColor;"></span>
                                 @player.Username
                             </span>
-                            <span class="game-player-score">@player.Score</span>
+                            <span class="ranked-mp-game-player-score">@player.Score</span>
                         </div>
                     </div>
                 }
             }
         </aside>
 
-        <main class="game-main">
+        <main class="ranked-mp-game-main">
             <div class="ranked-mp-game-card">
 
-                <h1 class="game-page-title">Ranked Multiplayer</h1>
-                <p class="game-page-subtitle">Answer quickly and climb the ladder</p>
+                <h1 class="ranked-mp-game-title">Ranked Multiplayer</h1>
+                <p class="ranked-mp-game-subtitle">Lobby code: @Code</p>
 
                 @if (Finished && FinalResult != null)
                 {
                     <div class="ranked-mp-game-finish-card">
                         <h2 class="ranked-mp-game-finish-title">Match Finished</h2>
 
-                        <div class="ranked-mp-game-results">
+                        <div class="ranked-mp-game-result-list">
                             @foreach (var r in FinalResult.Results.OrderBy(x => x.Place).ThenBy(x => x.Username))
                             {
                                 <div class="ranked-mp-game-result-item">
@@ -111,13 +109,6 @@
                     }
                     else
                     {
-                        @if (!string.IsNullOrWhiteSpace(Message))
-                        {
-                            <div class="ranked-mp-game-info-box">
-                                <p class="ranked-mp-game-message">@Message</p>
-                            </div>
-                        }
-
                         <div class="ranked-mp-game-question-box">
                             <p class="ranked-mp-game-question-label">Current Question</p>
                             <h2 class="ranked-mp-game-question">@Current.Question</h2>
@@ -129,11 +120,23 @@
                                 <button class="menu-btn ranked-mp-game-answer-btn @GetAnswerHighlightClass(a)"
                                         style="@GetAnswerStyle(a)"
                                         @onclick="() => Answer(a)"
-                                        disabled="@Locked">
-                                    @a
-                                    @if (ResolvedAnswer == a && !string.IsNullOrWhiteSpace(ResolvedBy))
+                                        disabled="@(!CanAnswer)">
+                                    <span>@a</span>
+
+                                    @if (GetAnswerMarkers(a).Any())
                                     {
-                                        <span class="multiplayer-answer-player-tag">@ResolvedBy</span>
+                                        <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; justify-content:center;">
+                                            @foreach (var marker in GetAnswerMarkers(a))
+                                            {
+                                                <span style="background:@marker.PlayerColor; color:#101323; padding:4px 8px; border-radius:999px; font-size:12px; font-weight:700;">
+                                                    @marker.Username
+                                                    @if (marker.PointsAwarded > 0)
+                                                    {
+                                                        <span> (+@marker.PointsAwarded)</span>
+                                                    }
+                                                </span>
+                                            }
+                                        </div>
                                     }
                                 </button>
                             }
@@ -145,7 +148,6 @@
         </main>
 
     </div>
-
 </div>
 
 @code {
@@ -154,18 +156,22 @@
     private TriviaQuestion? Current;
     private List<string> Answers = new();
     private bool Locked = false;
+    private bool HasAnswered = false;
     private string Message = "";
     private bool Finished = false;
     private RankedGameFinishedDto? FinalResult;
     private List<LivePlayerScoreDto> LiveScores = new();
+    private List<RankedQuestionPlayerAnswerDto> RoundResults = new();
+    private string? CorrectAnswer;
 
-    private string? ResolvedAnswer;
-    private string? ResolvedBy;
+    private string? LocalSelectedAnswer;
+    private bool ResultsVisible = false;
 
     private const int QuestionIntroSeconds = 4;
     private bool ShowingQuestionIntro = false;
-    private double IntroProgressPercent = 100;
     private CancellationTokenSource? IntroCts;
+
+    private bool CanAnswer => !Locked && !ShowingQuestionIntro && !HasAnswered && !Finished;
 
     protected override async Task OnInitializedAsync()
     {
@@ -217,9 +223,12 @@
             .ToList();
 
         Locked = true;
+        HasAnswered = false;
         Message = "";
-        ResolvedAnswer = null;
-        ResolvedBy = null;
+        CorrectAnswer = null;
+        RoundResults = new List<RankedQuestionPlayerAnswerDto>();
+        LocalSelectedAnswer = null;
+        ResultsVisible = false;
     }
 
     private async Task StartQuestionIntroAsync()
@@ -229,28 +238,12 @@
         var token = IntroCts.Token;
 
         ShowingQuestionIntro = true;
-        IntroProgressPercent = 100;
         Locked = true;
         await InvokeAsync(StateHasChanged);
 
-        var started = DateTime.UtcNow;
-        var totalMs = QuestionIntroSeconds * 1000.0;
-
         try
         {
-            while (!token.IsCancellationRequested)
-            {
-                var elapsed = (DateTime.UtcNow - started).TotalMilliseconds;
-                var ratio = Math.Clamp(elapsed / totalMs, 0, 1);
-                IntroProgressPercent = 100 - (ratio * 100);
-
-                await InvokeAsync(StateHasChanged);
-
-                if (ratio >= 1)
-                    break;
-
-                await Task.Delay(50, token);
-            }
+            await Task.Delay(TimeSpan.FromSeconds(QuestionIntroSeconds), token);
         }
         catch (TaskCanceledException)
         {
@@ -262,17 +255,19 @@
         await InvokeAsync(StateHasChanged);
     }
 
-    private void HandleQuestionResolved(string who, string chosen, bool correct)
+    private void HandleQuestionResolved(RankedQuestionResolutionDto dto)
     {
         Locked = true;
-        ResolvedAnswer = who == "TIMEOUT" ? null : chosen;
-        ResolvedBy = who == "TIMEOUT" ? null : who;
+        ResultsVisible = true;
+        CorrectAnswer = dto.CorrectAnswer;
+        RoundResults = dto.Results ?? new List<RankedQuestionPlayerAnswerDto>();
 
-        Message = who == "TIMEOUT"
-            ? "Time's up! Nobody answered."
-            : $"{who} clicked \"{chosen}\" -> {(correct ? "CORRECT" : "WRONG")}";
+        var correctCount = RoundResults.Count(x => x.IsCorrect);
+        Message = correctCount > 0
+            ? $"Správná odpověď: {dto.CorrectAnswer}"
+            : $"Nikdo neodpověděl správně. Správná odpověď: {dto.CorrectAnswer}";
 
-        InvokeAsync(StateHasChanged);
+        _ = InvokeAsync(StateHasChanged);
     }
 
     private void HandleGameFinished(RankedGameFinishedDto dto)
@@ -283,21 +278,23 @@
         FinalResult = dto;
         Locked = true;
 
-        InvokeAsync(StateHasChanged);
+        _ = InvokeAsync(StateHasChanged);
     }
 
     private void HandleGameError(string msg)
     {
         Message = msg;
-        InvokeAsync(StateHasChanged);
+        _ = InvokeAsync(StateHasChanged);
     }
 
     private async Task Answer(string ans)
     {
-        if (Locked || ShowingQuestionIntro) return;
+        if (!CanAnswer) return;
 
-        Locked = true;
+        HasAnswered = true;
+        LocalSelectedAnswer = ans;
         await RankedMp.AnswerRankedQuestionAsync(Code, ans);
+        await InvokeAsync(StateHasChanged);
     }
 
     private void BackToMenu()
@@ -307,6 +304,8 @@
 
     public void Dispose()
     {
+        IntroCts?.Cancel();
+
         RankedMp.OnNewQuestion -= HandleNewQuestion;
         RankedMp.OnQuestionResolved -= HandleQuestionResolved;
         RankedMp.OnGameFinished -= HandleGameFinished;
@@ -326,28 +325,52 @@
         _ = InvokeAsync(StateHasChanged);
     }
 
-    private string GetPlayerColor(string username)
+    private IReadOnlyList<RankedQuestionPlayerAnswerDto> GetAnswerMarkers(string answer)
     {
-        var live = LiveScores.FirstOrDefault(p =>
-            string.Equals(p.Username, username, StringComparison.OrdinalIgnoreCase));
+        if (ResultsVisible)
+        {
+            return RoundResults
+                .Where(r => !string.IsNullOrWhiteSpace(r.Answer) &&
+                            string.Equals(r.Answer, answer, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
 
-        if (live != null)
-            return live.PlayerColor;
+        if (!string.IsNullOrWhiteSpace(LocalSelectedAnswer) &&
+            string.Equals(LocalSelectedAnswer, answer, StringComparison.OrdinalIgnoreCase) &&
+            !string.IsNullOrWhiteSpace(Auth.Username))
+        {
+            var localColor = LiveScores
+                .FirstOrDefault(x => string.Equals(x.Username, Auth.Username, StringComparison.OrdinalIgnoreCase))
+                ?.PlayerColor ?? "#6f5cff";
 
-        return "#6f5cff";
+            return new List<RankedQuestionPlayerAnswerDto>
+            {
+                new RankedQuestionPlayerAnswerDto
+                {
+                    Username = Auth.Username!,
+                    PlayerColor = localColor,
+                    PointsAwarded = 0
+                }
+            };
+        }
+
+        return Array.Empty<RankedQuestionPlayerAnswerDto>();
     }
 
     private string GetAnswerStyle(string answer)
     {
-        if (ResolvedAnswer != answer || string.IsNullOrWhiteSpace(ResolvedBy))
+        if (string.IsNullOrWhiteSpace(CorrectAnswer))
             return string.Empty;
 
-        var color = GetPlayerColor(ResolvedBy);
-        return $"background:{color}; border-color:{color}; color:#101323;";
+        if (string.Equals(answer, CorrectAnswer, StringComparison.OrdinalIgnoreCase))
+            return "border:2px solid #51cf66; background:linear-gradient(135deg, rgba(81,207,102,0.38), rgba(81,207,102,0.20));";
+
+        return string.Empty;
     }
 
     private string GetAnswerHighlightClass(string answer)
-        => ResolvedAnswer == answer && !string.IsNullOrWhiteSpace(ResolvedBy)
+        => !string.IsNullOrWhiteSpace(CorrectAnswer) &&
+           string.Equals(answer, CorrectAnswer, StringComparison.OrdinalIgnoreCase)
             ? "multiplayer-game-answer-btn--resolved"
             : string.Empty;
 }

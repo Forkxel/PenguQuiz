@@ -1,5 +1,9 @@
 ﻿using WebQuizGame.Classes.Models.Multiplayer;
 
+using WebQuizGame.Classes.Models.Multiplayer;
+
+using WebQuizGame.Classes.Models.Multiplayer;
+
 namespace WebQuizGame.Classes.Models.Multiplayer.MultiplayerRanked;
 
 public record RankedLobbyPlayerView(
@@ -24,6 +28,23 @@ public record RankedLobbyState(
     bool IsMatchmaking,
     DateTime? MatchmakingEndsAtUtc
 );
+
+public class RankedQuestionPlayerAnswerDto
+{
+    public string Username { get; set; } = "";
+    public string AvatarKey { get; set; } = "default_1";
+    public string PlayerColor { get; set; } = "#6f5cff";
+    public string? Answer { get; set; }
+    public bool IsCorrect { get; set; }
+    public int PointsAwarded { get; set; }
+    public int ResponseMs { get; set; }
+}
+
+public class RankedQuestionResolutionDto
+{
+    public string CorrectAnswer { get; set; } = "";
+    public List<RankedQuestionPlayerAnswerDto> Results { get; set; } = new();
+}
 
 public class RankedMatchPlayerResultDto
 {

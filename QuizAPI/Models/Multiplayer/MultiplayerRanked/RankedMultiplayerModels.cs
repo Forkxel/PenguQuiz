@@ -21,6 +21,29 @@ public record LivePlayerScoreDto(
     string PlayerColor
 );
 
+public class RankedSubmittedAnswer
+{
+    public string Answer { get; set; } = "";
+    public DateTime AnsweredAtUtc { get; set; }
+}
+
+public class RankedQuestionPlayerAnswerDto
+{
+    public string Username { get; set; } = "";
+    public string AvatarKey { get; set; } = "default_1";
+    public string PlayerColor { get; set; } = "#6f5cff";
+    public string? Answer { get; set; }
+    public bool IsCorrect { get; set; }
+    public int PointsAwarded { get; set; }
+    public int ResponseMs { get; set; }
+}
+
+public class RankedQuestionResolutionDto
+{
+    public string CorrectAnswer { get; set; } = "";
+    public List<RankedQuestionPlayerAnswerDto> Results { get; set; } = new();
+}
+
 public class RankedLobby
 {
     public string Code { get; init; } = "";
@@ -44,6 +67,8 @@ public class RankedLobby
     public DateTime QuestionStartedAtUtc { get; set; } = DateTime.UtcNow;
     public CancellationTokenSource? QuestionCts { get; set; }
     public CancellationTokenSource? MatchmakingCts { get; set; }
+
+    public Dictionary<string, RankedSubmittedAnswer> SubmittedAnswers { get; } = new();
 }
 
 public record RankedLobbyState(

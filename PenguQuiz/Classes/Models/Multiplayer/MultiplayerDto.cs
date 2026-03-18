@@ -52,3 +52,20 @@ public record LobbyState(
     bool IsMatchmaking,
     DateTime? MatchmakingEndsAtUtc
 );
+
+public class QuestionPlayerAnswerDto
+{
+    public string Username { get; set; } = "";
+    public string AvatarKey { get; set; } = "default_1";
+    public string PlayerColor { get; set; } = "#6f5cff";
+    public string? Answer { get; set; }
+    public bool IsCorrect { get; set; }
+    public int PointsAwarded { get; set; }
+    public int ResponseMs { get; set; }
+}
+
+public class QuestionResolutionDto
+{
+    public string CorrectAnswer { get; set; } = "";
+    public List<QuestionPlayerAnswerDto> Results { get; set; } = new();
+}
