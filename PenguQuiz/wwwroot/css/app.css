@@ -4902,3 +4902,61 @@ main,
     font-weight: 700;
     letter-spacing: 0.02em;
 }
+
+/* ===== SINGLEPLAYER / RANKED ANSWER BUTTONS - MATCH MULTIPLAYER ===== */
+.single-game-answer-btn,
+.ranked-game-answer-btn {
+    display: block;
+    width: 100%;
+    margin: 0;
+    padding: 18px 24px;
+    border: none;
+    outline: none;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #ffffff;
+    background: linear-gradient(90deg, #6f5cff 0%, #57c7f5 100%);
+    box-shadow: 0 8px 24px rgba(87, 199, 245, 0.16);
+    transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease, opacity 0.2s ease;
+}
+
+.single-game-answer-btn:hover,
+.ranked-game-answer-btn:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.04);
+    box-shadow: 0 10px 28px rgba(87, 199, 245, 0.22);
+}
+
+.single-game-answer-btn:active,
+.ranked-game-answer-btn:active {
+    transform: translateY(0);
+}
+
+.single-game-answer-btn.correct,
+.ranked-game-answer-btn.correct {
+    border: 2px solid #51cf66;
+    color: #ffffff;
+    background: linear-gradient(135deg, rgba(81, 207, 102, 0.38), rgba(81, 207, 102, 0.20));
+    box-shadow: 0 8px 24px rgba(81, 207, 102, 0.18);
+}
+
+.single-game-answer-btn.wrong,
+.ranked-game-answer-btn.wrong {
+    border: 2px solid #ff6b6b;
+    color: #ffffff;
+    background: linear-gradient(135deg, rgba(255, 107, 107, 0.30), rgba(255, 107, 107, 0.16));
+    box-shadow: 0 8px 24px rgba(255, 107, 107, 0.16);
+}
+
+.single-game-answer-btn.disabled,
+.ranked-game-answer-btn.disabled {
+    opacity: 0.45;
+    filter: saturate(0.8);
+}
+
+.single-game-answer-btn:disabled,
+.ranked-game-answer-btn:disabled {
+    cursor: default;
+}
