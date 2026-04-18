@@ -12,8 +12,6 @@ namespace QuizAPI;
 [Authorize]
 public class RankedMultiplayerHub : Hub
 {
-    private readonly RankedMultiplayerManager _manager;
-    private readonly DatabaseServices _db;
 
     private const int QuestionIntroSeconds = 4;
     private const int BaseCorrectPoints = 100;
@@ -21,10 +19,112 @@ public class RankedMultiplayerHub : Hub
     private const int ResultRevealSeconds = 2;
     private const int MatchmakingCountdownSeconds = 10;
 
-    public RankedMultiplayerHub(RankedMultiplayerManager manager, DatabaseServices db)
+    private readonly RankedMultiplayerManager _manager;
+    private readonly DatabaseServices _db;
+    private readonly IHubContext<RankedMultiplayerHub> _hubContext;
+    private const int RankedK = 32;
+    private const int DisconnectPenalty = 10;
+
+    public RankedMultiplayerHub(
+        RankedMultiplayerManager manager,
+        DatabaseServices db,
+        IHubContext<RankedMultiplayerHub> hubContext)
     {
         _manager = manager;
         _db = db;
+        _hubContext = hubContext;
+    }
+    
+    public async Task LeaveRankedLobby(string code)
+    {
+        var lobby = _manager.GetLobby(code);
+        if (lobby == null)
+            return;
+
+        RankedGameFinishedDto? forfeitResult = null;
+
+        lock (lobby)
+        {
+            var leavingPlayer = lobby.Players.FirstOrDefault(p => p.ConnectionId == Context.ConnectionId);
+            if (leavingPlayer == null)
+                return;
+
+            var shouldForfeit = !lobby.ResultProcessed && lobby.Players.Count >= 2;
+
+            if (shouldForfeit)
+                forfeitResult = BuildAndApplyRankedResult(lobby, Context.ConnectionId);
+        }
+
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId, lobby.GroupName);
+        _manager.RemovePlayerByConnection(Context.ConnectionId);
+
+        if (forfeitResult != null && forfeitResult.Results.Any())
+        {
+            await _hubContext.Clients.Group(lobby.GroupName)
+                .SendAsync("RankedGameFinished", forfeitResult);
+        }
+        else
+        {
+            var state = _manager.GetState(code);
+            if (state != null)
+            {
+                await _hubContext.Clients.Group(lobby.GroupName)
+                    .SendAsync("RankedLobbyUpdated", state);
+            }
+        }
+    }
+    
+    public Task<DateTime?> GetQuestionStartedAtUtc(string code)
+    {
+        var lobby = _manager.GetLobby(code);
+        if (lobby == null)
+            return Task.FromResult<DateTime?>(null);
+
+        if (!_manager.IsPlayerInLobby(code, Context.ConnectionId))
+            return Task.FromResult<DateTime?>(null);
+
+        lock (lobby)
+        {
+            if (lobby.Questions.Count == 0)
+                return Task.FromResult<DateTime?>(null);
+
+            return Task.FromResult<DateTime?>(lobby.QuestionStartedAtUtc);
+        }
+    }
+    
+    public override async Task OnDisconnectedAsync(Exception? exception)
+    {
+        var lobby = _manager.FindLobbyByConnection(Context.ConnectionId);
+        if (lobby != null)
+        {
+            RankedGameFinishedDto? forfeitResult = null;
+
+            lock (lobby)
+            {
+                var shouldForfeit = !lobby.ResultProcessed && lobby.Players.Count >= 2;
+                if (shouldForfeit)
+                    forfeitResult = BuildAndApplyRankedResult(lobby, Context.ConnectionId);
+            }
+
+            _manager.RemovePlayerByConnection(Context.ConnectionId);
+
+            if (forfeitResult != null && forfeitResult.Results.Any())
+            {
+                await _hubContext.Clients.Group(lobby.GroupName)
+                    .SendAsync("RankedGameFinished", forfeitResult);
+            }
+            else
+            {
+                var state = _manager.GetState(lobby.Code);
+                if (state != null)
+                {
+                    await _hubContext.Clients.Group(lobby.GroupName)
+                        .SendAsync("RankedLobbyUpdated", state);
+                }
+            }
+        }
+
+        await base.OnDisconnectedAsync(exception);
     }
 
     public async Task<RankedLobbyState> QuickMatchRanked()
@@ -47,10 +147,21 @@ public class RankedMultiplayerHub : Hub
             throw new HubException("Lobby not found");
 
         await Groups.AddToGroupAsync(Context.ConnectionId, lobby.GroupName);
-        await Clients.Group(lobby.GroupName).SendAsync("RankedLobbyUpdated", _manager.GetState(lobby.Code)!);
+
+        await _hubContext.Clients.Group(lobby.GroupName)
+            .SendAsync("RankedLobbyUpdated", _manager.GetState(lobby.Code)!);
 
         if (!lobby.IsStarted && lobby.Players.Count >= 2)
+        {
             StartMatchmakingCountdownIfNeeded(lobby);
+
+            var updatedState = _manager.GetState(lobby.Code);
+            if (updatedState != null)
+            {
+                await _hubContext.Clients.Group(lobby.GroupName)
+                    .SendAsync("RankedLobbyUpdated", updatedState);
+            }
+        }
 
         return _manager.GetState(lobby.Code)!;
     }
@@ -60,6 +171,9 @@ public class RankedMultiplayerHub : Hub
         var lobby = _manager.GetLobby(code);
         if (lobby == null)
             throw new HubException("Lobby not found");
+
+        if (!_manager.IsPlayerInLobby(code, Context.ConnectionId))
+            throw new HubException("You are no longer in this ranked lobby");
 
         await Groups.AddToGroupAsync(Context.ConnectionId, lobby.GroupName);
 
@@ -75,6 +189,9 @@ public class RankedMultiplayerHub : Hub
         var lobby = _manager.GetLobby(code);
         if (lobby == null) return Task.FromResult(new List<LivePlayerScoreDto>());
 
+        if (!_manager.IsPlayerInLobby(code, Context.ConnectionId))
+            return Task.FromResult(new List<LivePlayerScoreDto>());
+
         lock (lobby)
         {
             return Task.FromResult(BuildLiveScores(lobby));
@@ -85,6 +202,9 @@ public class RankedMultiplayerHub : Hub
     {
         var lobby = _manager.GetLobby(code);
         if (lobby == null) return Task.FromResult<TriviaQuestion?>(null);
+
+        if (!_manager.IsPlayerInLobby(code, Context.ConnectionId))
+            return Task.FromResult<TriviaQuestion?>(null);
 
         lock (lobby)
         {
@@ -100,6 +220,9 @@ public class RankedMultiplayerHub : Hub
     {
         var lobby = _manager.GetLobby(code);
         if (lobby == null) return;
+        
+        if (!_manager.IsPlayerInLobby(code, Context.ConnectionId))
+            return;
 
         bool shouldResolveImmediately = false;
 
@@ -142,6 +265,7 @@ public class RankedMultiplayerHub : Hub
         {
             if (lobby.IsStarted) return;
             if (lobby.IsMatchmaking) return;
+            if (lobby.Players.Count < 2) return;
 
             lobby.IsMatchmaking = true;
             lobby.MatchmakingEndsAtUtc = DateTime.UtcNow.AddSeconds(MatchmakingCountdownSeconds);
@@ -173,9 +297,17 @@ public class RankedMultiplayerHub : Hub
                     }
                 }
 
-                if (!shouldStart) return;
+                if (!shouldStart)
+                    return;
 
-                await Clients.Group(lobby.GroupName).SendAsync("RankedLobbyUpdated", _manager.GetState(lobby.Code)!);
+                var state = _manager.GetState(lobby.Code);
+                if (state != null)
+                {
+                    await _hubContext.Clients.Group(lobby.GroupName)
+                        .SendAsync("RankedLobbyUpdated", state);
+                }
+
+                await Task.Delay(300);
                 await StartRankedGame(lobby);
             });
         }
@@ -201,7 +333,8 @@ public class RankedMultiplayerHub : Hub
 
             if (questions.Count == 0)
             {
-                await Clients.Group(lobby.GroupName).SendAsync("RankedGameError", "No questions loaded.");
+                await _hubContext.Clients.Group(lobby.GroupName)
+                    .SendAsync("RankedGameError", "No questions loaded.");
                 return;
             }
 
@@ -217,7 +350,7 @@ public class RankedMultiplayerHub : Hub
                     lobby.Scores[player.ConnectionId] = 0;
             }
 
-            await Clients.Group(lobby.GroupName).SendAsync("ScoresUpdated", BuildLiveScores(lobby));
+            await _hubContext.Clients.Group(lobby.GroupName).SendAsync("ScoresUpdated", BuildLiveScores(lobby));
             await SendQuestion(lobby);
         }
         catch (Exception ex)
@@ -245,7 +378,8 @@ public class RankedMultiplayerHub : Hub
             question = lobby.Questions[lobby.CurrentQuestionIndex];
         }
 
-        await Clients.Group(lobby.GroupName).SendAsync("RankedNewQuestion", question);
+        await _hubContext.Clients.Group(lobby.GroupName)
+            .SendAsync("RankedNewQuestion", question);
 
         _ = Task.Run(async () =>
         {
@@ -341,38 +475,7 @@ public class RankedMultiplayerHub : Hub
 
             if (lobby.CurrentQuestionIndex >= lobby.Questions.Count)
             {
-                var results = lobby.Players
-                    .Select(p =>
-                    {
-                        var score = lobby.Scores.TryGetValue(p.ConnectionId, out var s) ? s : 0;
-                        return new RankedMatchPlayerResultDto
-                        {
-                            UserId = p.UserId,
-                            Username = p.Username,
-                            AvatarKey = p.AvatarKey,
-                            Score = score,
-                            OldRating = 0,
-                            NewRating = 0,
-                            Delta = 0,
-                            Place = 0,
-                            IsWinner = false
-                        };
-                    })
-                    .OrderByDescending(x => x.Score)
-                    .ThenBy(x => x.Username)
-                    .ToList();
-
-                for (int i = 0; i < results.Count; i++)
-                {
-                    results[i].Place = i + 1;
-                    results[i].IsWinner = i == 0;
-                }
-
-                finishedDto = new RankedGameFinishedDto
-                {
-                    LobbyCode = lobby.Code,
-                    Results = results
-                };
+                finishedDto = BuildAndApplyRankedResult(lobby);
             }
             else
             {
@@ -380,14 +483,18 @@ public class RankedMultiplayerHub : Hub
             }
         }
 
-        await Clients.Group(lobby.GroupName).SendAsync("ScoresUpdated", liveScores);
-        await Clients.Group(lobby.GroupName).SendAsync("RankedQuestionResolved", resolution);
+        await _hubContext.Clients.Group(lobby.GroupName)
+            .SendAsync("ScoresUpdated", liveScores);
+
+        await _hubContext.Clients.Group(lobby.GroupName)
+            .SendAsync("RankedQuestionResolved", resolution);
 
         await Task.Delay(TimeSpan.FromSeconds(ResultRevealSeconds));
 
         if (finishedDto != null)
         {
-            await Clients.Group(lobby.GroupName).SendAsync("RankedGameFinished", finishedDto);
+            await _hubContext.Clients.Group(lobby.GroupName)
+                .SendAsync("RankedGameFinished", finishedDto);
             return;
         }
 
@@ -406,5 +513,168 @@ public class RankedMultiplayerHub : Hub
             .OrderByDescending(x => x.Score)
             .ThenBy(x => x.Username)
             .ToList();
+    }
+    
+    private RankedGameFinishedDto BuildAndApplyRankedResult(RankedLobby lobby, string? forcedLoserConnectionId = null)
+    {
+        lock (lobby)
+        {
+            if (lobby.ResultProcessed)
+            {
+                return new RankedGameFinishedDto
+                {
+                    LobbyCode = lobby.Code,
+                    Results = new List<RankedMatchPlayerResultDto>()
+                };
+            }
+
+            lobby.ResultProcessed = true;
+            lobby.QuestionCts?.Cancel();
+            lobby.MatchmakingCts?.Cancel();
+            lobby.IsMatchmaking = false;
+            lobby.MatchmakingEndsAtUtc = null;
+
+            var players = lobby.Players
+                .Select(p => new
+                {
+                    Player = p,
+                    Score = lobby.Scores.TryGetValue(p.ConnectionId, out var s) ? s : 0
+                })
+                .ToList();
+
+            if (players.Count != 2)
+            {
+                return new RankedGameFinishedDto
+                {
+                    LobbyCode = lobby.Code,
+                    Results = players.Select((x, i) => new RankedMatchPlayerResultDto
+                    {
+                        UserId = x.Player.UserId,
+                        Username = x.Player.Username,
+                        AvatarKey = x.Player.AvatarKey,
+                        Score = x.Score,
+                        OldRating = 0,
+                        NewRating = 0,
+                        Delta = 0,
+                        Place = i + 1,
+                        IsWinner = i == 0
+                    }).ToList()
+                };
+            }
+
+            var p1 = players[0];
+            var p2 = players[1];
+
+            var old1 = _db.GetMultiRating(p1.Player.UserId);
+            var old2 = _db.GetMultiRating(p2.Player.UserId);
+
+            double actual1;
+            double actual2;
+
+            if (!string.IsNullOrWhiteSpace(forcedLoserConnectionId))
+            {
+                actual1 = p1.Player.ConnectionId == forcedLoserConnectionId ? 0d : 1d;
+                actual2 = p2.Player.ConnectionId == forcedLoserConnectionId ? 0d : 1d;
+            }
+            else if (p1.Score == p2.Score)
+            {
+                actual1 = 0.5d;
+                actual2 = 0.5d;
+            }
+            else
+            {
+                actual1 = p1.Score > p2.Score ? 1d : 0d;
+                actual2 = p2.Score > p1.Score ? 1d : 0d;
+            }
+
+            var expected1 = 1d / (1d + Math.Pow(10d, (old2 - old1) / 400d));
+            var expected2 = 1d / (1d + Math.Pow(10d, (old1 - old2) / 400d));
+
+            var delta1 = (int)Math.Round(RankedK * (actual1 - expected1));
+            var delta2 = (int)Math.Round(RankedK * (actual2 - expected2));
+
+            if (!string.IsNullOrWhiteSpace(forcedLoserConnectionId))
+            {
+                if (p1.Player.ConnectionId == forcedLoserConnectionId)
+                    delta1 -= DisconnectPenalty;
+
+                if (p2.Player.ConnectionId == forcedLoserConnectionId)
+                    delta2 -= DisconnectPenalty;
+            }
+
+            var new1 = Math.Max(0, old1 + delta1);
+            var new2 = Math.Max(0, old2 + delta2);
+
+            _db.UpdateMultiRating(p1.Player.UserId, new1, delta1 > 0);
+            _db.UpdateMultiRating(p2.Player.UserId, new2, delta2 > 0);
+
+            var result1 = new RankedMatchPlayerResultDto
+            {
+                UserId = p1.Player.UserId,
+                Username = p1.Player.Username,
+                AvatarKey = p1.Player.AvatarKey,
+                Score = p1.Score,
+                OldRating = old1,
+                NewRating = new1,
+                Delta = delta1
+            };
+
+            var result2 = new RankedMatchPlayerResultDto
+            {
+                UserId = p2.Player.UserId,
+                Username = p2.Player.Username,
+                AvatarKey = p2.Player.AvatarKey,
+                Score = p2.Score,
+                OldRating = old2,
+                NewRating = new2,
+                Delta = delta2
+            };
+
+            List<RankedMatchPlayerResultDto> ordered;
+
+            if (!string.IsNullOrWhiteSpace(forcedLoserConnectionId))
+            {
+                var winnerUserId = p1.Player.ConnectionId == forcedLoserConnectionId
+                    ? p2.Player.UserId
+                    : p1.Player.UserId;
+
+                ordered = new List<RankedMatchPlayerResultDto> { result1, result2 }
+                    .OrderByDescending(x => x.UserId == winnerUserId)
+                    .ThenBy(x => x.Username)
+                    .ToList();
+            }
+            else
+            {
+                ordered = new List<RankedMatchPlayerResultDto> { result1, result2 }
+                    .OrderByDescending(x => x.Score)
+                    .ThenBy(x => x.Username)
+                    .ToList();
+            }
+
+            for (int i = 0; i < ordered.Count; i++)
+            {
+                ordered[i].Place = i + 1;
+                ordered[i].IsWinner = i == 0;
+            }
+
+            var matchId = _db.CreateRankedMatch("multi");
+
+            foreach (var r in ordered)
+            {
+                _db.CreateRankedMatchResult(
+                    matchId,
+                    r.UserId,
+                    r.Score,
+                    r.Place,
+                    r.OldRating,
+                    r.NewRating);
+            }
+
+            return new RankedGameFinishedDto
+            {
+                LobbyCode = lobby.Code,
+                Results = ordered
+            };
+        }
     }
 }

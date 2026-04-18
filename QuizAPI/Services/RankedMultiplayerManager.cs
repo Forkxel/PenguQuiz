@@ -19,7 +19,7 @@ public class RankedMultiplayerManager
     {
         lock (_lock)
         {
-            var lobby = _lobbies.Values.FirstOrDefault(l => !l.IsStarted && l.Players.Count < 4);
+            var lobby = _lobbies.Values.FirstOrDefault(l => !l.IsStarted && l.Players.Count < 2);
 
             if (lobby != null)
             {
@@ -112,5 +112,63 @@ public class RankedMultiplayerManager
         while (_lobbies.ContainsKey(code));
 
         return code;
+    }
+    
+    public bool IsPlayerInLobby(string code, string connectionId)
+    {
+        lock (_lock)
+        {
+            if (!_lobbies.TryGetValue(code, out var lobby))
+                return false;
+
+            return lobby.Players.Any(p => p.ConnectionId == connectionId);
+        }
+    }
+
+    public RankedLobby? FindLobbyByConnection(string connectionId)
+    {
+        lock (_lock)
+        {
+            return _lobbies.Values.FirstOrDefault(l =>
+                l.Players.Any(p => p.ConnectionId == connectionId));
+        }
+    }
+
+    public RankedLobby? RemovePlayerByConnection(string connectionId)
+    {
+        lock (_lock)
+        {
+            var lobby = _lobbies.Values.FirstOrDefault(l =>
+                l.Players.Any(p => p.ConnectionId == connectionId));
+
+            if (lobby == null)
+                return null;
+
+            var player = lobby.Players.FirstOrDefault(p => p.ConnectionId == connectionId);
+            if (player == null)
+                return null;
+
+            lobby.Players.Remove(player);
+            lobby.SubmittedAnswers.Remove(connectionId);
+            lobby.Scores.Remove(connectionId);
+
+            if (!lobby.IsStarted && lobby.IsMatchmaking && lobby.Players.Count < 2)
+            {
+                lobby.IsMatchmaking = false;
+                lobby.MatchmakingEndsAtUtc = null;
+                lobby.MatchmakingCts?.Cancel();
+                lobby.MatchmakingCts = null;
+            }
+
+            if (lobby.Players.Count == 0)
+            {
+                lobby.QuestionCts?.Cancel();
+                lobby.MatchmakingCts?.Cancel();
+                _lobbies.Remove(lobby.Code);
+                return null;
+            }
+
+            return lobby;
+        }
     }
 }

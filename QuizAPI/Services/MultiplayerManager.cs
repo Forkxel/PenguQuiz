@@ -48,35 +48,6 @@ public class MultiplayerManager
         }
     }
 
-    public void LeaveByConnection(string connectionId)
-    {
-        foreach (var kv in _lobbies)
-        {
-            var lobby = kv.Value;
-
-            lock (_lock)
-            {
-                var idx = lobby.Players.FindIndex(p => p.ConnectionId == connectionId);
-                if (idx < 0) continue;
-
-                lobby.Players.RemoveAt(idx);
-                
-                if (lobby.HostConnectionId == connectionId)
-                {
-                    if (lobby.Players.Count > 0)
-                    {
-                        lobby.HostConnectionId = lobby.Players[0].ConnectionId;
-                        lobby.HostUsername = lobby.Players[0].Username;
-                    }
-                    else
-                    {
-                        _lobbies.TryRemove(lobby.Code, out _);
-                    }
-                }
-            }
-        }
-    }
-
     public void UpdateSettings(string code, string hostConnId, LobbySettings settings)
     {
         if (!_lobbies.TryGetValue(code, out var lobby)) return;
@@ -185,5 +156,63 @@ public class MultiplayerManager
         }
 
         return PlayerColors[lobby.Players.Count % PlayerColors.Length];
+    }
+    
+    public bool IsPlayerInLobby(string code, string connectionId)
+    {
+        if (!_lobbies.TryGetValue(code, out var lobby))
+            return false;
+
+        lock (_lock)
+        {
+            return lobby.Players.Any(p => p.ConnectionId == connectionId);
+        }
+    }
+
+    public Lobby? LeaveByConnection(string connectionId)
+    {
+        foreach (var kv in _lobbies)
+        {
+            var lobby = kv.Value;
+
+            lock (_lock)
+            {
+                var idx = lobby.Players.FindIndex(p => p.ConnectionId == connectionId);
+                if (idx < 0) continue;
+
+                lobby.Players.RemoveAt(idx);
+
+                if (!lobby.IsStarted && lobby.IsMatchmaking && lobby.Players.Count < lobby.MinPlayers)
+                {
+                    lobby.IsMatchmaking = false;
+                    lobby.MatchmakingEndsAtUtc = null;
+                    lobby.MatchmakingCts?.Cancel();
+                    lobby.MatchmakingCts = null;
+                }
+
+                if (lobby.HostConnectionId == connectionId)
+                {
+                    if (lobby.Players.Count > 0)
+                    {
+                        lobby.HostConnectionId = lobby.Players[0].ConnectionId;
+                        lobby.HostUsername = lobby.Players[0].Username;
+                    }
+                    else
+                    {
+                        lobby.QuestionCts?.Cancel();
+                        lobby.MatchmakingCts?.Cancel();
+                        _lobbies.TryRemove(lobby.Code, out _);
+                        return null;
+                    }
+                }
+
+                lobby.SubmittedAnswers.Remove(connectionId);
+                lobby.Scores.Remove(connectionId);
+
+                return lobby;
+            }
+        }
+
+        return null;
     }
 }

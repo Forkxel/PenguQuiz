@@ -62,4 +62,9 @@ public class RankedMultiplayerClient
 
     public async Task<List<LivePlayerScoreDto>> GetLiveScoresAsync(string lobbyCode)
         => await _conn!.InvokeAsync<List<LivePlayerScoreDto>>("GetLiveScores", lobbyCode);
+    
+    public async Task LeaveRankedLobbyAsync(string lobbyCode)
+        => await _conn!.InvokeAsync("LeaveRankedLobby", lobbyCode);
+    public async Task<DateTime?> GetQuestionStartedAtUtcAsync(string lobbyCode)
+        => await _conn!.InvokeAsync<DateTime?>("GetQuestionStartedAtUtc", lobbyCode);
 }

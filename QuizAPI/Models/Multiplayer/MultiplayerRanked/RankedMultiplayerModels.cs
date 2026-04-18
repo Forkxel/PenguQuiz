@@ -53,6 +53,7 @@ public class RankedLobby
         new LobbySettings(15, 15, "any", new List<int>());
 
     public bool IsStarted { get; set; } = false;
+    public bool ResultProcessed { get; set; } = false;
     public bool IsMatchmaking { get; set; } = false;
     public DateTime? MatchmakingEndsAtUtc { get; set; }
 

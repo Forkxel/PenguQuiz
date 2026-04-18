@@ -183,19 +183,26 @@
     {
         Message = "";
 
-        var settings = new LobbySettings(
-            QuestionCount,
-            TimePerQuestion,
-            SelectedDifficulty,
-            SelectedCategoryIds.ToList());
+        try
+        {
+            var settings = new LobbySettings(
+                QuestionCount,
+                TimePerQuestion,
+                SelectedDifficulty,
+                SelectedCategoryIds.ToList());
 
-        var state = await Mp.CreateLobbyAsync(
-            new CreateLobbyRequest(
-                GetUsername(),
-                settings,
-                Auth.AvatarKey ?? "default_1"));
+            var state = await Mp.CreateLobbyAsync(
+                new CreateLobbyRequest(
+                    GetUsername(),
+                    settings,
+                    Auth.AvatarKey ?? "default_1"));
 
-        Nav.NavigateTo($"/multiplayerCustomLobby/{state.Code}");
+            Nav.NavigateTo($"/multiplayerCustomLobby/{state.Code}");
+        }
+        catch (Exception ex)
+        {
+            Message = ex.Message;
+        }
     }
 
     private void GoBack()

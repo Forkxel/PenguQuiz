@@ -40,6 +40,27 @@ public class RankedController : ControllerBase
             Delta = delta
         });
     }
+    
+    [Authorize]
+    [HttpPost("single/forfeit")]
+    public IActionResult ForfeitSingle()
+    {
+        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+        var old = _db.GetSingleRating(userId);
+        var penalty = 15;
+
+        var newRating = Math.Max(0, old - penalty);
+
+        _db.UpdateSingleRating(userId, newRating, false);
+
+        return Ok(new
+        {
+            OldRating = old,
+            NewRating = newRating,
+            Delta = -penalty
+        });
+    }
 
     private static int CalculateSingleDelta(SubmitSingleRankedRequest req, int currentRating)
     {

@@ -5,7 +5,11 @@
 @inject MultiplayerClient Mp
 @inject Authorization Auth
 @inject NavigationManager Nav
+@using Microsoft.AspNetCore.Components.Routing
+@inject IJSRuntime JS
 @implements IDisposable
+
+<NavigationLock OnBeforeInternalNavigation="ConfirmLeaveNavigation" />
 
 <div class="mp-custom-lobby-page">
     <div class="mp-custom-lobby-screen">
@@ -220,12 +224,42 @@
     </div>
 </div>
 
+@if (ShowLeaveModal)
+{
+    <div class="leave-modal-overlay">
+        <div class="leave-modal-card">
+            <div class="leave-modal-icon">!</div>
+
+            <h2 class="leave-modal-title">Leave custom lobby?</h2>
+
+            <p class="leave-modal-text">
+                Do you really want to leave the custom lobby?
+                <br />
+                You will be disconnected and returned to multiplayer.
+            </p>
+
+            <div class="leave-modal-actions">
+                <button class="menu-btn leave-modal-btn-secondary" @onclick="CancelLeave">
+                    Stay
+                </button>
+
+                <button class="menu-btn leave-modal-btn-danger" @onclick="ConfirmLeave">
+                    Leave
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     [Parameter] public string Code { get; set; } = "";
 
     private LobbyState? State;
     private bool _navigated = false;
     private string? GameError;
+    private bool _isLeaving = false;
+    private bool ShowLeaveModal = false;
+    private string? PendingTargetUrl;
 
     private const int MaxQuestionCount = 50;
     private int QuestionCount = 10;
@@ -273,15 +307,73 @@
         Mp.OnGameError += HandleGameError;
         Mp.OnNewQuestion += HandleNewQuestion;
 
-        State = await Mp.GetLobbyStateAsync(Code);
-
-        if (State != null)
+        try
         {
-            QuestionCount = State.Settings.Amount;
-            TimePerQuestion = State.Settings.TimePerQuestion;
-            SelectedDifficulty = State.Settings.Difficulty;
-            SelectedCategoryIds = State.Settings.CategoryIds.ToList();
+            State = await Mp.GetLobbyStateAsync(Code);
+
+            if (State != null)
+            {
+                QuestionCount = State.Settings.Amount;
+                TimePerQuestion = State.Settings.TimePerQuestion;
+                SelectedDifficulty = State.Settings.Difficulty;
+                SelectedCategoryIds = State.Settings.CategoryIds.ToList();
+            }
         }
+        catch
+        {
+            Nav.NavigateTo("/multiplayer", true);
+        }
+    }
+    
+    private Task ConfirmLeaveNavigation(LocationChangingContext context)
+    {
+        if (_isLeaving)
+            return Task.CompletedTask;
+
+        var target = Nav.ToBaseRelativePath(context.TargetLocation).ToLowerInvariant();
+        var gameTarget = $"multiplayergame/{Code}".ToLowerInvariant();
+
+        if (target == gameTarget)
+            return Task.CompletedTask;
+
+        context.PreventNavigation();
+        PendingTargetUrl = context.TargetLocation;
+        ShowLeaveModal = true;
+
+        InvokeAsync(StateHasChanged);
+        return Task.CompletedTask;
+    }
+
+    private Task CancelLeave()
+    {
+        ShowLeaveModal = false;
+        PendingTargetUrl = null;
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ConfirmLeave()
+    {
+        if (_isLeaving)
+            return;
+
+        _isLeaving = true;
+        ShowLeaveModal = false;
+
+        try
+        {
+            await Mp.LeaveLobbyAsync(Code);
+        }
+        catch
+        {
+        }
+
+        var target = PendingTargetUrl;
+        PendingTargetUrl = null;
+
+        if (string.IsNullOrWhiteSpace(target))
+            await JS.InvokeVoidAsync("appNav.replace", "/multiplayer");
+        else
+            await JS.InvokeVoidAsync("appNav.replace", target);
     }
 
     private void HandleLobbyUpdated(LobbyState s)

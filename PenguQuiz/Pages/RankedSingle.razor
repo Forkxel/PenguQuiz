@@ -4,6 +4,10 @@
 @inject HttpClient Http
 @inject Authorization Auth
 @using System.Net.Http.Headers
+@using Microsoft.AspNetCore.Components.Routing
+@inject IJSRuntime JS
+
+<NavigationLock OnBeforeInternalNavigation="ConfirmLeaveNavigation" />
 
 <div class="ranked-game-page">
     <div class="ranked-game-layout">
@@ -161,6 +165,33 @@
     </div>
 </div>
 
+@if (ShowLeaveModal)
+{
+    <div class="leave-modal-overlay">
+        <div class="leave-modal-card">
+            <div class="leave-modal-icon">!</div>
+
+            <h2 class="leave-modal-title">Leave ranked singleplayer?</h2>
+
+            <p class="leave-modal-text">
+                Do you really want to leave the ranked game?
+                <br />
+                Your current ranked run will be lost.
+            </p>
+
+            <div class="leave-modal-actions">
+                <button class="menu-btn leave-modal-btn-secondary" @onclick="CancelLeave">
+                    Stay
+                </button>
+
+                <button class="menu-btn leave-modal-btn-danger" @onclick="ConfirmLeave">
+                    Leave
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private const int Amount = 15;
     private const int TimePerQuestion = 15;
@@ -178,10 +209,20 @@
     private double TotalAnswerTimeSeconds = 0;
     private RankedSubmitResponse? RankedResult;
     private bool RankedSubmitted = false;
+    private bool _isLeaving = false;
+    private bool ShowLeaveModal = false;
+    private string? PendingTargetUrl;
 
     private bool ShowingQuestionIntro = false;
     private double IntroProgressPercent = 100;
     private CancellationTokenSource? IntroCts;
+    
+    private bool IsGameFinished => Questions != null && Questions.Count > 0 && CurrentQuestionIndex >= Questions.Count;
+
+    private bool IsGameInProgress =>
+        Questions != null &&
+        Questions.Count > 0 &&
+        CurrentQuestionIndex < Questions.Count;
 
     protected override async Task OnInitializedAsync()
     {
@@ -199,10 +240,70 @@
         if (Questions.Count > 0)
             await StartQuestionIntroAsync();
     }
+    
+    private Task ConfirmLeaveNavigation(LocationChangingContext context)
+    {
+        if (_isLeaving || IsGameFinished || !IsGameInProgress)
+            return Task.CompletedTask;
+
+        var target = Navigation.ToBaseRelativePath(context.TargetLocation).ToLowerInvariant();
+
+        if (target == "singleplayerranked")
+            return Task.CompletedTask;
+
+        context.PreventNavigation();
+        PendingTargetUrl = context.TargetLocation;
+        ShowLeaveModal = true;
+
+        InvokeAsync(StateHasChanged);
+        return Task.CompletedTask;
+    }
+
+    private Task CancelLeave()
+    {
+        ShowLeaveModal = false;
+        PendingTargetUrl = null;
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ConfirmLeave()
+    {
+        if (_isLeaving)
+            return;
+
+        _isLeaving = true;
+        ShowLeaveModal = false;
+
+        TimerCts?.Cancel();
+        IntroCts?.Cancel();
+        
+        try
+        {
+            var token = await Auth.GetTokenAsync();
+
+            if (!string.IsNullOrWhiteSpace(token))
+            {
+                using var client = new HttpClient();
+                client.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue("Bearer", token);
+
+                await client.PostAsync("http://localhost:5237/api/ranked/single/forfeit", null);
+            }
+        }
+        catch { }
+
+        var target = PendingTargetUrl;
+        PendingTargetUrl = null;
+
+        if (string.IsNullOrWhiteSpace(target))
+            await JS.InvokeVoidAsync("appNav.replace", "/singleplayerMenu");
+        else
+            await JS.InvokeVoidAsync("appNav.replace", target);
+    }
 
     private async Task LoadQuestions()
     {
-        var url = $"api/trivia?amount={Amount}&difficulty=any";
+        var url = $"api/trivia?amount={Amount}&difficulty=any&fresh=true";
 
         var response = await Http.GetAsync(url);
         if (!response.IsSuccessStatusCode) return;
@@ -365,6 +466,8 @@
 
     private async Task RestartGame()
     {
+        _isLeaving = true;
+
         TimerCts?.Cancel();
         IntroCts?.Cancel();
 
@@ -385,11 +488,21 @@
 
         if (Questions.Count > 0)
             await StartQuestionIntroAsync();
+
+        _isLeaving = false;
     }
 
-    private void GoToMenu()
+    private async Task GoToMenu()
     {
-        Navigation.NavigateTo("/singleplayerMenu");
+        if (IsGameFinished || !IsGameInProgress)
+        {
+            await JS.InvokeVoidAsync("appNav.replace", "/singleplayerMenu");
+            return;
+        }
+
+        PendingTargetUrl = "/singleplayerMenu";
+        ShowLeaveModal = true;
+        await InvokeAsync(StateHasChanged);
     }
     
     private async Task SubmitRankedResult()

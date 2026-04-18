@@ -2,7 +2,11 @@
 @using WebQuizGame.Classes.Models
 @inject NavigationManager Navigation
 @inject HttpClient Http
+@using Microsoft.AspNetCore.Components.Routing
+@inject IJSRuntime JS
 @inject Authorization Auth
+
+<NavigationLock OnBeforeInternalNavigation="ConfirmLeaveNavigation" />
 
 <div class="single-game-page">
     <div class="single-game-layout">
@@ -165,6 +169,33 @@
     </div>
 </div>
 
+@if (ShowLeaveModal)
+{
+    <div class="leave-modal-overlay">
+        <div class="leave-modal-card">
+            <div class="leave-modal-icon">!</div>
+
+            <h2 class="leave-modal-title">Leave singleplayer game?</h2>
+
+            <p class="leave-modal-text">
+                Do you really want to leave the game?
+                <br />
+                Your current progress will be lost.
+            </p>
+
+            <div class="leave-modal-actions">
+                <button class="menu-btn leave-modal-btn-secondary" @onclick="CancelLeave">
+                    Stay
+                </button>
+
+                <button class="menu-btn leave-modal-btn-danger" @onclick="ConfirmLeave">
+                    Leave
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
 
     [Parameter, SupplyParameterFromQuery] public string? categories { get; set; }
@@ -191,6 +222,17 @@
 
     private DateTime? QuestionStartTime;
     private bool IsLoadingQuestions = false;
+    
+    private bool _isLeaving = false;
+    private bool ShowLeaveModal = false;
+    private string? PendingTargetUrl;
+    
+    private bool IsGameFinished => Questions.Count > 0 && CurrentQuestionIndex >= Questions.Count;
+
+    private bool IsGameInProgress =>
+        Questions.Count > 0 &&
+        CurrentQuestionIndex < Questions.Count &&
+        !IsLoadingQuestions;
 
     protected override async Task OnInitializedAsync()
     {
@@ -199,6 +241,51 @@
 
         if (Questions.Count > 0)
             await StartQuestionIntroAsync();
+    }
+    
+    private Task ConfirmLeaveNavigation(LocationChangingContext context)
+    {
+        if (_isLeaving || IsGameFinished || !IsGameInProgress)
+            return Task.CompletedTask;
+
+        var target = Navigation.ToBaseRelativePath(context.TargetLocation).ToLowerInvariant();
+
+        if (target.StartsWith("singleplayer?", StringComparison.OrdinalIgnoreCase))
+            return Task.CompletedTask;
+
+        context.PreventNavigation();
+        PendingTargetUrl = context.TargetLocation;
+        ShowLeaveModal = true;
+
+        InvokeAsync(StateHasChanged);
+        return Task.CompletedTask;
+    }
+
+    private Task CancelLeave()
+    {
+        ShowLeaveModal = false;
+        PendingTargetUrl = null;
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ConfirmLeave()
+    {
+        if (_isLeaving)
+            return;
+
+        _isLeaving = true;
+        ShowLeaveModal = false;
+
+        TimerCts?.Cancel();
+        IntroCts?.Cancel();
+
+        var target = PendingTargetUrl;
+        PendingTargetUrl = null;
+
+        if (string.IsNullOrWhiteSpace(target))
+            await JS.InvokeVoidAsync("appNav.replace", "/singleplayerMenu");
+        else
+            await JS.InvokeVoidAsync("appNav.replace", target);
     }
 
     private async Task LoadQuestionsAsync()
@@ -387,6 +474,8 @@
 
     private async Task RestartGame()
     {
+        _isLeaving = true;
+
         TimerCts?.Cancel();
         TimerCts = null;
         IntroCts?.Cancel();
@@ -402,16 +491,32 @@
         IntroProgressPercent = 100;
 
         ForceFreshOnNextLoad = true;
-        
+
         await LoadQuestionsAsync();
 
         if (Questions.Count > 0)
             await StartQuestionIntroAsync();
+
+        _isLeaving = false;
     }
 
-    private void GoToMenu()
+    private async Task GoToMenu()
     {
-        Navigation.NavigateTo("/singleplayerMenu");
+        if (IsGameFinished)
+        {
+            await JS.InvokeVoidAsync("appNav.replace", "/singleplayerMenu");
+            return;
+        }
+
+        if (!IsGameInProgress)
+        {
+            await JS.InvokeVoidAsync("appNav.replace", "/singleplayerMenu");
+            return;
+        }
+
+        PendingTargetUrl = "/singleplayerMenu";
+        ShowLeaveModal = true;
+        await InvokeAsync(StateHasChanged);
     }
 
     private List<Question> ParseTrivia(TriviaResponse response)

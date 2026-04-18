@@ -2,10 +2,14 @@
 @using WebQuizGame.Classes.Models
 @using WebQuizGame.Classes.Models.Multiplayer.MultiplayerRanked
 @using WebQuizGame.Classes.Services
+@using Microsoft.AspNetCore.Components.Routing
 @inject RankedMultiplayerClient RankedMp
 @inject Authorization Auth
 @inject NavigationManager Nav
+@inject IJSRuntime JS
 @implements IDisposable
+
+<NavigationLock OnBeforeInternalNavigation="ConfirmLeaveNavigation" />
 
 <div class="ranked-lobby-page">
     <div class="ranked-lobby-screen">
@@ -94,13 +98,44 @@
                 else if (!State.IsStarted)
                 {
                     <div class="ranked-lobby-status-box">
-                        <p class="ranked-lobby-message">Waiting for opponent...</p>
+                        <p class="ranked-lobby-message">
+                            @(State.PlayerDetails.Count < 2
+                                ? "Waiting for opponent..."
+                                : "Match is starting...")
+                        </p>
                     </div>
                 }
             }
         </div>
     </div>
 </div>
+
+@if (ShowLeaveModal)
+{
+    <div class="leave-modal-overlay">
+        <div class="leave-modal-card">
+            <div class="leave-modal-icon">!</div>
+
+            <h2 class="leave-modal-title">Leave ranked lobby?</h2>
+
+            <p class="leave-modal-text">
+                Do you really want to leave the ranked lobby?
+                <br />
+                You will be disconnected from the match queue.
+            </p>
+
+            <div class="leave-modal-actions">
+                <button class="menu-btn leave-modal-btn-secondary" @onclick="CancelLeave">
+                    Stay
+                </button>
+
+                <button class="menu-btn leave-modal-btn-danger" @onclick="ConfirmLeave">
+                    Leave
+                </button>
+            </div>
+        </div>
+    </div>
+}
 
 @code {
     [Parameter] public string Code { get; set; } = "";
@@ -109,6 +144,9 @@
     private bool _navigated = false;
     private PeriodicTimer? _timer;
     private string? GameError;
+    private bool _isLeaving = false;
+    private bool ShowLeaveModal = false;
+    private string? PendingTargetUrl;
 
     protected override async Task OnInitializedAsync()
     {
@@ -142,7 +180,14 @@
         RankedMp.OnGameError += HandleGameError;
         RankedMp.OnNewQuestion += HandleNewQuestion;
 
-        State = await RankedMp.GetRankedLobbyStateAsync(Code);
+        try
+        {
+            State = await RankedMp.GetRankedLobbyStateAsync(Code);
+        }
+        catch
+        {
+            Nav.NavigateTo("/multiplayerRanked", true);
+        }
     }
 
     private void HandleLobbyUpdated(RankedLobbyState s)
@@ -160,6 +205,57 @@
 
         InvokeAsync(StateHasChanged);
     }
+    
+    private Task ConfirmLeaveNavigation(LocationChangingContext context)
+    {
+        if (_isLeaving)
+            return Task.CompletedTask;
+
+        var target = Nav.ToBaseRelativePath(context.TargetLocation).ToLowerInvariant();
+        var gameTarget = $"rankedmultiplayergame/{Code}".ToLowerInvariant();
+
+        if (target == gameTarget)
+            return Task.CompletedTask;
+
+        context.PreventNavigation();
+        PendingTargetUrl = context.TargetLocation;
+        ShowLeaveModal = true;
+
+        InvokeAsync(StateHasChanged);
+        return Task.CompletedTask;
+    }
+
+    private Task CancelLeave()
+    {
+        ShowLeaveModal = false;
+        PendingTargetUrl = null;
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ConfirmLeave()
+    {
+        if (_isLeaving)
+            return;
+
+        _isLeaving = true;
+        ShowLeaveModal = false;
+
+        try
+        {
+            await RankedMp.LeaveRankedLobbyAsync(Code);
+        }
+        catch
+        {
+        }
+
+        var target = PendingTargetUrl;
+        PendingTargetUrl = null;
+
+        if (string.IsNullOrWhiteSpace(target))
+            await JS.InvokeVoidAsync("appNav.replace", "/multiplayerRanked");
+        else
+            await JS.InvokeVoidAsync("appNav.replace", target);
+    }
 
     private void HandleGameError(string msg)
     {
@@ -167,10 +263,11 @@
         InvokeAsync(StateHasChanged);
     }
 
-    private void HandleNewQuestion(TriviaQuestion q)
+    private async void HandleNewQuestion(TriviaQuestion q)
     {
         if (_navigated) return;
         _navigated = true;
+        await Task.Delay(100);
         Nav.NavigateTo($"/rankedMultiplayerGame/{Code}");
     }
 

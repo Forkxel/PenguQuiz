@@ -254,6 +254,8 @@ public class DatabaseServices
     
     public int GetMultiRating(int userId)
     {
+        EnsureRankingExists(userId);
+
         using var connection = GetConnection();
         connection.Open();
 
@@ -268,15 +270,17 @@ public class DatabaseServices
 
     public void UpdateMultiRating(int userId, int newRating, bool win)
     {
+        EnsureRankingExists(userId);
+
         using var connection = GetConnection();
         connection.Open();
 
         using var cmd = new SqlCommand(@"
-        UPDATE UserRankings
-        SET MultiElo = @Rating,
+            UPDATE UserRankings
+            SET MultiElo = @Rating,
             MultiRankedPlayed = MultiRankedPlayed + 1,
             MultiRankedWins = MultiRankedWins + @WinAdd
-        WHERE UserId = @UserId", connection);
+            WHERE UserId = @UserId", connection);
 
         cmd.Parameters.AddWithValue("@Rating", newRating);
         cmd.Parameters.AddWithValue("@WinAdd", win ? 1 : 0);

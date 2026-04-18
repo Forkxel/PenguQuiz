@@ -73,4 +73,7 @@ public class MultiplayerClient
 
     public async Task<List<LivePlayerScoreDto>> GetLiveScoresAsync(string lobbyCode)
         => await _conn!.InvokeAsync<List<LivePlayerScoreDto>>("GetLiveScores", lobbyCode);
+    
+    public async Task LeaveLobbyAsync(string lobbyCode)
+        => await _conn!.InvokeAsync("LeaveLobby", lobbyCode);
 }

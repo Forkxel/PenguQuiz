@@ -26,6 +26,9 @@ public class MultiplayerHub : Hub
         if (!_lobbies.TryGetLobby(lobbyCode, out var lobby) || lobby == null)
             return Task.FromResult(new List<LivePlayerScoreDto>());
 
+        if (!_lobbies.IsPlayerInLobby(lobbyCode, Context.ConnectionId))
+            return Task.FromResult(new List<LivePlayerScoreDto>());
+
         lock (lobby)
         {
             return Task.FromResult(BuildLiveScores(lobby));
@@ -71,9 +74,43 @@ public class MultiplayerHub : Hub
         if (!_lobbies.TryGetLobby(lobbyCode, out var lobby) || lobby == null)
             throw new HubException("Lobby not found");
 
+        if (!_lobbies.IsPlayerInLobby(lobbyCode, Context.ConnectionId))
+            throw new HubException("You are no longer in this lobby");
+
         await Groups.AddToGroupAsync(Context.ConnectionId, lobby.GroupName);
 
         return MultiplayerManager.ToState(lobby);
+    }
+    
+    public async Task LeaveLobby(string lobbyCode)
+    {
+        if (!_lobbies.TryGetLobby(lobbyCode, out var lobby) || lobby == null)
+            return;
+
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId, lobby.GroupName);
+
+        var updatedLobby = _lobbies.LeaveByConnection(Context.ConnectionId);
+
+        if (updatedLobby != null)
+        {
+            var state = MultiplayerManager.ToState(updatedLobby);
+            await _hubContext.Clients.Group(updatedLobby.GroupName)
+                .SendCoreAsync("LobbyUpdated", new object[] { state });
+        }
+    }
+    
+    public override async Task OnDisconnectedAsync(Exception? exception)
+    {
+        var updatedLobby = _lobbies.LeaveByConnection(Context.ConnectionId);
+
+        if (updatedLobby != null)
+        {
+            var state = MultiplayerManager.ToState(updatedLobby);
+            await _hubContext.Clients.Group(updatedLobby.GroupName)
+                .SendCoreAsync("LobbyUpdated", new object[] { state });
+        }
+
+        await base.OnDisconnectedAsync(exception);
     }
 
     public async Task<LobbyState> QuickMatch(QuickMatchRequest req)
@@ -190,6 +227,9 @@ public class MultiplayerHub : Hub
         if (!_lobbies.TryGetLobby(lobbyCode, out var lobby) || lobby == null)
             return Task.FromResult<TriviaQuestion?>(null);
 
+        if (!_lobbies.IsPlayerInLobby(lobbyCode, Context.ConnectionId))
+            return Task.FromResult<TriviaQuestion?>(null);
+
         lock (lobby)
         {
             if (lobby.Questions.Count == 0)
@@ -205,6 +245,9 @@ public class MultiplayerHub : Hub
     public async Task AnswerQuestion(string lobbyCode, string answer)
     {
         if (!_lobbies.TryGetLobby(lobbyCode, out var lobby) || lobby == null)
+            return;
+        
+        if (!_lobbies.IsPlayerInLobby(lobbyCode, Context.ConnectionId))
             return;
 
         bool shouldResolveImmediately = false;

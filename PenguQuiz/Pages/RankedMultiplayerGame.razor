@@ -6,36 +6,38 @@
 @inject RankedMultiplayerClient RankedMp
 @inject Authorization Auth
 @inject NavigationManager Nav
+@inject IJSRuntime JS
 @implements IDisposable
 
-<div class="ranked-mp-game-page">
-    <div class="ranked-mp-game-layout">
+<NavigationLock OnBeforeInternalNavigation="ConfirmLeaveNavigation" />
 
-        <aside class="ranked-mp-game-sidebar">
+<div class="ranked-mp-game-page">
+    <div class="game-layout">
+
+        <aside class="game-sidebar">
             @if (LiveScores.Any())
             {
                 @foreach (var player in LiveScores)
                 {
-                    <div class="ranked-mp-game-player-card" style="border-left:4px solid @player.PlayerColor;">
-                        <img class="ranked-mp-game-player-avatar"
+                    <div class="game-player" style="border-left:4px solid @player.PlayerColor;">
+                        <img class="game-avatar"
                              src="@GetAvatarUrl(player.AvatarKey)"
                              alt="avatar" />
 
-                        <div class="ranked-mp-game-player-meta">
-                            <span class="ranked-mp-game-player-name">
+                        <div class="game-player-info">
+                            <span class="game-player-name">
                                 <span class="multiplayer-player-color-dot" style="background:@player.PlayerColor;"></span>
                                 @player.Username
                             </span>
-                            <span class="ranked-mp-game-player-score">@player.Score</span>
+                            <span class="game-player-score">@player.Score</span>
                         </div>
                     </div>
                 }
             }
         </aside>
 
-        <main class="ranked-mp-game-main">
+        <main class="game-main">
             <div class="ranked-mp-game-card">
-
                 <h1 class="ranked-mp-game-title">Ranked Multiplayer</h1>
                 <p class="ranked-mp-game-subtitle">Lobby code: @Code</p>
 
@@ -150,6 +152,33 @@
     </div>
 </div>
 
+@if (ShowLeaveModal)
+{
+    <div class="leave-modal-overlay">
+        <div class="leave-modal-card">
+            <div class="leave-modal-icon">!</div>
+
+            <h2 class="leave-modal-title">Leave ranked game?</h2>
+
+            <p class="leave-modal-text">
+                Do you really want to leave the ranked game?
+                <br />
+                You will be disconnected from the ranked lobby.
+            </p>
+
+            <div class="leave-modal-actions">
+                <button class="menu-btn leave-modal-btn-secondary" @onclick="CancelLeave">
+                    Stay
+                </button>
+
+                <button class="menu-btn leave-modal-btn-danger" @onclick="ConfirmLeave">
+                    Leave
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     [Parameter] public string Code { get; set; } = "";
 
@@ -163,6 +192,9 @@
     private List<LivePlayerScoreDto> LiveScores = new();
     private List<RankedQuestionPlayerAnswerDto> RoundResults = new();
     private string? CorrectAnswer;
+    private bool _isLeaving = false;
+    private bool ShowLeaveModal = false;
+    private string? PendingTargetUrl;
 
     private string? LocalSelectedAnswer;
     private bool ResultsVisible = false;
@@ -198,20 +230,104 @@
         RankedMp.OnGameError += HandleGameError;
         RankedMp.OnScoresUpdated += HandleScoresUpdated;
 
-        LiveScores = await RankedMp.GetLiveScoresAsync(Code);
-
-        var q = await RankedMp.GetCurrentRankedQuestionAsync(Code);
-        if (q != null)
+        try
         {
-            SetQuestion(q);
-            await StartQuestionIntroAsync();
+            LiveScores = await RankedMp.GetLiveScoresAsync(Code);
+            var q = await RankedMp.GetCurrentRankedQuestionAsync(Code);
+
+            if (!LiveScores.Any() && q == null)
+            {
+                Nav.NavigateTo("/multiplayerRanked", true);
+                return;
+            }
+
+            if (q != null)
+            {
+                await SyncQuestionIntroAsync(q);
+            }
+        }
+        catch
+        {
+            Nav.NavigateTo("/multiplayerRanked", true);
         }
     }
-
+    
     private void HandleNewQuestion(TriviaQuestion q)
     {
+        _ = SyncQuestionIntroAsync(q);
+    }
+    
+    private async Task SyncQuestionIntroAsync(TriviaQuestion q)
+    {
         SetQuestion(q);
-        _ = StartQuestionIntroAsync();
+
+        var startedAt = await RankedMp.GetQuestionStartedAtUtcAsync(Code);
+
+        if (!startedAt.HasValue)
+        {
+            await StartQuestionIntroAsync(TimeSpan.FromSeconds(QuestionIntroSeconds));
+            return;
+        }
+
+        var introEndsAt = startedAt.Value.AddSeconds(QuestionIntroSeconds);
+        var remaining = introEndsAt - DateTime.UtcNow;
+
+        if (remaining > TimeSpan.Zero)
+        {
+            await StartQuestionIntroAsync(remaining);
+        }
+        else
+        {
+            IntroCts?.Cancel();
+            ShowingQuestionIntro = false;
+            Locked = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+    
+    private Task ConfirmLeaveNavigation(LocationChangingContext context)
+    {
+        if (_isLeaving || Finished)
+            return Task.CompletedTask;
+
+        context.PreventNavigation();
+        PendingTargetUrl = context.TargetLocation;
+        ShowLeaveModal = true;
+
+        InvokeAsync(StateHasChanged);
+        return Task.CompletedTask;
+    }
+
+    private Task CancelLeave()
+    {
+        ShowLeaveModal = false;
+        PendingTargetUrl = null;
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ConfirmLeave()
+    {
+        if (_isLeaving)
+            return;
+
+        _isLeaving = true;
+        ShowLeaveModal = false;
+
+        try
+        {
+            await RankedMp.LeaveRankedLobbyAsync(Code);
+        }
+        catch
+        {
+        }
+
+        var target = PendingTargetUrl;
+        PendingTargetUrl = null;
+
+        if (string.IsNullOrWhiteSpace(target))
+            await JS.InvokeVoidAsync("appNav.replace", "/multiplayerRanked");
+        else
+            await JS.InvokeVoidAsync("appNav.replace", target);
     }
 
     private void SetQuestion(TriviaQuestion q)
@@ -231,7 +347,7 @@
         ResultsVisible = false;
     }
 
-    private async Task StartQuestionIntroAsync()
+    private async Task StartQuestionIntroAsync(TimeSpan duration)
     {
         IntroCts?.Cancel();
         IntroCts = new CancellationTokenSource();
@@ -243,7 +359,7 @@
 
         try
         {
-            await Task.Delay(TimeSpan.FromSeconds(QuestionIntroSeconds), token);
+            await Task.Delay(duration, token);
         }
         catch (TaskCanceledException)
         {
@@ -324,6 +440,8 @@
         LiveScores = scores;
         _ = InvokeAsync(StateHasChanged);
     }
+    
+    
 
     private IReadOnlyList<RankedQuestionPlayerAnswerDto> GetAnswerMarkers(string answer)
     {

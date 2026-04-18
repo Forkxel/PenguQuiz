@@ -5,7 +5,11 @@
 @inject MultiplayerClient Mp
 @inject Authorization Auth
 @inject NavigationManager Nav
+@using Microsoft.AspNetCore.Components.Routing
+@inject IJSRuntime JS
 @implements IDisposable
+
+<NavigationLock OnBeforeInternalNavigation="ConfirmLeaveNavigation" />
 
 <div class="lobby-page">
     <div class="lobby-screen">
@@ -162,6 +166,33 @@
     </div>
 </div>
 
+@if (ShowLeaveModal)
+{
+    <div class="leave-modal-overlay">
+        <div class="leave-modal-card">
+            <div class="leave-modal-icon">!</div>
+
+            <h2 class="leave-modal-title">Leave lobby?</h2>
+
+            <p class="leave-modal-text">
+                Do you really want to leave the lobby?
+                <br />
+                You will be disconnected and return to the multiplayer menu.
+            </p>
+
+            <div class="leave-modal-actions">
+                <button class="menu-btn leave-modal-btn-secondary" @onclick="CancelLeave">
+                    Stay
+                </button>
+
+                <button class="menu-btn leave-modal-btn-danger" @onclick="ConfirmLeave">
+                    Leave
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     [Parameter] public string Code { get; set; } = "";
 
@@ -174,6 +205,9 @@
     private bool _navigated = false;
     private PeriodicTimer? _timer;
     private string? GameError;
+    private bool _isLeaving = false;
+    private bool ShowLeaveModal = false;
+    private string? PendingTargetUrl;
 
     private bool IsHost => State != null && State.HostUsername == Mp.LocalUsername;
 
@@ -192,47 +226,109 @@
             }
         });
         
-        Mp.OnLobbyUpdated += s =>
-        {
-            if (s.Code == Code)
-            {
-                State = s;
-
-                Amount = s.Settings.Amount;
-                TimePerQuestion = s.Settings.TimePerQuestion;
-                Difficulty = s.Settings.Difficulty;
-                SelectedCategoryIds = s.Settings.CategoryIds.ToList();
-
-                if (State.IsStarted && !_navigated)
-                {
-                    _navigated = true;
-                    Nav.NavigateTo($"/multiplayerGame/{Code}");
-                    return;
-                }
-
-                InvokeAsync(StateHasChanged);
-            }
-        };
+        Mp.OnLobbyUpdated += HandleLobbyUpdated;
+        Mp.OnGameError += HandleGameErrorInternal;
+        Mp.OnNewQuestion += HandleNewQuestionInternal;
         
-        Mp.OnGameError += msg =>
+        try
         {
-            GameError = msg;
-            InvokeAsync(StateHasChanged);
-        };
+            State = await Mp.GetLobbyStateAsync(Code);
+            Amount = State.Settings.Amount;
+            TimePerQuestion = State.Settings.TimePerQuestion;
+            Difficulty = State.Settings.Difficulty;
+            SelectedCategoryIds = State.Settings.CategoryIds.ToList();
+        }
+        catch
+        {
+            Nav.NavigateTo("/multiplayer", true);
+        }
+    }
+    
+    private Task CancelLeave()
+    {
+        ShowLeaveModal = false;
+        PendingTargetUrl = null;
+        return InvokeAsync(StateHasChanged);
+    }
 
-        Mp.OnNewQuestion += async q =>
+    private async Task ConfirmLeave()
+    {
+        if (_isLeaving)
+            return;
+
+        _isLeaving = true;
+        ShowLeaveModal = false;
+
+        try
         {
-            if (_navigated) return;
+            await Mp.LeaveLobbyAsync(Code);
+        }
+        catch
+        {
+        }
+
+        var target = PendingTargetUrl;
+        PendingTargetUrl = null;
+
+        if (string.IsNullOrWhiteSpace(target))
+            await JS.InvokeVoidAsync("appNav.replace", "/multiplayer");
+        else
+            await JS.InvokeVoidAsync("appNav.replace", target);
+    }
+    
+    private void HandleLobbyUpdated(LobbyState s)
+    {
+        if (s.Code != Code)
+            return;
+
+        State = s;
+
+        Amount = s.Settings.Amount;
+        TimePerQuestion = s.Settings.TimePerQuestion;
+        Difficulty = s.Settings.Difficulty;
+        SelectedCategoryIds = s.Settings.CategoryIds.ToList();
+
+        if (State.IsStarted && !_navigated)
+        {
             _navigated = true;
-            await Task.Delay(100);
             Nav.NavigateTo($"/multiplayerGame/{Code}");
-        };
-        
-        State = await Mp.GetLobbyStateAsync(Code);
-        Amount = State.Settings.Amount;
-        TimePerQuestion = State.Settings.TimePerQuestion;
-        Difficulty = State.Settings.Difficulty;
-        SelectedCategoryIds = State.Settings.CategoryIds.ToList();
+            return;
+        }
+
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void HandleGameErrorInternal(string msg)
+    {
+        GameError = msg;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async void HandleNewQuestionInternal(TriviaQuestion q)
+    {
+        if (_navigated) return;
+        _navigated = true;
+        await Task.Delay(100);
+        Nav.NavigateTo($"/multiplayerGame/{Code}");
+    }
+    
+    private Task ConfirmLeaveNavigation(LocationChangingContext context)
+    {
+        if (_isLeaving)
+            return Task.CompletedTask;
+
+        var target = Nav.ToBaseRelativePath(context.TargetLocation).ToLowerInvariant();
+        var gameTarget = $"multiplayergame/{Code}".ToLowerInvariant();
+
+        if (target == gameTarget)
+            return Task.CompletedTask;
+
+        context.PreventNavigation();
+        PendingTargetUrl = context.TargetLocation;
+        ShowLeaveModal = true;
+
+        InvokeAsync(StateHasChanged);
+        return Task.CompletedTask;
     }
 
     private async Task ApplySettings()
@@ -268,6 +364,9 @@
     public void Dispose()
     {
         _timer?.Dispose();
+        Mp.OnLobbyUpdated -= HandleLobbyUpdated;
+        Mp.OnGameError -= HandleGameErrorInternal;
+        Mp.OnNewQuestion -= HandleNewQuestionInternal;
     }
     
     private string GetAvatarUrl(string? avatarKey)

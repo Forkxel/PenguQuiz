@@ -3,7 +3,12 @@
 @using WebQuizGame.Classes.Models.Multiplayer
 @using WebQuizGame.Classes.Services
 @inject MultiplayerClient Mp
+@using Microsoft.AspNetCore.Components.Routing
+@inject NavigationManager Nav
+@inject IJSRuntime JS
 @implements IDisposable
+
+<NavigationLock OnBeforeInternalNavigation="ConfirmLeaveNavigation" />
 
 <div class="multiplayer-game-page">
     <div class="game-layout">
@@ -128,6 +133,33 @@
     </div>
 </div>
 
+@if (ShowLeaveModal)
+{
+    <div class="leave-modal-overlay">
+        <div class="leave-modal-card">
+            <div class="leave-modal-icon">!</div>
+
+            <h2 class="leave-modal-title">Leave game?</h2>
+
+            <p class="leave-modal-text">
+                Do you really want to leave the game?
+                <br />
+                You will be disconnected from the lobby.
+            </p>
+
+            <div class="leave-modal-actions">
+                <button class="menu-btn leave-modal-btn-secondary" @onclick="CancelLeave">
+                    Stay
+                </button>
+
+                <button class="menu-btn leave-modal-btn-danger" @onclick="ConfirmLeave">
+                    Leave
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     [Parameter] public string Code { get; set; } = "";
 
@@ -149,6 +181,9 @@
     private const int QuestionIntroSeconds = 4;
     private bool ShowingQuestionIntro = false;
     private CancellationTokenSource? IntroCts;
+    private bool _isLeaving = false;
+    private bool ShowLeaveModal = false;
+    private string? PendingTargetUrl;
 
     private bool CanAnswer => !Locked && !ShowingQuestionIntro && !HasAnswered && !Finished;
 
@@ -162,16 +197,74 @@
         Mp.OnGameFinished += HandleGameFinished;
         Mp.OnGameError += HandleGameError;
 
-        LiveScores = await Mp.GetLiveScoresAsync(Code);
-
-        var q = await Mp.GetCurrentQuestionAsync(Code);
-        if (q != null)
+        try
         {
-            SetQuestion(q);
-            await StartQuestionIntroAsync();
+            LiveScores = await Mp.GetLiveScoresAsync(Code);
+            var q = await Mp.GetCurrentQuestionAsync(Code);
+
+            if (!LiveScores.Any() && q == null)
+            {
+                Nav.NavigateTo("/multiplayer", true);
+                return;
+            }
+
+            if (q != null)
+            {
+                SetQuestion(q);
+                await StartQuestionIntroAsync();
+            }
+        }
+        catch
+        {
+            Nav.NavigateTo("/multiplayer", true);
         }
     }
+  
+    private Task ConfirmLeaveNavigation(LocationChangingContext context)
+    {
+        if (_isLeaving || Finished)
+            return Task.CompletedTask;
 
+        context.PreventNavigation();
+        PendingTargetUrl = context.TargetLocation;
+        ShowLeaveModal = true;
+
+        InvokeAsync(StateHasChanged);
+        return Task.CompletedTask;
+    }
+
+    private Task CancelLeave()
+    {
+        ShowLeaveModal = false;
+        PendingTargetUrl = null;
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ConfirmLeave()
+    {
+        if (_isLeaving)
+            return;
+
+        _isLeaving = true;
+        ShowLeaveModal = false;
+
+        try
+        {
+            await Mp.LeaveLobbyAsync(Code);
+        }
+        catch
+        {
+        }
+
+        var target = PendingTargetUrl;
+        PendingTargetUrl = null;
+
+        if (string.IsNullOrWhiteSpace(target))
+            await JS.InvokeVoidAsync("appNav.replace", "/multiplayer");
+        else
+            await JS.InvokeVoidAsync("appNav.replace", target);
+    }
+    
     private void HandleNewQuestion(TriviaQuestion q)
     {
         SetQuestion(q);

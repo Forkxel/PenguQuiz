@@ -4960,3 +4960,155 @@ main,
 .ranked-game-answer-btn:disabled {
     cursor: default;
 }
+
+/* ===== LEAVE MODAL ===== */
+.leave-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 5000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(5, 10, 24, 0.70);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    animation: leaveModalFadeIn 0.18s ease;
+}
+
+.leave-modal-card {
+    width: 100%;
+    max-width: 460px;
+    padding: 28px 24px;
+    border-radius: 28px;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow:
+            0 30px 80px rgba(0, 0, 0, 0.45),
+            inset 0 1px 0 rgba(255,255,255,0.08);
+    animation: leaveModalPopIn 0.2s ease;
+}
+
+.leave-modal-icon {
+    width: 72px;
+    height: 72px;
+    margin: 0 auto 18px auto;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: 900;
+    color: #ffffff;
+    background: linear-gradient(135deg, #6f5cff, #4cc9f0);
+    box-shadow:
+            0 12px 30px rgba(76, 201, 240, 0.18),
+            0 8px 18px rgba(111, 92, 255, 0.24);
+}
+
+.leave-modal-title {
+    margin: 0 0 12px 0;
+    font-size: 1.7rem;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: 0.4px;
+}
+
+.leave-modal-text {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+.leave-modal-actions {
+    display: flex;
+    gap: 14px;
+    justify-content: center;
+    margin-top: 24px;
+    flex-wrap: wrap;
+}
+
+.leave-modal-actions .menu-btn {
+    min-width: 160px;
+}
+
+.leave-modal-btn-secondary {
+    background: linear-gradient(135deg, #2a2f45, #3c445f);
+    box-shadow: 0 8px 18px rgba(0,0,0,0.28);
+}
+
+.leave-modal-btn-danger {
+    background: linear-gradient(135deg, #8f2230, #d64550);
+    box-shadow:
+            0 10px 20px rgba(214, 69, 80, 0.18),
+            0 6px 14px rgba(143, 34, 48, 0.22);
+}
+
+.leave-modal-btn-danger:hover {
+    box-shadow:
+            0 16px 28px rgba(214, 69, 80, 0.24),
+            0 10px 22px rgba(143, 34, 48, 0.30);
+}
+
+@keyframes leaveModalFadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes leaveModalPopIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px) scale(0.97);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@media (max-width: 600px) {
+    .leave-modal-card {
+        padding: 22px 18px;
+        border-radius: 22px;
+    }
+
+    .leave-modal-title {
+        font-size: 1.4rem;
+    }
+
+    .leave-modal-actions {
+        flex-direction: column;
+    }
+
+    .leave-modal-actions .menu-btn {
+        width: 100%;
+        min-width: 0;
+    }
+}
+
+.ranked-mp-game-result-header-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+.ranked-mp-game-result-name {
+    display: block;
+    flex: 1;
+    min-width: 0;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #ffffff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
