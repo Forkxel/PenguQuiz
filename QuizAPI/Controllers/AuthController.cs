@@ -31,7 +31,7 @@ public class AuthController : ControllerBase
         var userId = _db.RegisterUser(user.Username.Trim(), user.Password);
 
         if (userId == null)
-            return BadRequest("Username already exists");
+            return Conflict("Username already exists");
 
         _db.CreateDefaultRanking(userId.Value);
 

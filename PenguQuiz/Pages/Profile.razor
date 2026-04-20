@@ -75,9 +75,24 @@
                 Password = Password
             });
 
-        Message = response.IsSuccessStatusCode
-            ? "Registration successful! Now log in."
-            : "Username already exists!";
+        if (response.IsSuccessStatusCode)
+        {
+            Message = "Registration successful! Now log in.";
+            return;
+        }
+
+        var errorText = await response.Content.ReadAsStringAsync();
+
+        Message = response.StatusCode switch
+        {
+            System.Net.HttpStatusCode.Conflict => "Username already exists.",
+            System.Net.HttpStatusCode.BadRequest => string.IsNullOrWhiteSpace(errorText)
+                ? "Invalid username."
+                : errorText,
+            _ => string.IsNullOrWhiteSpace(errorText)
+                ? "Registration failed."
+                : errorText
+        };
     }
 
     protected override async Task OnInitializedAsync()
