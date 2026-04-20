@@ -67,14 +67,17 @@
     private async Task QuickMatchAny()
     {
         Message = "";
-        var prefs = new LobbySettings(10, 10, "any", new List<int>());
+
+        var prefs = new LobbySettings(10, 10, "any", new List<int> { 9 });
+
         var state = await Mp.QuickMatchAsync(
             new QuickMatchRequest(
                 GetUsername(),
                 prefs,
                 2,
                 4,
-                Auth.AvatarKey ?? "default_1"));
+                Auth.AvatarKey ?? "default"));
+
         Nav.NavigateTo($"/lobby/{state.Code}");
     }
 

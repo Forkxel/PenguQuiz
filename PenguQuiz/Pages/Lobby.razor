@@ -79,12 +79,18 @@
 
                         <div class="lobby-setting-box lobby-setting-box-wide">
                             <span class="lobby-setting-label">Categories</span>
-                            <span class="lobby-setting-value">@(State.Settings.CategoryIds.Count == 0 ? "Any" : string.Join(", ", State.Settings.CategoryIds))</span>
+                            <span class="lobby-setting-value">
+                                @(State.Settings.CategoryIds.SequenceEqual(new List<int> { 9 })
+                                    ? "General Knowledge"
+                                    : State.Settings.CategoryIds.Count == 0
+                                        ? "Any"
+                                        : string.Join(", ", State.Settings.CategoryIds))
+                            </span>
                         </div>
                     </div>
                 </div>
 
-                @if (IsHost)
+                @if (IsHost && !State.IsQuickMatch)
                 {
                     <div class="lobby-section lobby-host-section">
                         <h2 class="lobby-section-title">Host Settings</h2>

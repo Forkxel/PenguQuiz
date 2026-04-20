@@ -154,7 +154,7 @@
                 new CreateCustomQuizMultiplayerLobbyRequest(
                     QuizId,
                     username,
-                    Auth.AvatarKey ?? "default_1"));
+                    Auth.AvatarKey ?? "default"));
 
             Nav.NavigateTo($"/multiplayerSavedQuizLobby/{state.Code}");
         }

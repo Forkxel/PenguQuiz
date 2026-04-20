@@ -281,7 +281,7 @@
 
     private string GetAvatarUrl(string? avatarKey)
     {
-        var key = string.IsNullOrWhiteSpace(avatarKey) ? "default_1" : avatarKey;
+        var key = string.IsNullOrWhiteSpace(avatarKey) ? "default" : avatarKey;
         return $"/images/avatars/{key}.png";
     }
 }

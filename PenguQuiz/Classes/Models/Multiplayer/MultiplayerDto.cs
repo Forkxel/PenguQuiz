@@ -50,7 +50,8 @@ public record LobbyState(
     List<LobbyPlayerView> PlayerDetails,
     bool IsStarted,
     bool IsMatchmaking,
-    DateTime? MatchmakingEndsAtUtc
+    DateTime? MatchmakingEndsAtUtc,
+    bool IsQuickMatch
 );
 
 public class QuestionPlayerAnswerDto

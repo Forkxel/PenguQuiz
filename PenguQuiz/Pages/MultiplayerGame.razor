@@ -290,8 +290,8 @@
 
         var correctCount = RoundResults.Count(x => x.IsCorrect);
         Message = correctCount > 0
-            ? $"Správná odpověď: {dto.CorrectAnswer}"
-            : $"Nikdo neodpověděl správně. Správná odpověď: {dto.CorrectAnswer}";
+            ? $"Correct answer: {dto.CorrectAnswer}"
+            : $"Nobody answered. Correct answer: {dto.CorrectAnswer}";
 
         _ = InvokeAsync(StateHasChanged);
     }
