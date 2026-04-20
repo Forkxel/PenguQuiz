@@ -25,9 +25,11 @@
         {
             <div class="profile-menu-card">
                 <div class="profile-menu-user-box">
-                    <img class="profile-menu-avatar"
-                         src="@GetAvatarUrl(Profile.AvatarKey)"
-                         alt="avatar" />
+                    <div class="profile-menu-avatar-wrap">
+                        <img class="profile-menu-avatar"
+                             src="@GetAvatarUrl(Profile.AvatarKey)"
+                             alt="avatar" />
+                    </div>
 
                     <span class="profile-menu-user-label">Username</span>
                     <span class="profile-menu-user-value">@Profile.Username</span>
@@ -157,7 +159,7 @@
     
     private string GetAvatarUrl(string? avatarKey)
     {
-        var key = string.IsNullOrWhiteSpace(avatarKey) ? "default_1" : avatarKey;
+        var key = string.IsNullOrWhiteSpace(avatarKey) ? "default" : avatarKey;
         return $"/images/avatars/{key}.png";
     }
 }

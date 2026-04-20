@@ -101,8 +101,7 @@
         var code = JoinCode.Trim().ToUpper();
         var username = GetUsername();
         var avatar = Auth.AvatarKey ?? "default_1";
-
-        // 🔥 1. ZKUS CUSTOM QUIZ
+        
         try
         {
             await CustomMp.ConnectAsync("http://localhost:5237");

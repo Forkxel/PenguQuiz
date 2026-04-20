@@ -12,9 +12,11 @@
 <div class="ranked-game-page">
     <div class="ranked-game-layout">
         <aside class="ranked-game-sidebar">
-            <img class="ranked-game-sidebar-avatar"
-                 src="@GetMyAvatarUrl()"
-                 alt="avatar" />
+            <div class="ranked-game-sidebar-avatar-wrap">
+                <img class="ranked-game-sidebar-avatar"
+                     src="@GetMyAvatarUrl()"
+                     alt="avatar" />
+            </div>
 
             <div class="ranked-game-sidebar-name">@Auth.Username</div>
 
@@ -542,7 +544,7 @@
     
     private string GetMyAvatarUrl()
     {
-        var key = string.IsNullOrWhiteSpace(Auth.AvatarKey) ? "default_1" : Auth.AvatarKey;
+        var key = string.IsNullOrWhiteSpace(Auth.AvatarKey) ? "default" : Auth.AvatarKey;
         return $"/images/avatars/{key}.png";
     }
 }

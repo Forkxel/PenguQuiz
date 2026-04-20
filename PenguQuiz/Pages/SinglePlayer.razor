@@ -11,9 +11,11 @@
 <div class="single-game-page">
     <div class="single-game-layout">
         <aside class="single-game-sidebar">
-            <img class="single-game-sidebar-avatar"
-                 src="@GetMyAvatarUrl()"
-                 alt="avatar" />
+            <div class="single-game-sidebar-avatar-wrap">
+                <img class="single-game-sidebar-avatar"
+                     src="@GetMyAvatarUrl()"
+                     alt="avatar" />
+            </div>
 
             <div class="single-game-sidebar-name">@GetDisplayName()</div>
 
@@ -538,7 +540,7 @@
     
     private string GetMyAvatarUrl()
     {
-        var key = string.IsNullOrWhiteSpace(Auth.AvatarKey) ? "default_1" : Auth.AvatarKey;
+        var key = string.IsNullOrWhiteSpace(Auth.AvatarKey) ? "default" : Auth.AvatarKey;
         return $"/images/avatars/{key}.png";
     }
     

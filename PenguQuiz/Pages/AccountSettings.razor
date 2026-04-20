@@ -61,7 +61,14 @@
                         {
                             <button class="account-settings-avatar-btn @(avatar == Settings.AvatarKey ? "active" : "")"
                                     @onclick="() => SaveAvatar(avatar)">
+                                <div class="account-settings-avatar-wrap">
+                                    <img src="@GetAvatarUrl(avatar)"
+                                         alt="@avatar"
+                                         class="account-settings-avatar-img" />
+                                </div>
+
                                 <span class="account-settings-avatar-name">@avatar</span>
+
                                 @if (avatar == Settings.AvatarKey)
                                 {
                                     <span class="account-settings-avatar-check">✓ Selected</span>
@@ -95,14 +102,10 @@
 
     private List<string> Avatars = new()
     {
-        "default_1",
-        "default_2",
-        "default_3",
-        "cat_blue",
-        "cat_red",
-        "robot_green",
-        "fox_purple",
-        "wizard_gold"
+        "default",
+        "emperor",
+        "macaroni",
+        "humbolt",
     };
 
     protected override async Task OnInitializedAsync()
@@ -226,5 +229,11 @@
     private void Back()
     {
         Navigation.NavigateTo("/profileMenu");
+    }
+    
+    private string GetAvatarUrl(string? avatarKey)
+    {
+        var key = string.IsNullOrWhiteSpace(avatarKey) ? "default" : avatarKey;
+        return $"/images/avatars/{key}.png";
     }
 }

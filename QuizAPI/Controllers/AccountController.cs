@@ -17,14 +17,10 @@ public class AccountController : ControllerBase
 
     private static readonly HashSet<string> AllowedAvatars = new(StringComparer.OrdinalIgnoreCase)
     {
-        "default_1",
-        "default_2",
-        "default_3",
-        "cat_blue",
-        "cat_red",
-        "robot_green",
-        "fox_purple",
-        "wizard_gold"
+        "default",
+        "emperor",
+        "macaroni",
+        "humbolt",
     };
 
     public AccountController(

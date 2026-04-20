@@ -20,9 +20,11 @@
                 @foreach (var player in LiveScores)
                 {
                     <div class="game-player" style="border-left:4px solid @player.PlayerColor;">
-                        <img class="game-avatar"
-                             src="@GetAvatarUrl(player.AvatarKey)"
-                             alt="avatar" />
+                        <div class="game-avatar-wrap">
+                            <img class="game-avatar"
+                                 src="@GetAvatarUrl(player.AvatarKey)"
+                                 alt="avatar" />
+                        </div>
 
                         <div class="game-player-info">
                             <span class="game-player-name">
@@ -51,9 +53,11 @@
                             {
                                 <div class="ranked-mp-game-result-item">
                                     <div class="ranked-mp-game-result-header-row">
-                                        <img class="ranked-mp-game-result-avatar"
-                                             src="@GetAvatarUrl(r.AvatarKey)"
-                                             alt="avatar" />
+                                        <div class="ranked-mp-game-result-avatar-wrap">
+                                            <img class="ranked-mp-game-result-avatar"
+                                                 src="@GetAvatarUrl(r.AvatarKey)"
+                                                 alt="avatar" />
+                                        </div>
 
                                         <span class="ranked-mp-game-result-name">
                                             #@r.Place - @r.Username @(r.IsWinner ? "(Winner)" : "")
@@ -431,7 +435,7 @@
 
     private string GetAvatarUrl(string? avatarKey)
     {
-        var key = string.IsNullOrWhiteSpace(avatarKey) ? "default_1" : avatarKey;
+        var key = string.IsNullOrWhiteSpace(avatarKey) ? "default" : avatarKey;
         return $"/images/avatars/{key}.png";
     }
 

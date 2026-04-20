@@ -46,9 +46,11 @@
                             @foreach (var player in State.PlayerDetails)
                             {
                                 <div class="mp-custom-lobby-player-item mp-custom-lobby-player-row">
-                                    <img class="mp-custom-lobby-player-avatar"
-                                         src="@GetAvatarUrl(player.AvatarKey)"
-                                         alt="avatar" />
+                                    <div class="mp-custom-lobby-player-avatar-wrap">
+                                        <img class="mp-custom-lobby-player-avatar"
+                                             src="@GetAvatarUrl(player.AvatarKey)"
+                                             alt="avatar" />
+                                    </div>
 
                                     <span class="mp-custom-lobby-player-name">@player.Username</span>
                                 </div>
@@ -458,7 +460,7 @@
     
     private string GetAvatarUrl(string? avatarKey)
     {
-        var key = string.IsNullOrWhiteSpace(avatarKey) ? "default_1" : avatarKey;
+        var key = string.IsNullOrWhiteSpace(avatarKey) ? "default" : avatarKey;
         return $"/images/avatars/{key}.png";
     }
 }
