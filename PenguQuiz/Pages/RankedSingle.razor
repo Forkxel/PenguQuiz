@@ -289,11 +289,10 @@
 
             if (!string.IsNullOrWhiteSpace(token))
             {
-                using var client = new HttpClient();
-                client.DefaultRequestHeaders.Authorization =
+                Http.DefaultRequestHeaders.Authorization =
                     new AuthenticationHeaderValue("Bearer", token);
 
-                await client.PostAsync("http://localhost:5237/api/ranked/single/forfeit", null);
+                await Http.PostAsync("api/ranked/single/forfeit", null);
             }
         }
         catch { }
@@ -517,9 +516,8 @@
 
         var token = await Auth.GetTokenAsync();
         if (string.IsNullOrWhiteSpace(token)) return;
-
-        using var client = new HttpClient();
-        client.DefaultRequestHeaders.Authorization =
+        
+        Http.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", token);
 
         double averageTime = Questions == null || Questions.Count == 0
@@ -535,8 +533,8 @@
             Difficulty = "any"
         };
 
-        var response = await client.PostAsJsonAsync(
-            "http://localhost:5237/api/ranked/single/submit",
+        var response = await Http.PostAsJsonAsync(
+            "api/ranked/single/submit",
             request);
 
         if (!response.IsSuccessStatusCode)

@@ -171,7 +171,7 @@
             return;
         }
 
-        await RankedMp.ConnectAsync("http://localhost:5237", token);
+        await RankedMp.ConnectAsync(Nav.BaseUri.TrimEnd('/'), token);
 
         _timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
         _ = Task.Run(async () =>

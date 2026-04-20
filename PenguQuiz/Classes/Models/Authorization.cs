@@ -6,16 +6,18 @@ namespace WebQuizGame.Classes.Models;
 
 public class Authorization
 {
-    private readonly ILocalStorageService _localStorage;
-
     public bool IsLoggedIn { get; private set; }
     public int? UserId { get; private set; }
     public string? Username { get; private set; }
     public string? AvatarKey { get; private set; }
 
-    public Authorization(ILocalStorageService localStorage)
+    private readonly ILocalStorageService _localStorage;
+    private readonly HttpClient _httpClient;
+
+    public Authorization(ILocalStorageService localStorage, HttpClient httpClient)
     {
         _localStorage = localStorage;
+        _httpClient = httpClient;
     }
 
     public async Task InitializeAsync()
@@ -30,11 +32,10 @@ public class Authorization
             return;
         }
 
-        using var client = new HttpClient();
-        client.DefaultRequestHeaders.Authorization =
+        _httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", token);
 
-        var response = await client.GetAsync("http://localhost:5237/api/auth/verify");
+        var response = await _httpClient.GetAsync("api/auth/verify");
 
         if (!response.IsSuccessStatusCode)
         {
@@ -69,6 +70,7 @@ public class Authorization
     public async Task Logout()
     {
         await _localStorage.RemoveItemAsync("token");
+        _httpClient.DefaultRequestHeaders.Authorization = null;
 
         IsLoggedIn = false;
         UserId = null;

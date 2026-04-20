@@ -114,12 +114,11 @@
                 Loading = false;
                 return;
             }
-
-            using var client = new HttpClient();
-            client.DefaultRequestHeaders.Authorization =
+            
+            Http.DefaultRequestHeaders.Authorization =
                 new AuthenticationHeaderValue("Bearer", token);
 
-            var response = await client.GetAsync($"http://localhost:5237/api/customquiz/{QuizId}");
+            var response = await Http.GetAsync($"api/customquiz/{QuizId}");
 
             if (!response.IsSuccessStatusCode)
             {
@@ -144,7 +143,7 @@
 
         try
         {
-            await CustomMp.ConnectAsync("http://localhost:5237");
+            await CustomMp.ConnectAsync(Nav.BaseUri.TrimEnd('/'));
 
             var username = !string.IsNullOrWhiteSpace(Auth.Username)
                 ? Auth.Username!

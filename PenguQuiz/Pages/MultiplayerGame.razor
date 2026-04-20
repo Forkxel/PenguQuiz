@@ -197,7 +197,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await Mp.ConnectAsync("http://localhost:5237");
+        await Mp.ConnectAsync(Nav.BaseUri.TrimEnd('/'));
 
         Mp.OnNewQuestion += HandleNewQuestion;
         Mp.OnScoresUpdated += HandleScoresUpdated;

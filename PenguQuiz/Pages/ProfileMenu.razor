@@ -3,6 +3,7 @@
 @using WebQuizGame.Classes.Models
 @inject Authorization Auth
 @inject NavigationManager Navigation
+@inject HttpClient Http
 
 <div class="profile-menu-page">
     <div class="profile-menu-screen">
@@ -122,11 +123,10 @@
             return;
         }
 
-        using var client = new HttpClient();
-        client.DefaultRequestHeaders.Authorization =
+        Http.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", token);
 
-        var response = await client.GetAsync("http://localhost:5237/api/ranked/profile");
+        var response = await Http.GetAsync("api/ranked/profile");
 
         if (!response.IsSuccessStatusCode)
         {

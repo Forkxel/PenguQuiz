@@ -226,7 +226,7 @@
     protected override async Task OnInitializedAsync()
     {
         await Auth.InitializeAsync();
-        await Mp.ConnectAsync("http://localhost:5237");
+        await Mp.ConnectAsync(Nav.BaseUri.TrimEnd('/'));
         
         _timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
 

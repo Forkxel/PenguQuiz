@@ -102,7 +102,7 @@
         Searching = true;
         Message = "";
 
-        await RankedMp.ConnectAsync("http://localhost:5237", token);
+        await RankedMp.ConnectAsync(Nav.BaseUri.TrimEnd('/'), token);
         var state = await RankedMp.QuickMatchRankedAsync();
 
         Nav.NavigateTo($"/rankedLobby/{state.Code}");

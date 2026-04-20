@@ -3,6 +3,7 @@
 @using WebQuizGame.Classes.Models
 @inject Authorization Auth
 @inject NavigationManager Navigation
+@inject HttpClient Http
 
 <div class="account-settings-page">
     <div class="account-settings-screen">
@@ -131,12 +132,11 @@
             Message = "Missing token.";
             return;
         }
-
-        using var client = new HttpClient();
-        client.DefaultRequestHeaders.Authorization =
+        
+        Http.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", token);
 
-        var response = await client.GetAsync("http://localhost:5237/api/account/settings");
+        var response = await Http.GetAsync("api/account/settings");
 
         if (!response.IsSuccessStatusCode)
         {
@@ -158,13 +158,12 @@
             Message = "Missing token.";
             return;
         }
-
-        using var client = new HttpClient();
-        client.DefaultRequestHeaders.Authorization =
+        
+        Http.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", token);
 
-        var response = await client.PostAsJsonAsync(
-            "http://localhost:5237/api/account/change-username",
+        var response = await Http.PostAsJsonAsync(
+            "api/account/change-username",
             new ChangeUsernameRequest
             {
                 NewUsername = NewUsername
@@ -204,13 +203,12 @@
             Message = "Missing token.";
             return;
         }
-
-        using var client = new HttpClient();
-        client.DefaultRequestHeaders.Authorization =
+        
+        Http.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", token);
 
-        var response = await client.PostAsJsonAsync(
-            "http://localhost:5237/api/account/change-avatar",
+        var response = await Http.PostAsJsonAsync(
+            "api/account/change-avatar",
             new ChangeAvatarRequest
             {
                 AvatarKey = avatarKey

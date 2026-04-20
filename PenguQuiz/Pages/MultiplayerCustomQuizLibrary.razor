@@ -93,13 +93,12 @@
                 Loading = false;
                 return;
             }
-
-            using var client = new HttpClient();
-            client.DefaultRequestHeaders.Authorization =
+            
+            Http.DefaultRequestHeaders.Authorization =
                 new AuthenticationHeaderValue("Bearer", token);
 
-            var data = await client.GetFromJsonAsync<List<CustomQuizDto>>(
-                "http://localhost:5237/api/customquiz/mine");
+            var data = await Http.GetFromJsonAsync<List<CustomQuizDto>>(
+                "api/customquiz/mine");
 
             Quizzes = data ?? new List<CustomQuizDto>();
         }
@@ -126,12 +125,11 @@
                 Message = "Missing token.";
                 return;
             }
-
-            using var client = new HttpClient();
-            client.DefaultRequestHeaders.Authorization =
+            
+            Http.DefaultRequestHeaders.Authorization =
                 new AuthenticationHeaderValue("Bearer", token);
 
-            var response = await client.DeleteAsync($"http://localhost:5237/api/customquiz/{quizId}");
+            var response = await Http.DeleteAsync($"api/customquiz/{quizId}");
 
             if (!response.IsSuccessStatusCode)
             {

@@ -155,7 +155,7 @@
     protected override async Task OnInitializedAsync()
     {
         await Auth.InitializeAsync();
-        await CustomMp.ConnectAsync("http://localhost:5237");
+        await CustomMp.ConnectAsync(Nav.BaseUri.TrimEnd('/'));
 
         CustomMp.OnLobbyUpdated += HandleLobbyUpdated;
         CustomMp.OnGameError += HandleGameError;

@@ -53,7 +53,7 @@
     protected override async Task OnInitializedAsync()
     {
         await Auth.InitializeAsync();
-        await Mp.ConnectAsync("http://localhost:5237");
+        await Mp.ConnectAsync(Nav.BaseUri.TrimEnd('/'));
     }
 
     private string GetUsername()
@@ -107,7 +107,7 @@
         
         try
         {
-            await CustomMp.ConnectAsync("http://localhost:5237");
+            await CustomMp.ConnectAsync(Nav.BaseUri.TrimEnd('/'));
 
             var state = await CustomMp.JoinLobbyAsync(
                 new JoinCustomQuizMultiplayerLobbyRequest(code, username, avatar));

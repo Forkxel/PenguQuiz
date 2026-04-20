@@ -196,7 +196,7 @@
     protected override async Task OnInitializedAsync()
     {
         await Auth.InitializeAsync();
-        await CustomMp.ConnectAsync("http://localhost:5237");
+        await CustomMp.ConnectAsync(Nav.BaseUri.TrimEnd('/'));
 
         CustomMp.OnNewQuestion += HandleNewQuestion;
         CustomMp.OnQuestionResolved += HandleQuestionResolved;

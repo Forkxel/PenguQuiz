@@ -183,11 +183,10 @@
             Message = "Missing token.";
             return;
         }
+        
+        Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-        using var client = new HttpClient();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-        var response = await client.PostAsJsonAsync("http://localhost:5237/api/customquiz", Quiz);
+        var response = await Http.PostAsJsonAsync("api/customquiz", Quiz);
 
         if (!response.IsSuccessStatusCode)
         {

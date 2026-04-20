@@ -229,7 +229,7 @@
             return;
         }
 
-        await RankedMp.ConnectAsync("http://localhost:5237", token);
+        await RankedMp.ConnectAsync(Nav.BaseUri.TrimEnd('/'), token);
 
         RankedMp.OnNewQuestion += HandleNewQuestion;
         RankedMp.OnQuestionResolved += HandleQuestionResolved;
