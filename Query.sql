@@ -1,4 +1,4 @@
-use halik;
+use PenguQuiz;
 
 CREATE TABLE Users
 (
@@ -42,7 +42,7 @@ CREATE TABLE RankedMatchResults
 
 ALTER TABLE Users
 ADD AvatarKey NVARCHAR(50) NOT NULL
-CONSTRAINT DF_Users_AvatarKey DEFAULT 'default_1';
+CONSTRAINT DF_Users_AvatarKey DEFAULT 'default';
 
 CREATE UNIQUE INDEX IX_Users_Username_CI
 ON Users (Username);
