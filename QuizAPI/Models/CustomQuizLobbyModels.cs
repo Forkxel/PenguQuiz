@@ -3,7 +3,7 @@
 public record CustomQuizLobbyPlayerInfo(
     string ConnectionId,
     string Username,
-    string AvatarKey = "default_1",
+    string AvatarKey = "default",
     string PlayerColor = "#6f5cff"
 );
 
@@ -23,13 +23,13 @@ public record CustomQuizLivePlayerScoreDto(
 public record CreateCustomQuizMultiplayerLobbyRequest(
     int QuizId,
     string HostUsername,
-    string AvatarKey = "default_1"
+    string AvatarKey = "default"
 );
 
 public record JoinCustomQuizMultiplayerLobbyRequest(
     string LobbyCode,
     string Username,
-    string AvatarKey = "default_1"
+    string AvatarKey = "default"
 );
 
 public record CustomQuizLobbyState(
@@ -53,7 +53,7 @@ public class CustomQuizSubmittedAnswer
 public class CustomQuizQuestionPlayerAnswerDto
 {
     public string Username { get; set; } = "";
-    public string AvatarKey { get; set; } = "default_1";
+    public string AvatarKey { get; set; } = "default";
     public string PlayerColor { get; set; } = "#6f5cff";
     public string? Answer { get; set; }
     public bool IsCorrect { get; set; }

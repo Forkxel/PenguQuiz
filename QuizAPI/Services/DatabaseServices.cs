@@ -312,7 +312,7 @@ public class DatabaseServices
 
         cmd.Parameters.AddWithValue("@u", username);
         cmd.Parameters.AddWithValue("@p", hash);
-        cmd.Parameters.AddWithValue("@a", "default_1");
+        cmd.Parameters.AddWithValue("@a", "default");
 
         try
         {
@@ -349,7 +349,7 @@ public class DatabaseServices
         {
             Id = Convert.ToInt32(reader["Id"]),
             Username = reader["Username"]?.ToString() ?? "",
-            AvatarKey = reader["AvatarKey"]?.ToString() ?? "default_1"
+            AvatarKey = reader["AvatarKey"]?.ToString() ?? "default"
         };
     }
     
@@ -374,7 +374,7 @@ public class DatabaseServices
         {
             Id = Convert.ToInt32(reader["Id"]),
             Username = reader["Username"]?.ToString() ?? "",
-            AvatarKey = reader["AvatarKey"]?.ToString() ?? "default_1"
+            AvatarKey = reader["AvatarKey"]?.ToString() ?? "default"
         };
     }
     
@@ -457,7 +457,7 @@ public class DatabaseServices
         {
             UserId = Convert.ToInt32(reader["Id"]),
             Username = reader["Username"]?.ToString() ?? "",
-            AvatarKey = reader["AvatarKey"]?.ToString() ?? "default_1",
+            AvatarKey = reader["AvatarKey"]?.ToString() ?? "default",
             SingleElo = Convert.ToInt32(reader["SingleElo"]),
             MultiElo = Convert.ToInt32(reader["MultiElo"]),
             SingleRankedPlayed = Convert.ToInt32(reader["SingleRankedPlayed"]),
@@ -694,7 +694,7 @@ public class DatabaseServices
         {
             UserId = Convert.ToInt32(reader["Id"]),
             Username = reader["Username"]?.ToString() ?? "",
-            AvatarKey = reader["AvatarKey"]?.ToString() ?? "default_1"
+            AvatarKey = reader["AvatarKey"]?.ToString() ?? "default"
         };
     }
 

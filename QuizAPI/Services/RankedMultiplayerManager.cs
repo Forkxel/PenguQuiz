@@ -15,7 +15,7 @@ public class RankedMultiplayerManager
         "#ffd43b"
     };
 
-    public RankedLobbyState QuickMatch(int userId, string connectionId, string username, string avatarKey = "default_1")
+    public RankedLobbyState QuickMatch(int userId, string connectionId, string username, string avatarKey = "default")
     {
         lock (_lock)
         {

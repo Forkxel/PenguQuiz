@@ -195,7 +195,7 @@
                 new CreateLobbyRequest(
                     GetUsername(),
                     settings,
-                    Auth.AvatarKey ?? "default_1"));
+                    Auth.AvatarKey ?? "default"));
 
             Nav.NavigateTo($"/multiplayerCustomLobby/{state.Code}");
         }

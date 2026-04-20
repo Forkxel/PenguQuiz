@@ -139,7 +139,7 @@ public class RankedMultiplayerHub : Hub
             throw new HubException("Invalid user id");
 
         var account = _db.GetUserById(userId);
-        var avatarKey = account?.AvatarKey ?? "default_1";
+        var avatarKey = account?.AvatarKey ?? "default";
 
         var state = _manager.QuickMatch(userId, Context.ConnectionId, username, avatarKey);
         var lobby = _manager.GetLobby(state.Code);

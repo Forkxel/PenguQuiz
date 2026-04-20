@@ -4,7 +4,7 @@ public class AccountSettingsResponse
 {
     public int UserId { get; set; }
     public string Username { get; set; } = "";
-    public string AvatarKey { get; set; } = "default_1";
+    public string AvatarKey { get; set; } = "default";
 }
 
 public class ChangeUsernameRequest

@@ -4,5 +4,5 @@ public class DbUser
 {
     public int Id { get; set; }
     public string Username { get; set; } = "";
-    public string AvatarKey { get; set; } = "default_1";
+    public string AvatarKey { get; set; } = "default";
 }

@@ -1,6 +1,6 @@
 ﻿namespace WebQuizGame.Classes.Models.Multiplayer;
 
-public record PlayerInfo(string ConnectionId, string Username, string AvatarKey = "default_1", string PlayerColor = "#6f5cff");
+public record PlayerInfo(string ConnectionId, string Username, string AvatarKey = "default", string PlayerColor = "#6f5cff");
 
 public record LobbyPlayerView(
     string Username,
@@ -25,13 +25,13 @@ public record LobbySettings(
 public record CreateLobbyRequest(
     string HostUsername,
     LobbySettings Settings,
-    string AvatarKey = "default_1"
+    string AvatarKey = "default"
 );
 
 public record JoinLobbyRequest(
     string LobbyCode,
     string Username,
-    string AvatarKey = "default_1"
+    string AvatarKey = "default"
 );
 
 public record QuickMatchRequest(
@@ -39,7 +39,7 @@ public record QuickMatchRequest(
     LobbySettings Preferences,
     int MinPlayers = 2,
     int MaxPlayers = 4,
-    string AvatarKey = "default_1"
+    string AvatarKey = "default"
 );
 
 public record LobbyState(
@@ -57,7 +57,7 @@ public record LobbyState(
 public class QuestionPlayerAnswerDto
 {
     public string Username { get; set; } = "";
-    public string AvatarKey { get; set; } = "default_1";
+    public string AvatarKey { get; set; } = "default";
     public string PlayerColor { get; set; } = "#6f5cff";
     public string? Answer { get; set; }
     public bool IsCorrect { get; set; }

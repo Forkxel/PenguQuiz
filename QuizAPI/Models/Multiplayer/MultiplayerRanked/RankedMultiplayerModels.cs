@@ -4,7 +4,7 @@ public record RankedPlayerInfo(
     int UserId,
     string ConnectionId,
     string Username,
-    string AvatarKey = "default_1",
+    string AvatarKey = "default",
     string PlayerColor = "#6f5cff"
 );
 
@@ -30,7 +30,7 @@ public class RankedSubmittedAnswer
 public class RankedQuestionPlayerAnswerDto
 {
     public string Username { get; set; } = "";
-    public string AvatarKey { get; set; } = "default_1";
+    public string AvatarKey { get; set; } = "default";
     public string PlayerColor { get; set; } = "#6f5cff";
     public string? Answer { get; set; }
     public bool IsCorrect { get; set; }
@@ -86,7 +86,7 @@ public class RankedMatchPlayerResultDto
 {
     public int UserId { get; set; }
     public string Username { get; set; } = "";
-    public string AvatarKey { get; set; } = "default_1";
+    public string AvatarKey { get; set; } = "default";
     public int Score { get; set; }
 
     public int OldRating { get; set; }
