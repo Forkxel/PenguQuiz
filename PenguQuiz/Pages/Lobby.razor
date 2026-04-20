@@ -12,6 +12,10 @@
 <NavigationLock OnBeforeInternalNavigation="ConfirmLeaveNavigation" />
 
 <div class="lobby-page">
+    <button class="home-floating-btn home-with-text" @onclick="GoHome" title="Home">
+        <img src="/images/avatars/macaroni.png" alt="Home" class="home-floating-img" />
+        <span>Home</span>
+    </button>
     <div class="lobby-screen">
         <h1 class="lobby-title">Lobby @Code</h1>
         <p class="lobby-subtitle">Prepare your match and wait for the game to start</p>
@@ -41,7 +45,7 @@
                                     <div class="lobby-player-avatar-wrap">
                                         <img class="lobby-player-avatar"
                                              src="@GetAvatarUrl(player.AvatarKey)"
-                                             alt="avatar" />
+                                             alt="avatar"/>
                                     </div>
 
                                     <span class="lobby-player-name">@player.Username</span>
@@ -98,7 +102,7 @@
                         <div class="lobby-form-grid">
                             <div class="lobby-field">
                                 <label class="lobby-label">Amount</label>
-                                <input class="lobby-input" type="number" min="5" max="50" @bind="Amount" />
+                                <input class="lobby-input" type="number" min="5" max="50" @bind="Amount"/>
                             </div>
 
                             <div class="lobby-field">
@@ -132,7 +136,7 @@
                                         <input type="checkbox"
                                                @onchange="() => ToggleCategory(cat.Id)"
                                                checked="@SelectedCategoryIds.Contains(cat.Id)"
-                                               disabled="@(!SelectedCategoryIds.Contains(cat.Id) && SelectedCategoryIds.Count >= 3)" />
+                                               disabled="@(!SelectedCategoryIds.Contains(cat.Id) && SelectedCategoryIds.Count >= 3)"/>
                                         <span>@cat.Name</span>
                                     </label>
                                 }
@@ -381,5 +385,15 @@
     {
         var key = string.IsNullOrWhiteSpace(avatarKey) ? "default" : avatarKey;
         return $"/images/avatars/{key}.png";
+    }
+    
+    private Task GoHome()
+    {
+        if (_isLeaving)
+            return Task.CompletedTask;
+
+        PendingTargetUrl = "/";
+        ShowLeaveModal = true;
+        return InvokeAsync(StateHasChanged);
     }
 }

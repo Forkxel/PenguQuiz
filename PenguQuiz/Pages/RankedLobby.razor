@@ -12,6 +12,10 @@
 <NavigationLock OnBeforeInternalNavigation="ConfirmLeaveNavigation" />
 
 <div class="ranked-lobby-page">
+    <button class="home-floating-btn home-with-text" @onclick="GoHome" title="Home">
+        <img src="/images/avatars/macaroni.png" alt="Home" class="home-floating-img" />
+        <span>Home</span>
+    </button>
     <div class="ranked-lobby-screen">
         <h1 class="ranked-lobby-title">Ranked Lobby</h1>
         <p class="ranked-lobby-subtitle">Preparing your ranked 1v1 match</p>
@@ -47,7 +51,7 @@
                                     <div class="ranked-lobby-player-avatar-wrap">
                                         <img class="ranked-lobby-player-avatar"
                                              src="@GetAvatarUrl(player.AvatarKey)"
-                                             alt="avatar" />
+                                             alt="avatar"/>
                                     </div>
 
                                     <span class="ranked-lobby-player-name">@player.Username</span>
@@ -285,5 +289,15 @@
     {
         var key = string.IsNullOrWhiteSpace(avatarKey) ? "default" : avatarKey;
         return $"/images/avatars/{key}.png";
+    }
+    
+    private Task GoHome()
+    {
+        if (_isLeaving)
+            return Task.CompletedTask;
+
+        PendingTargetUrl = "/";
+        ShowLeaveModal = true;
+        return InvokeAsync(StateHasChanged);
     }
 }

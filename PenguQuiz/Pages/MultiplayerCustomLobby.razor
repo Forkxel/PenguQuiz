@@ -12,6 +12,10 @@
 <NavigationLock OnBeforeInternalNavigation="ConfirmLeaveNavigation" />
 
 <div class="mp-custom-lobby-page">
+    <button class="home-floating-btn home-with-text" @onclick="GoHome" title="Home">
+        <img src="/images/avatars/macaroni.png" alt="Home" class="home-floating-img" />
+        <span>Home</span>
+    </button>
     <div class="mp-custom-lobby-screen">
         <h1 class="mp-custom-lobby-title">Custom Lobby</h1>
         <p class="mp-custom-lobby-subtitle">Manage players and game settings before the match starts</p>
@@ -49,7 +53,7 @@
                                     <div class="mp-custom-lobby-player-avatar-wrap">
                                         <img class="mp-custom-lobby-player-avatar"
                                              src="@GetAvatarUrl(player.AvatarKey)"
-                                             alt="avatar" />
+                                             alt="avatar"/>
                                     </div>
 
                                     <span class="mp-custom-lobby-player-name">@player.Username</span>
@@ -115,7 +119,7 @@
                                    max="@MaxQuestionCount"
                                    step="1"
                                    @bind="QuestionCount"
-                                   @bind:event="oninput" />
+                                   @bind:event="oninput"/>
                         </div>
 
                         <div class="mp-custom-lobby-field">
@@ -154,7 +158,7 @@
                                                 <input type="checkbox"
                                                        @onchange="() => ToggleCategory(cat.Id)"
                                                        checked="@SelectedCategoryIds.Contains(cat.Id)"
-                                                       disabled="@(!SelectedCategoryIds.Contains(cat.Id) && SelectedCategoryIds.Count >= 3)" />
+                                                       disabled="@(!SelectedCategoryIds.Contains(cat.Id) && SelectedCategoryIds.Count >= 3)"/>
                                                 <span>@cat.Name</span>
                                             </label>
                                         }
@@ -187,7 +191,7 @@
                                                name="difficulty"
                                                value="@diff"
                                                @onchange="() => SelectedDifficulty = diff"
-                                               checked="@SelectedDifficulty == diff" />
+                                               checked="@SelectedDifficulty == diff"/>
                                         <span>@diff</span>
                                     </label>
                                 }
@@ -462,5 +466,15 @@
     {
         var key = string.IsNullOrWhiteSpace(avatarKey) ? "default" : avatarKey;
         return $"/images/avatars/{key}.png";
+    }
+    
+    private Task GoHome()
+    {
+        if (_isLeaving)
+            return Task.CompletedTask;
+
+        PendingTargetUrl = "/";
+        ShowLeaveModal = true;
+        return InvokeAsync(StateHasChanged);
     }
 }

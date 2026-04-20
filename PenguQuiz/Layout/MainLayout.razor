@@ -1,3 +1,81 @@
 ﻿@inherits LayoutComponentBase
+@implements IDisposable
+@inject NavigationManager Navigation
+
+@if (ShowGlobalHomeButton)
+{
+    <button class="home-floating-btn" @onclick="GoHome" title="Home">
+        <img src="/images/avatars/macaroni.png" alt="Home" class="home-floating-img" />
+        <span>Home</span>
+    </button>
+}
 
 @Body
+
+<style>
+    .home-floating-btn {
+        position: fixed;
+        top: 18px;
+        left: 18px;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        padding: 0;
+    }
+
+    .home-floating-img {
+        width: 90px;
+        height: 90px;
+        object-fit: contain;
+        transition: transform 0.2s ease;
+    }
+
+    .home-floating-btn:hover .home-floating-img {
+        transform: scale(1.06);
+    }
+
+    .home-floating-btn span {
+        color: white;
+        font-weight: 800;
+        font-size: 1rem;
+        text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+    }
+</style>
+
+@code {
+    private string CurrentPath => "/" + Navigation.ToBaseRelativePath(Navigation.Uri).Trim('/');
+
+    private bool ShowGlobalHomeButton =>
+        CurrentPath != "/" &&
+        !CurrentPath.StartsWith("/singleplayer", StringComparison.OrdinalIgnoreCase) &&
+        !CurrentPath.StartsWith("/lobby/", StringComparison.OrdinalIgnoreCase) &&
+        !CurrentPath.StartsWith("/multiplayercustomlobby/", StringComparison.OrdinalIgnoreCase) &&
+        !CurrentPath.StartsWith("/rankedlobby/", StringComparison.OrdinalIgnoreCase) &&
+        !CurrentPath.StartsWith("/multiplayergame/", StringComparison.OrdinalIgnoreCase) &&
+        !CurrentPath.StartsWith("/rankedmultiplayergame/", StringComparison.OrdinalIgnoreCase);
+
+    protected override void OnInitialized()
+    {
+        Navigation.LocationChanged += HandleLocationChanged;
+    }
+
+    private void HandleLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void GoHome()
+    {
+        Navigation.NavigateTo("/");
+    }
+
+    public void Dispose()
+    {
+        Navigation.LocationChanged -= HandleLocationChanged;
+    }
+}

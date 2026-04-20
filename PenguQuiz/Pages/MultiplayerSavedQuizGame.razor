@@ -12,6 +12,10 @@
 <NavigationLock OnBeforeInternalNavigation="ConfirmLeaveNavigation" />
 
 <div class="saved-quiz-game-page">
+    <button class="home-floating-btn home-with-text" @onclick="GoHome" title="Home">
+        <img src="/images/avatars/macaroni.png" alt="Home" class="home-floating-img" />
+        <span>Home</span>
+    </button>
     <div class="game-layout">
         <aside class="game-sidebar">
             @if (LiveScores.Any())
@@ -22,7 +26,7 @@
                         <div class="game-avatar-wrap">
                             <img class="game-avatar"
                                  src="@GetAvatarUrl(player.AvatarKey)"
-                                 alt="avatar" />
+                                 alt="avatar"/>
                         </div>
                         <div class="game-player-info">
                             <span class="game-player-name">
@@ -42,7 +46,7 @@
                         <div class="game-avatar-wrap">
                             <img class="game-avatar"
                                  src="@GetAvatarUrl("default")"
-                                 alt="avatar" />
+                                 alt="avatar"/>
                         </div>
                         <div class="game-player-info">
                             <span class="game-player-name">@s.Key</span>
@@ -493,5 +497,15 @@
     {
         var key = string.IsNullOrWhiteSpace(avatarKey) ? "default" : avatarKey;
         return $"/images/avatars/{key}.png";
+    }
+    
+    private Task GoHome()
+    {
+        if (_isLeaving)
+            return Task.CompletedTask;
+
+        PendingTargetUrl = "/";
+        ShowLeaveModal = true;
+        return InvokeAsync(StateHasChanged);
     }
 }

@@ -1,8 +1,13 @@
 ﻿@page "/singleplayerMenu"
 @using WebQuizGame.Classes.Models
 @inject Authorization Auth
+@inject NavigationManager Nav
 
 <div class="single-menu-page">
+    <button class="home-floating-btn home-with-text" @onclick="GoHome" title="Home">
+        <img src="/images/avatars/macaroni.png" alt="Home" class="home-floating-img" />
+        <span>Home</span>
+    </button>
     <div class="single-menu-screen">
         <h1 class="single-menu-title">Singleplayer</h1>
         <p class="single-menu-subtitle">Choose ranked or customize your casual game</p>
@@ -39,7 +44,7 @@
                            max="@MaxQuestionCount"
                            step="1"
                            @bind="QuestionCount"
-                           @bind:event="oninput" />
+                           @bind:event="oninput"/>
                 </div>
 
                 <div class="single-menu-field">
@@ -76,7 +81,7 @@
                                                value="@cat.Id"
                                                @onchange="() => ToggleCategory(cat.Id)"
                                                checked="@SelectedCategoryIds.Contains(cat.Id)"
-                                               disabled="@(!SelectedCategoryIds.Contains(cat.Id) && SelectedCategoryIds.Count >= 3)" />
+                                               disabled="@(!SelectedCategoryIds.Contains(cat.Id) && SelectedCategoryIds.Count >= 3)"/>
                                         <span>@cat.Name</span>
                                     </label>
                                 }
@@ -108,7 +113,7 @@
                                        name="difficulty"
                                        value="@diff"
                                        @onchange="() => SelectedDifficulty = diff"
-                                       checked="@SelectedDifficulty == diff" />
+                                       checked="@SelectedDifficulty == diff"/>
                                 <span>@diff</span>
                             </label>
                         }
@@ -231,4 +236,9 @@
                 Categories
                     .Where(c => SelectedCategoryIds.Contains(c.Id))
                     .Select(c => c.Name));
+    
+    private void GoHome()
+    {
+        Nav.NavigateTo("/");
+    }
 }

@@ -12,6 +12,9 @@
 <NavigationLock OnBeforeInternalNavigation="ConfirmLeaveNavigation" />
 
 <div class="ranked-mp-game-page">
+    <button class="home-floating-btn" @onclick="GoHome" title="Home">
+        <img src="/images/avatars/macaroni.png" alt="Home" class="home-floating-img" />
+    </button>
     <div class="game-layout">
 
         <aside class="game-sidebar">
@@ -23,7 +26,7 @@
                         <div class="game-avatar-wrap">
                             <img class="game-avatar"
                                  src="@GetAvatarUrl(player.AvatarKey)"
-                                 alt="avatar" />
+                                 alt="avatar"/>
                         </div>
 
                         <div class="game-player-info">
@@ -56,7 +59,7 @@
                                         <div class="ranked-mp-game-result-avatar-wrap">
                                             <img class="ranked-mp-game-result-avatar"
                                                  src="@GetAvatarUrl(r.AvatarKey)"
-                                                 alt="avatar" />
+                                                 alt="avatar"/>
                                         </div>
 
                                         <span class="ranked-mp-game-result-name">
@@ -495,4 +498,14 @@
            string.Equals(answer, CorrectAnswer, StringComparison.OrdinalIgnoreCase)
             ? "multiplayer-game-answer-btn--resolved"
             : string.Empty;
+    
+    private Task GoHome()
+    {
+        if (_isLeaving)
+            return Task.CompletedTask;
+
+        PendingTargetUrl = "/";
+        ShowLeaveModal = true;
+        return InvokeAsync(StateHasChanged);
+    }
 }

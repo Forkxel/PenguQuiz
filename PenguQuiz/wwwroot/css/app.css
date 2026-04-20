@@ -5721,3 +5721,55 @@ main,
     padding: 6px;
     box-sizing: border-box;
 }
+
+.mainmenu-logo-wrap {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 28px;
+}
+
+.mainmenu-logo {
+    width: 150px;
+    height: 150px;
+    object-fit: contain;
+}
+
+.home-floating-btn {
+    position: fixed;
+    top: 18px;
+    left: 18px;
+    z-index: 9999;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+}
+
+.mainmenu-logo {
+    width: 220px;
+    height: 220px;
+    object-fit: contain;
+    filter: drop-shadow(0 0 25px rgba(80, 140, 255, 0.35));
+    transition: transform 0.25s ease;
+}
+
+.mainmenu-logo-wrap {
+    display: flex;
+    justify-content: center;
+    margin-top: -60px;  
+    margin-bottom: -10px;
+}
+
+.home-with-text {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.home-with-text span {
+    margin-top: 4px;
+    color: white;
+    font-weight: 800;
+    font-size: 1rem;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+}

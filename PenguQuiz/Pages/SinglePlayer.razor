@@ -9,12 +9,16 @@
 <NavigationLock OnBeforeInternalNavigation="ConfirmLeaveNavigation" />
 
 <div class="single-game-page">
+    <button class="home-floating-btn home-with-text" @onclick="GoHome" title="Home">
+        <img src="/images/avatars/macaroni.png" alt="Home" class="home-floating-img" />
+        <span>Home</span>
+    </button>
     <div class="single-game-layout">
         <aside class="single-game-sidebar">
             <div class="single-game-sidebar-avatar-wrap">
                 <img class="single-game-sidebar-avatar"
                      src="@GetMyAvatarUrl()"
-                     alt="avatar" />
+                     alt="avatar"/>
             </div>
 
             <div class="single-game-sidebar-name">@GetDisplayName()</div>
@@ -547,5 +551,15 @@
     private string GetDisplayName()
     {
         return string.IsNullOrWhiteSpace(Auth.Username) ? "Guest" : Auth.Username!;
+    }
+    
+    private Task GoHome()
+    {
+        if (_isLeaving)
+            return Task.CompletedTask;
+
+        PendingTargetUrl = "/";
+        ShowLeaveModal = true;
+        return InvokeAsync(StateHasChanged);
     }
 }
