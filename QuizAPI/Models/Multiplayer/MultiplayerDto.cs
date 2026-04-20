@@ -8,6 +8,12 @@ public record LobbyPlayerView(
     string PlayerColor
 );
 
+public record CreateCustomQuizLobbyRequest(
+    int QuizId,
+    string HostUsername,
+    string AvatarKey = "default_1"
+);
+
 public record LivePlayerScoreDto(
     string Username,
     string AvatarKey,

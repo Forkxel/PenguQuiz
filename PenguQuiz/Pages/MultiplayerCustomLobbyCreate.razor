@@ -1,0 +1,176 @@
+﻿@page "/multiplayerCustomQuizLobbyCreate/{QuizId:int}"
+@using System.Net.Http.Headers
+@using WebQuizGame.Classes.Models
+@using WebQuizGame.Classes.Services
+@inject HttpClient Http
+@inject Authorization Auth
+@inject NavigationManager Nav
+@inject CustomQuizMultiplayerClient CustomMp
+
+<div class="custom-quiz-lobby-page">
+    <div class="custom-quiz-lobby-screen">
+        <h1 class="custom-quiz-lobby-title">Saved Quiz Lobby</h1>
+        <p class="custom-quiz-lobby-subtitle">Prepare your saved quiz lobby for friends</p>
+
+        <div class="custom-quiz-lobby-card">
+            @if (Loading)
+            {
+                <div class="custom-quiz-lobby-message-box">
+                    <p class="custom-quiz-lobby-message">Loading quiz...</p>
+                </div>
+            }
+            else if (Quiz == null)
+            {
+                <div class="custom-quiz-lobby-message-box">
+                    <p class="custom-quiz-lobby-message">Quiz not found.</p>
+                </div>
+
+                <div class="custom-quiz-lobby-actions">
+                    <button class="menu-btn custom-quiz-lobby-btn custom-quiz-lobby-btn-secondary" @onclick="GoBack">
+                        Back
+                    </button>
+                </div>
+            }
+            else
+            {
+                <div class="custom-quiz-lobby-overview">
+                    <div class="custom-quiz-lobby-overview-box">
+                        <span class="custom-quiz-lobby-overview-label">Quiz title</span>
+                        <span class="custom-quiz-lobby-overview-value">@Quiz.Title</span>
+                    </div>
+
+                    <div class="custom-quiz-lobby-overview-box">
+                        <span class="custom-quiz-lobby-overview-label">Questions</span>
+                        <span class="custom-quiz-lobby-overview-value">@Quiz.Questions.Count</span>
+                    </div>
+
+                    <div class="custom-quiz-lobby-overview-box">
+                        <span class="custom-quiz-lobby-overview-label">Time per question</span>
+                        <span class="custom-quiz-lobby-overview-value">@Quiz.TimePerQuestion s</span>
+                    </div>
+
+                    <div class="custom-quiz-lobby-overview-box">
+                        <span class="custom-quiz-lobby-overview-label">Created</span>
+                        <span class="custom-quiz-lobby-overview-value">@Quiz.CreatedAt.ToLocalTime().ToString("g")</span>
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(Message))
+                {
+                    <div class="custom-quiz-lobby-message-box">
+                        <p class="custom-quiz-lobby-message">@Message</p>
+                    </div>
+                }
+
+                <div class="custom-quiz-lobby-actions">
+                    <button class="menu-btn custom-quiz-lobby-btn" @onclick="CreateLobbyFromQuiz">
+                        Create Lobby From This Quiz
+                    </button>
+
+                    <button class="menu-btn custom-quiz-lobby-btn custom-quiz-lobby-btn-secondary" @onclick="GoToLibrary">
+                        My Quizzes
+                    </button>
+
+                    <button class="menu-btn custom-quiz-lobby-btn custom-quiz-lobby-btn-secondary" @onclick="GoBack">
+                        Back
+                    </button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int QuizId { get; set; }
+
+    private CustomQuizDto? Quiz;
+    private string Message = "";
+    private bool Loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Auth.InitializeAsync();
+
+        if (!Auth.IsLoggedIn)
+        {
+            Nav.NavigateTo("/profile");
+            return;
+        }
+
+        await LoadQuiz();
+    }
+
+    private async Task LoadQuiz()
+    {
+        Loading = true;
+        Message = "";
+
+        try
+        {
+            var token = await Auth.GetTokenAsync();
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                Message = "Missing token.";
+                Loading = false;
+                return;
+            }
+
+            using var client = new HttpClient();
+            client.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", token);
+
+            var response = await client.GetAsync($"http://localhost:5237/api/customquiz/{QuizId}");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                Message = "Failed to load quiz.";
+                Loading = false;
+                return;
+            }
+
+            Quiz = await response.Content.ReadFromJsonAsync<CustomQuizDto>();
+        }
+        catch
+        {
+            Message = "Failed to load quiz.";
+        }
+
+        Loading = false;
+    }
+
+    private async Task CreateLobbyFromQuiz()
+    {
+        Message = "";
+
+        try
+        {
+            await CustomMp.ConnectAsync("http://localhost:5237");
+
+            var username = !string.IsNullOrWhiteSpace(Auth.Username)
+                ? Auth.Username!
+                : "Guest_" + Guid.NewGuid().ToString("N").Substring(0, 4);
+
+            var state = await CustomMp.CreateLobbyAsync(
+                new CreateCustomQuizMultiplayerLobbyRequest(
+                    QuizId,
+                    username,
+                    Auth.AvatarKey ?? "default_1"));
+
+            Nav.NavigateTo($"/multiplayerSavedQuizLobby/{state.Code}");
+        }
+        catch (Exception ex)
+        {
+            Message = ex.Message;
+        }
+    }
+
+    private void GoToLibrary()
+    {
+        Nav.NavigateTo("/multiplayerCustomQuizLibrary");
+    }
+
+    private void GoBack()
+    {
+        Nav.NavigateTo("/multiplayer");
+    }
+}

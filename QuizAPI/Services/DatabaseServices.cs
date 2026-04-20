@@ -18,6 +18,285 @@ public class DatabaseServices
         var connectionString = _configuration.GetConnectionString("DefaultConnection");
         return new SqlConnection(connectionString);
     }
+    
+    public List<TriviaQuestion> GetCustomQuizAsTriviaQuestions(int quizId, int userId)
+    {
+        var quiz = GetCustomQuizById(quizId, userId);
+        if (quiz == null)
+            return new List<TriviaQuestion>();
+
+        return quiz.Questions
+            .OrderBy(q => q.QuestionOrder)
+            .Select(q =>
+            {
+                var answers = new List<string> { q.Answer1, q.Answer2 };
+
+                if (!string.IsNullOrWhiteSpace(q.Answer3))
+                    answers.Add(q.Answer3);
+
+                if (!string.IsNullOrWhiteSpace(q.Answer4))
+                    answers.Add(q.Answer4);
+
+                var incorrect = answers
+                    .Where(a => !string.Equals(a, q.CorrectAnswer, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
+                return new TriviaQuestion
+                {
+                    Question = q.QuestionText,
+                    CorrectAnswer = q.CorrectAnswer,
+                    IncorrectAnswers = incorrect,
+                    Type = answers.Count == 2 ? "boolean" : "multiple",
+                    Difficulty = "custom",
+                    Category = quiz.Title
+                };
+            })
+            .ToList();
+    }
+    
+    public CustomQuizDto? GetCustomQuizByIdAnyOwner(int quizId)
+    {
+        using var connection = GetConnection();
+        connection.Open();
+
+        CustomQuizDto? quiz = null;
+
+        using (var cmd = new SqlCommand(@"
+            SELECT Id, UserId, Title, TimePerQuestion, CreatedAt
+            FROM CustomQuizzes
+            WHERE Id = @QuizId", connection))
+        {
+            cmd.Parameters.AddWithValue("@QuizId", quizId);
+
+            using var reader = cmd.ExecuteReader();
+            if (reader.Read())
+            {
+                quiz = new CustomQuizDto
+                {
+                    Id = Convert.ToInt32(reader["Id"]),
+                    UserId = Convert.ToInt32(reader["UserId"]),
+                    Title = reader["Title"]?.ToString() ?? "",
+                    TimePerQuestion = Convert.ToInt32(reader["TimePerQuestion"]),
+                    CreatedAt = Convert.ToDateTime(reader["CreatedAt"])
+                };
+            }
+        }
+
+        if (quiz == null)
+            return null;
+
+        quiz.Questions = GetCustomQuizQuestions(quiz.Id, connection);
+        return quiz;
+    }
+
+    public List<TriviaQuestion> GetCustomQuizAsTriviaQuestionsAnyOwner(int quizId)
+    {
+        var quiz = GetCustomQuizByIdAnyOwner(quizId);
+        if (quiz == null)
+            return new List<TriviaQuestion>();
+
+        return quiz.Questions
+            .OrderBy(q => q.QuestionOrder)
+            .Select(q =>
+            {
+                var answers = new List<string> { q.Answer1, q.Answer2 };
+
+                if (!string.IsNullOrWhiteSpace(q.Answer3))
+                    answers.Add(q.Answer3!);
+
+                if (!string.IsNullOrWhiteSpace(q.Answer4))
+                    answers.Add(q.Answer4!);
+
+                var incorrect = answers
+                    .Where(a => !string.Equals(a, q.CorrectAnswer, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
+                return new TriviaQuestion
+                {
+                    Question = q.QuestionText,
+                    CorrectAnswer = q.CorrectAnswer,
+                    IncorrectAnswers = incorrect,
+                    Type = answers.Count == 2 ? "boolean" : "multiple",
+                    Difficulty = "custom",
+                    Category = quiz.Title
+                };
+            })
+            .ToList();
+    }
+    
+    public int CreateCustomQuiz(int userId, CreateCustomQuizRequest req)
+    {
+        using var connection = GetConnection();
+        connection.Open();
+
+        using var tx = connection.BeginTransaction();
+
+        try
+        {
+            int quizId;
+
+            using (var cmd = new SqlCommand(@"
+                INSERT INTO CustomQuizzes (UserId, Title, TimePerQuestion)
+                OUTPUT INSERTED.Id
+                VALUES (@UserId, @Title, @TimePerQuestion)", connection, tx))
+            {
+                cmd.Parameters.AddWithValue("@UserId", userId);
+                cmd.Parameters.AddWithValue("@Title", req.Title);
+                cmd.Parameters.AddWithValue("@TimePerQuestion", req.TimePerQuestion);
+
+                quizId = Convert.ToInt32(cmd.ExecuteScalar());
+            }
+
+            for (int i = 0; i < req.Questions.Count; i++)
+            {
+                var q = req.Questions[i];
+
+                using var qCmd = new SqlCommand(@"
+                    INSERT INTO CustomQuizQuestions
+                    (QuizId, QuestionText, Answer1, Answer2, Answer3, Answer4, CorrectAnswer, QuestionOrder)
+                    VALUES
+                    (@QuizId, @QuestionText, @Answer1, @Answer2, @Answer3, @Answer4, @CorrectAnswer, @QuestionOrder)", connection, tx);
+
+                qCmd.Parameters.AddWithValue("@QuizId", quizId);
+                qCmd.Parameters.AddWithValue("@QuestionText", q.QuestionText);
+                qCmd.Parameters.AddWithValue("@Answer1", q.Answer1);
+                qCmd.Parameters.AddWithValue("@Answer2", q.Answer2);
+                qCmd.Parameters.AddWithValue("@Answer3", (object?)q.Answer3 ?? DBNull.Value);
+                qCmd.Parameters.AddWithValue("@Answer4", (object?)q.Answer4 ?? DBNull.Value);
+                qCmd.Parameters.AddWithValue("@CorrectAnswer", q.CorrectAnswer);
+                qCmd.Parameters.AddWithValue("@QuestionOrder", i + 1);
+
+                qCmd.ExecuteNonQuery();
+            }
+
+            tx.Commit();
+            return quizId;
+        }
+        catch
+        {
+            tx.Rollback();
+            throw;
+        }
+    }
+
+    public List<CustomQuizDto> GetCustomQuizzesByUser(int userId)
+    {
+        using var connection = GetConnection();
+        connection.Open();
+
+        var quizzes = new List<CustomQuizDto>();
+
+        using (var cmd = new SqlCommand(@"
+            SELECT Id, UserId, Title, TimePerQuestion, CreatedAt
+            FROM CustomQuizzes
+            WHERE UserId = @UserId
+            ORDER BY Id DESC", connection))
+        {
+            cmd.Parameters.AddWithValue("@UserId", userId);
+
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                quizzes.Add(new CustomQuizDto
+                {
+                    Id = Convert.ToInt32(reader["Id"]),
+                    UserId = Convert.ToInt32(reader["UserId"]),
+                    Title = reader["Title"]?.ToString() ?? "",
+                    TimePerQuestion = Convert.ToInt32(reader["TimePerQuestion"]),
+                    CreatedAt = Convert.ToDateTime(reader["CreatedAt"])
+                });
+            }
+        }
+
+        foreach (var quiz in quizzes)
+        {
+            quiz.Questions = GetCustomQuizQuestions(quiz.Id, connection);
+        }
+
+        return quizzes;
+    }
+
+    public CustomQuizDto? GetCustomQuizById(int quizId, int userId)
+    {
+        using var connection = GetConnection();
+        connection.Open();
+
+        CustomQuizDto? quiz = null;
+
+        using (var cmd = new SqlCommand(@"
+            SELECT Id, UserId, Title, TimePerQuestion, CreatedAt
+            FROM CustomQuizzes
+            WHERE Id = @QuizId AND UserId = @UserId", connection))
+        {
+            cmd.Parameters.AddWithValue("@QuizId", quizId);
+            cmd.Parameters.AddWithValue("@UserId", userId);
+
+            using var reader = cmd.ExecuteReader();
+            if (reader.Read())
+            {
+                quiz = new CustomQuizDto
+                {
+                    Id = Convert.ToInt32(reader["Id"]),
+                    UserId = Convert.ToInt32(reader["UserId"]),
+                    Title = reader["Title"]?.ToString() ?? "",
+                    TimePerQuestion = Convert.ToInt32(reader["TimePerQuestion"]),
+                    CreatedAt = Convert.ToDateTime(reader["CreatedAt"])
+                };
+            }
+        }
+
+        if (quiz == null)
+            return null;
+
+        quiz.Questions = GetCustomQuizQuestions(quiz.Id, connection);
+        return quiz;
+    }
+
+    public bool DeleteCustomQuiz(int quizId, int userId)
+    {
+        using var connection = GetConnection();
+        connection.Open();
+
+        using var cmd = new SqlCommand(@"
+            DELETE FROM CustomQuizzes
+            WHERE Id = @QuizId AND UserId = @UserId", connection);
+
+        cmd.Parameters.AddWithValue("@QuizId", quizId);
+        cmd.Parameters.AddWithValue("@UserId", userId);
+
+        return cmd.ExecuteNonQuery() > 0;
+    }
+
+    private List<CustomQuizQuestionDto> GetCustomQuizQuestions(int quizId, SqlConnection connection)
+    {
+        var questions = new List<CustomQuizQuestionDto>();
+
+        using var cmd = new SqlCommand(@"
+            SELECT Id, QuizId, QuestionText, Answer1, Answer2, Answer3, Answer4, CorrectAnswer, QuestionOrder
+            FROM CustomQuizQuestions
+            WHERE QuizId = @QuizId
+            ORDER BY QuestionOrder ASC", connection);
+
+        cmd.Parameters.AddWithValue("@QuizId", quizId);
+
+        using var reader = cmd.ExecuteReader();
+        while (reader.Read())
+        {
+            questions.Add(new CustomQuizQuestionDto
+            {
+                Id = Convert.ToInt32(reader["Id"]),
+                QuestionText = reader["QuestionText"]?.ToString() ?? "",
+                Answer1 = reader["Answer1"]?.ToString() ?? "",
+                Answer2 = reader["Answer2"]?.ToString() ?? "",
+                Answer3 = reader["Answer3"] == DBNull.Value ? null : reader["Answer3"]?.ToString(),
+                Answer4 = reader["Answer4"] == DBNull.Value ? null : reader["Answer4"]?.ToString(),
+                CorrectAnswer = reader["CorrectAnswer"]?.ToString() ?? "",
+                QuestionOrder = Convert.ToInt32(reader["QuestionOrder"])
+            });
+        }
+
+        return questions;
+    }
 
     public int? RegisterUser(string username, string password)
     {

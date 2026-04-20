@@ -14,6 +14,8 @@ builder.Services.AddBlazoredLocalStorage();
 
 builder.Services.AddScoped<MultiplayerClient>();
 builder.Services.AddScoped<RankedMultiplayerClient>();
+builder.Services.AddScoped<CustomQuizMultiplayerClient>();
+builder.Services.AddScoped<UnifiedLobbyJoinService>();
 
 builder.Services.AddScoped(sp => new HttpClient
 {

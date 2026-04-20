@@ -1,0 +1,152 @@
+﻿@page "/multiplayerCustomQuizLibrary"
+@using System.Net.Http.Headers
+@using WebQuizGame.Classes.Models
+@inject HttpClient Http
+@inject Authorization Auth
+@inject NavigationManager Nav
+
+<div class="mp-custom-page">
+    <div class="mp-custom-screen">
+        <h1 class="mp-custom-title">My Saved Quizzes</h1>
+        <p class="mp-custom-subtitle">Manage your saved quizzes and choose one for multiplayer</p>
+
+        <div class="mp-custom-card">
+            @if (!string.IsNullOrWhiteSpace(Message))
+            {
+                <div class="mp-custom-message-box">
+                    <p class="mp-custom-message">@Message</p>
+                </div>
+            }
+
+            @if (Loading)
+            {
+                <div class="mp-custom-message-box">
+                    <p class="mp-custom-message">Loading quizzes...</p>
+                </div>
+            }
+            else if (Quizzes.Count == 0)
+            {
+                <div class="mp-custom-message-box">
+                    <p class="mp-custom-message">You have no saved quizzes yet.</p>
+                </div>
+            }
+            else
+            {
+                @foreach (var quiz in Quizzes)
+                {
+                    <div class="mp-custom-message-box" style="margin-bottom:16px;">
+                        <p class="mp-custom-message"><strong>@quiz.Title</strong></p>
+                        <p class="mp-custom-message">
+                            Questions: @quiz.Questions.Count · Time: @quiz.TimePerQuestion s
+                        </p>
+
+                        <div class="mp-custom-actions">
+                            <button class="menu-btn mp-custom-btn" @onclick="() => OpenLobbyCreate(quiz.Id)">
+                                Use For Lobby
+                            </button>
+
+                            <button class="menu-btn mp-custom-btn mp-custom-btn-secondary" @onclick="() => DeleteQuiz(quiz.Id)">
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                }
+            }
+
+            <div class="mp-custom-actions">
+                <button class="menu-btn mp-custom-btn" @onclick="GoCreate">Create New Quiz</button>
+                <button class="menu-btn mp-custom-btn mp-custom-btn-secondary" @onclick="GoBack">Back</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<CustomQuizDto> Quizzes = new();
+    private string Message = "";
+    private bool Loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Auth.InitializeAsync();
+
+        if (!Auth.IsLoggedIn)
+        {
+            Nav.NavigateTo("/profile");
+            return;
+        }
+
+        await LoadQuizzes();
+    }
+
+    private async Task LoadQuizzes()
+    {
+        Loading = true;
+        Message = "";
+
+        try
+        {
+            var token = await Auth.GetTokenAsync();
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                Message = "Missing token.";
+                Loading = false;
+                return;
+            }
+
+            using var client = new HttpClient();
+            client.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", token);
+
+            var data = await client.GetFromJsonAsync<List<CustomQuizDto>>(
+                "http://localhost:5237/api/customquiz/mine");
+
+            Quizzes = data ?? new List<CustomQuizDto>();
+        }
+        catch
+        {
+            Message = "Failed to load quizzes.";
+        }
+
+        Loading = false;
+    }
+
+    private void OpenLobbyCreate(int quizId)
+    {
+        Nav.NavigateTo($"/multiplayerCustomQuizLobbyCreate/{quizId}");
+    }
+
+    private async Task DeleteQuiz(int quizId)
+    {
+        try
+        {
+            var token = await Auth.GetTokenAsync();
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                Message = "Missing token.";
+                return;
+            }
+
+            using var client = new HttpClient();
+            client.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", token);
+
+            var response = await client.DeleteAsync($"http://localhost:5237/api/customquiz/{quizId}");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                Message = "Failed to delete quiz.";
+                return;
+            }
+
+            await LoadQuizzes();
+        }
+        catch
+        {
+            Message = "Failed to delete quiz.";
+        }
+    }
+
+    private void GoCreate() => Nav.NavigateTo("/multiplayerCustomQuizCreate");
+    private void GoBack() => Nav.NavigateTo("/multiplayer");
+}

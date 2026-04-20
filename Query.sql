@@ -48,3 +48,28 @@ CREATE UNIQUE INDEX IX_Users_Username_CI
 ON Users (Username);
 
 SELECT * FROM Users
+
+CREATE TABLE CustomQuizzes
+(
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+    UserId INT NOT NULL,
+    Title NVARCHAR(120) NOT NULL,
+    TimePerQuestion INT NOT NULL DEFAULT 15,
+    CreatedAt DATETIME2 NOT NULL DEFAULT GETUTCDATE()
+);
+
+CREATE TABLE CustomQuizQuestions
+(
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+    QuizId INT NOT NULL,
+    QuestionText NVARCHAR(500) NOT NULL,
+    Answer1 NVARCHAR(250) NOT NULL,
+    Answer2 NVARCHAR(250) NOT NULL,
+    Answer3 NVARCHAR(250) NULL,
+    Answer4 NVARCHAR(250) NULL,
+    CorrectAnswer NVARCHAR(250) NOT NULL,
+    QuestionOrder INT NOT NULL,
+
+    CONSTRAINT FK_CustomQuizQuestions_CustomQuizzes
+        FOREIGN KEY (QuizId) REFERENCES CustomQuizzes(Id) ON DELETE CASCADE
+);

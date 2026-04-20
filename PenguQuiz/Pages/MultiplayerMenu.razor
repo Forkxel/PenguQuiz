@@ -5,6 +5,7 @@
 @inject MultiplayerClient Mp
 @inject Authorization Auth
 @inject NavigationManager Nav
+@inject CustomQuizMultiplayerClient CustomMp
 
 <div class="multiplayer-page">
     <div class="multiplayer-screen">
@@ -24,6 +25,7 @@
             <button class="menu-btn" @onclick="QuickMatchAny">Quick Match (Any)</button>
             <button class="menu-btn" @onclick="GoToCustomCreate">Create Custom Lobby</button>
             <button class="menu-btn" @onclick="GoToRanked">Ranked Multiplayer</button>
+            <button class="menu-btn" @onclick="GoToSavedQuizLibrary">My Saved Quiz Lobbies</button>
         </div>
 
         <div class="multiplayer-join-card">
@@ -96,12 +98,41 @@
             return;
         }
 
-        var state = await Mp.JoinLobbyAsync(
-            new JoinLobbyRequest(
-                JoinCode.Trim().ToUpper(),
-                GetUsername(),
-                Auth.AvatarKey ?? "default_1"));
+        var code = JoinCode.Trim().ToUpper();
+        var username = GetUsername();
+        var avatar = Auth.AvatarKey ?? "default_1";
 
-        Nav.NavigateTo($"/multiplayerCustomLobby/{state.Code}");
+        // 🔥 1. ZKUS CUSTOM QUIZ
+        try
+        {
+            await CustomMp.ConnectAsync("http://localhost:5237");
+
+            var state = await CustomMp.JoinLobbyAsync(
+                new JoinCustomQuizMultiplayerLobbyRequest(code, username, avatar));
+
+            Nav.NavigateTo($"/multiplayerSavedQuizLobby/{state.Code}");
+            return;
+        }
+        catch
+        {
+        }
+        
+        try
+        {
+            var state = await Mp.JoinLobbyAsync(
+                new JoinLobbyRequest(code, username, avatar));
+
+            Nav.NavigateTo($"/lobby/{state.Code}");
+            return;
+        }
+        catch
+        {
+            Message = "Lobby not found";
+        }
+    }
+    
+    private void GoToSavedQuizLibrary()
+    {
+        Nav.NavigateTo("/multiplayerCustomQuizLibrary");
     }
 }

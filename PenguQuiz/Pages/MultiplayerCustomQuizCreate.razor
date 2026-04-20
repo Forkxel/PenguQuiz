@@ -1,0 +1,203 @@
+﻿@page "/multiplayerCustomQuizCreate"
+@using System.Net.Http.Headers
+@using WebQuizGame.Classes.Models
+@inject HttpClient Http
+@inject Authorization Auth
+@inject NavigationManager Nav
+
+<div class="mp-custom-page">
+    <div class="mp-custom-screen">
+        <h1 class="mp-custom-title">Create Saved Quiz</h1>
+        <p class="mp-custom-subtitle">Write your own questions and save your quiz</p>
+
+        <div class="mp-custom-card">
+            <div class="mp-custom-field">
+                <label class="mp-custom-label">Quiz title</label>
+                <input class="mp-custom-select" @bind="Quiz.Title" placeholder="Enter quiz title" />
+            </div>
+
+            <div class="mp-custom-field">
+                <label class="mp-custom-label">Time per question</label>
+                <select class="mp-custom-select" @bind="Quiz.TimePerQuestion">
+                    <option value="5">5 s</option>
+                    <option value="10">10 s</option>
+                    <option value="15">15 s</option>
+                    <option value="30">30 s</option>
+                    <option value="60">60 s</option>
+                </select>
+            </div>
+
+            <div class="mp-custom-actions">
+                <button class="menu-btn mp-custom-btn" @onclick="AddQuestion">Add Question</button>
+            </div>
+
+            @for (int i = 0; i < Quiz.Questions.Count; i++)
+            {
+                var index = i;
+                var q = Quiz.Questions[index];
+
+                <div class="mp-custom-message-box" style="margin-top:20px;">
+                    <p class="mp-custom-message"><strong>Question @(index + 1)</strong></p>
+
+                    <div class="mp-custom-field">
+                        <label class="mp-custom-label">Question text</label>
+                        <input class="mp-custom-select" @bind="q.QuestionText" />
+                    </div>
+
+                    <div class="mp-custom-field">
+                        <label class="mp-custom-label">Answer 1</label>
+                        <input class="mp-custom-select" @bind="q.Answer1" />
+                    </div>
+
+                    <div class="mp-custom-field">
+                        <label class="mp-custom-label">Answer 2</label>
+                        <input class="mp-custom-select" @bind="q.Answer2" />
+                    </div>
+
+                    <div class="mp-custom-field">
+                        <label class="mp-custom-label">Answer 3</label>
+                        <input class="mp-custom-select" @bind="q.Answer3" />
+                    </div>
+
+                    <div class="mp-custom-field">
+                        <label class="mp-custom-label">Answer 4</label>
+                        <input class="mp-custom-select" @bind="q.Answer4" />
+                    </div>
+
+                    <div class="mp-custom-field">
+                        <label class="mp-custom-label">Correct answer</label>
+                        <select class="mp-custom-select" @bind="q.CorrectAnswer">
+                            <option value="">Choose correct answer</option>
+                            @foreach (var ans in GetAvailableAnswers(q))
+                            {
+                                <option value="@ans">@ans</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mp-custom-actions">
+                        <button class="menu-btn mp-custom-btn mp-custom-btn-secondary"
+                                type="button"
+                                @onclick="() => RemoveQuestion(index)">
+                            Remove Question
+                        </button>
+                    </div>
+                </div>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(Message))
+            {
+                <div class="mp-custom-message-box">
+                    <p class="mp-custom-message">@Message</p>
+                </div>
+            }
+
+            <div class="mp-custom-actions">
+                <button class="menu-btn mp-custom-btn" @onclick="SaveQuiz">Save Quiz</button>
+                <button class="menu-btn mp-custom-btn mp-custom-btn-secondary" @onclick="GoToLibrary">My Quizzes</button>
+                <button class="menu-btn mp-custom-btn mp-custom-btn-secondary" @onclick="Back">Back</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private CreateCustomQuizRequest Quiz = new()
+    {
+        TimePerQuestion = 15
+    };
+
+    private string Message = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Auth.InitializeAsync();
+        AddQuestion();
+    }
+
+    private void AddQuestion()
+    {
+        Quiz.Questions.Add(new CreateCustomQuizQuestionRequest());
+    }
+
+    private void RemoveQuestion(int index)
+    {
+        if (index >= 0 && index < Quiz.Questions.Count)
+            Quiz.Questions.RemoveAt(index);
+    }
+
+    private List<string> GetAvailableAnswers(CreateCustomQuizQuestionRequest q)
+    {
+        return new[] { q.Answer1, q.Answer2, q.Answer3, q.Answer4 }
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct()
+            .ToList()!;
+    }
+
+    private async Task SaveQuiz()
+    {
+        Message = "";
+
+        if (!Auth.IsLoggedIn)
+        {
+            Message = "You must be logged in.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(Quiz.Title))
+        {
+            Message = "Enter quiz title.";
+            return;
+        }
+
+        if (Quiz.Questions.Count == 0)
+        {
+            Message = "Add at least one question.";
+            return;
+        }
+
+        foreach (var q in Quiz.Questions)
+        {
+            if (string.IsNullOrWhiteSpace(q.QuestionText))
+            {
+                Message = "Every question must have text.";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(q.Answer1) || string.IsNullOrWhiteSpace(q.Answer2))
+            {
+                Message = "Each question needs at least 2 answers.";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(q.CorrectAnswer))
+            {
+                Message = "Each question must have a correct answer.";
+                return;
+            }
+        }
+
+        var token = await Auth.GetTokenAsync();
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            Message = "Missing token.";
+            return;
+        }
+
+        using var client = new HttpClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var response = await client.PostAsJsonAsync("http://localhost:5237/api/customquiz", Quiz);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            Message = "Failed to save quiz.";
+            return;
+        }
+
+        Nav.NavigateTo("/multiplayerCustomQuizLibrary");
+    }
+
+    private void GoToLibrary() => Nav.NavigateTo("/multiplayerCustomQuizLibrary");
+    private void Back() => Nav.NavigateTo("/multiplayer");
+}

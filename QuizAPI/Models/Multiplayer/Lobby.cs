@@ -22,6 +22,8 @@ public class Lobby
     public bool IsMatchmaking { get; set; } = false;
     public DateTime? MatchmakingEndsAtUtc { get; set; }
     public CancellationTokenSource? MatchmakingCts { get; set; }
-
     public Dictionary<string, SubmittedAnswer> SubmittedAnswers { get; } = new();
+    public bool IsCustomQuiz { get; set; } = false;
+    public int? CustomQuizId { get; set; }
+    public string? CustomQuizTitle { get; set; }
 }

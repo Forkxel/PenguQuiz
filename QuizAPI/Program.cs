@@ -24,6 +24,7 @@ builder.Services.AddCors(options =>
 builder.Services.AddSingleton<MultiplayerManager>();
 builder.Services.AddSingleton<RankedMultiplayerManager>();
 builder.Services.AddSingleton<UsernameValidatorService>();
+builder.Services.AddSingleton<CustomQuizMultiplayerManager>();
 builder.Services.AddSignalR();
 
 builder.Services.AddMemoryCache();
@@ -86,5 +87,6 @@ app.MapControllers();
 
 app.MapHub<MultiplayerHub>("/hubs/multiplayer");
 app.MapHub<RankedMultiplayerHub>("/hubs/ranked-multiplayer");
+app.MapHub<CustomQuizMultiplayerHub>("/hubs/custom-quiz-multiplayer");
 
 app.Run();

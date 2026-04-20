@@ -1,0 +1,489 @@
+﻿@page "/multiplayerSavedQuizGame/{Code}"
+@using WebQuizGame.Classes.Models
+@using WebQuizGame.Classes.Services
+@using Microsoft.AspNetCore.Components.Routing
+@inject CustomQuizMultiplayerClient CustomMp
+@inject Authorization Auth
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+@using System.Globalization
+
+<NavigationLock OnBeforeInternalNavigation="ConfirmLeaveNavigation" />
+
+<div class="saved-quiz-game-page">
+    <div class="game-layout">
+        <aside class="game-sidebar">
+            @if (LiveScores.Any())
+            {
+                @foreach (var player in LiveScores)
+                {
+                    <div class="game-player" style="border-left: 4px solid @player.PlayerColor;">
+                        <img class="game-avatar" src="@GetAvatarUrl(player.AvatarKey)" alt="avatar" />
+                        <div class="game-player-info">
+                            <span class="game-player-name">
+                                <span class="multiplayer-player-color-dot" style="background:@player.PlayerColor;"></span>
+                                @player.Username
+                            </span>
+                            <span class="game-player-score">@player.Score</span>
+                        </div>
+                    </div>
+                }
+            }
+            else if (Scores.Any())
+            {
+                @foreach (var s in Scores.OrderByDescending(x => x.Value))
+                {
+                    <div class="game-player">
+                        <img class="game-avatar" src="@GetAvatarUrl("default_1")" alt="avatar" />
+                        <div class="game-player-info">
+                            <span class="game-player-name">@s.Key</span>
+                            <span class="game-player-score">@s.Value</span>
+                        </div>
+                    </div>
+                }
+            }
+        </aside>
+
+        <main class="game-main">
+            <div class="multiplayer-game-card">
+                <h1 class="game-page-title">@QuizTitle</h1>
+                <p class="game-page-subtitle">Lobby code: @Code</p>
+
+                @if (Finished)
+                {
+                    <div class="multiplayer-game-finish-card">
+                        <h2 class="multiplayer-game-finish-title">Quiz Finished</h2>
+
+                        <div class="multiplayer-game-scoreboard">
+                            @foreach (var s in Scores.OrderByDescending(x => x.Value))
+                            {
+                                <div class="multiplayer-game-score-row">
+                                    <span class="multiplayer-game-player">@s.Key</span>
+                                    <span class="multiplayer-game-points">@s.Value</span>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="single-game-actions">
+                            <button class="menu-btn single-game-menu-btn" @onclick="BackToMenu">Back</button>
+                        </div>
+                    </div>
+                }
+                else if (Current == null)
+                {
+                    <p class="multiplayer-game-message">Waiting for question...</p>
+                }
+                else
+                {
+                    @if (ShowingQuestionIntro)
+                    {
+                        <div class="question-reveal-card">
+                            <p class="question-reveal-label">Current Question</p>
+                            <h2 class="question-reveal-text">@Current.Question</h2>
+
+                            <div class="question-reveal-progress">
+                                <div class="question-reveal-progress-bar"
+                                     @key="IntroRenderKey"
+                                     style="@($"animation-duration:{CurrentIntroSeconds.ToString("0.00", CultureInfo.InvariantCulture)}s")">
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="multiplayer-game-question-box">
+                            <p class="multiplayer-game-question-label">Current Question</p>
+                            <h2 class="multiplayer-game-question">@Current.Question</h2>
+                        </div>
+
+                        <div class="multiplayer-game-answers">
+                            @foreach (var a in Answers)
+                            {
+                                <button class="menu-btn multiplayer-game-answer-btn @GetAnswerHighlightClass(a)"
+                                        style="@GetAnswerStyle(a)"
+                                        @onclick="() => Answer(a)"
+                                        disabled="@(!CanAnswer)">
+                                    <span>@a</span>
+
+                                    @if (GetAnswerMarkers(a).Any())
+                                    {
+                                        <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; justify-content:center;">
+                                            @foreach (var marker in GetAnswerMarkers(a))
+                                            {
+                                                <span style="background:@marker.PlayerColor; color:#101323; padding:4px 8px; border-radius:999px; font-size:12px; font-weight:700;">
+                                                    @marker.Username
+                                                    @if (marker.PointsAwarded > 0)
+                                                    {
+                                                        <span> (+@marker.PointsAwarded)</span>
+                                                    }
+                                                </span>
+                                            }
+                                        </div>
+                                    }
+                                </button>
+                            }
+                        </div>
+                    }
+                }
+            </div>
+        </main>
+    </div>
+</div>
+
+@if (ShowLeaveModal)
+{
+    <div class="leave-modal-overlay">
+        <div class="leave-modal-card">
+            <div class="leave-modal-icon">!</div>
+            <h2 class="leave-modal-title">Leave game?</h2>
+            <p class="leave-modal-text">
+                Do you really want to leave this saved quiz game?
+                <br />
+                You will be disconnected from the lobby.
+            </p>
+            <div class="leave-modal-actions">
+                <button class="menu-btn leave-modal-btn-secondary" @onclick="CancelLeave">Stay</button>
+                <button class="menu-btn leave-modal-btn-danger" @onclick="ConfirmLeave">Leave</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public string Code { get; set; } = "";
+
+    private TriviaQuestion? Current;
+    private List<string> Answers = new();
+    private bool Locked = false;
+    private bool HasAnswered = false;
+    private bool Finished = false;
+    private string? CorrectAnswer;
+
+    private Dictionary<string, int> Scores = new();
+    private List<CustomQuizLivePlayerScoreDto> LiveScores = new();
+    private List<CustomQuizQuestionPlayerAnswerDto> RoundResults = new();
+
+    private string? LocalSelectedAnswer;
+    private bool ResultsVisible = false;
+
+    private const double QuestionIntroSeconds = 4;
+    private double CurrentIntroSeconds = QuestionIntroSeconds;
+    private bool ShowingQuestionIntro = false;
+    private CancellationTokenSource? IntroCts;
+    private int IntroRenderKey = 0;
+
+    private bool _isLeaving = false;
+    private bool _leaveSent = false;
+    private bool ShowLeaveModal = false;
+    private string? PendingTargetUrl;
+    private string QuizTitle = "Saved Quiz Game";
+
+    private bool CanAnswer => !Locked && !ShowingQuestionIntro && !HasAnswered && !Finished;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Auth.InitializeAsync();
+        await CustomMp.ConnectAsync("http://localhost:5237");
+
+        CustomMp.OnNewQuestion += HandleNewQuestion;
+        CustomMp.OnQuestionResolved += HandleQuestionResolved;
+        CustomMp.OnGameFinished += HandleGameFinished;
+        CustomMp.OnGameError += HandleGameError;
+        CustomMp.OnScoresUpdated += HandleScoresUpdated;
+
+        try
+        {
+            var state = await CustomMp.GetLobbyStateAsync(Code);
+            QuizTitle = state?.QuizTitle ?? "Saved Quiz Game";
+
+            LiveScores = await CustomMp.GetLiveScoresAsync(Code);
+            var q = await CustomMp.GetCurrentQuestionAsync(Code);
+
+            if (!LiveScores.Any() && q == null)
+            {
+                Nav.NavigateTo("/multiplayer", true);
+                return;
+            }
+
+            if (q != null)
+            {
+                SetQuestion(q);
+
+                DateTime? startedAtUtc = null;
+                try
+                {
+                    startedAtUtc = await CustomMp.GetQuestionStartedAtUtcAsync(Code);
+                }
+                catch
+                {
+                }
+
+                await StartQuestionIntroAsync(startedAtUtc);
+            }
+        }
+        catch
+        {
+            Nav.NavigateTo("/multiplayer", true);
+        }
+    }
+
+    private Task ConfirmLeaveNavigation(LocationChangingContext context)
+    {
+        if (_isLeaving || Finished)
+            return Task.CompletedTask;
+
+        context.PreventNavigation();
+        PendingTargetUrl = context.TargetLocation;
+        ShowLeaveModal = true;
+        InvokeAsync(StateHasChanged);
+        return Task.CompletedTask;
+    }
+
+    private Task CancelLeave()
+    {
+        ShowLeaveModal = false;
+        PendingTargetUrl = null;
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ConfirmLeave()
+    {
+        if (_isLeaving)
+            return;
+
+        _isLeaving = true;
+        ShowLeaveModal = false;
+
+        await SafeLeaveAsync();
+
+        if (string.IsNullOrWhiteSpace(PendingTargetUrl))
+            await JS.InvokeVoidAsync("appNav.replace", "/multiplayer");
+        else
+            await JS.InvokeVoidAsync("appNav.replace", PendingTargetUrl);
+    }
+
+    private async Task SafeLeaveAsync()
+    {
+        if (_leaveSent || Finished)
+            return;
+
+        _leaveSent = true;
+
+        try
+        {
+            await CustomMp.LeaveLobbyAsync(Code);
+        }
+        catch
+        {
+        }
+
+        try
+        {
+            await CustomMp.DisconnectAsync();
+        }
+        catch
+        {
+        }
+    }
+
+    private void HandleNewQuestion(TriviaQuestion q)
+    {
+        _ = HandleNewQuestionAsync(q);
+    }
+
+    private async Task HandleNewQuestionAsync(TriviaQuestion q)
+    {
+        SetQuestion(q);
+
+        DateTime? startedAtUtc = null;
+        try
+        {
+            startedAtUtc = await CustomMp.GetQuestionStartedAtUtcAsync(Code);
+        }
+        catch
+        {
+        }
+
+        await StartQuestionIntroAsync(startedAtUtc);
+    }
+
+    private void HandleScoresUpdated(List<CustomQuizLivePlayerScoreDto> scores)
+    {
+        LiveScores = scores;
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private void HandleQuestionResolved(CustomQuizQuestionResolutionDto dto)
+    {
+        Locked = true;
+        ResultsVisible = true;
+        CorrectAnswer = dto.CorrectAnswer;
+        RoundResults = dto.Results ?? new List<CustomQuizQuestionPlayerAnswerDto>();
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private void HandleGameFinished(Dictionary<string, int> scores)
+    {
+        Scores = scores;
+        Finished = true;
+        Locked = true;
+        ShowingQuestionIntro = false;
+        IntroCts?.Cancel();
+
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private void HandleGameError(string msg)
+    {
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private void SetQuestion(TriviaQuestion q)
+    {
+        Current = q;
+        Answers = q.IncorrectAnswers
+            .Append(q.CorrectAnswer)
+            .OrderBy(_ => Guid.NewGuid())
+            .ToList();
+
+        Locked = true;
+        HasAnswered = false;
+        CorrectAnswer = null;
+        RoundResults = new List<CustomQuizQuestionPlayerAnswerDto>();
+        LocalSelectedAnswer = null;
+        ResultsVisible = false;
+    }
+
+    private async Task StartQuestionIntroAsync(DateTime? questionStartedAtUtc)
+    {
+        IntroCts?.Cancel();
+        IntroCts = new CancellationTokenSource();
+        var token = IntroCts.Token;
+
+        double remainingSeconds = QuestionIntroSeconds;
+
+        if (questionStartedAtUtc.HasValue)
+        {
+            var elapsed = (DateTime.UtcNow - questionStartedAtUtc.Value).TotalSeconds;
+            remainingSeconds = Math.Max(0, QuestionIntroSeconds - elapsed);
+        }
+
+        if (remainingSeconds <= 0.05)
+        {
+            ShowingQuestionIntro = false;
+            Locked = false;
+            CurrentIntroSeconds = QuestionIntroSeconds;
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        CurrentIntroSeconds = remainingSeconds;
+        IntroRenderKey++;
+        ShowingQuestionIntro = true;
+        Locked = true;
+        await InvokeAsync(StateHasChanged);
+
+        try
+        {
+            await Task.Delay(TimeSpan.FromSeconds(remainingSeconds), token);
+        }
+        catch (TaskCanceledException)
+        {
+            return;
+        }
+
+        ShowingQuestionIntro = false;
+        Locked = false;
+        CurrentIntroSeconds = QuestionIntroSeconds;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task Answer(string ans)
+    {
+        if (!CanAnswer)
+            return;
+
+        HasAnswered = true;
+        LocalSelectedAnswer = ans;
+        await CustomMp.AnswerQuestionAsync(Code, ans);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private IReadOnlyList<CustomQuizQuestionPlayerAnswerDto> GetAnswerMarkers(string answer)
+    {
+        if (ResultsVisible)
+        {
+            return RoundResults
+                .Where(r => !string.IsNullOrWhiteSpace(r.Answer) &&
+                            string.Equals(r.Answer, answer, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        if (!string.IsNullOrWhiteSpace(LocalSelectedAnswer) &&
+            string.Equals(LocalSelectedAnswer, answer, StringComparison.OrdinalIgnoreCase) &&
+            !string.IsNullOrWhiteSpace(CustomMp.LocalUsername))
+        {
+            var localColor = LiveScores
+                .FirstOrDefault(x => string.Equals(x.Username, CustomMp.LocalUsername, StringComparison.OrdinalIgnoreCase))
+                ?.PlayerColor ?? "#6f5cff";
+
+            return new List<CustomQuizQuestionPlayerAnswerDto>
+            {
+                new CustomQuizQuestionPlayerAnswerDto
+                {
+                    Username = CustomMp.LocalUsername!,
+                    PlayerColor = localColor,
+                    PointsAwarded = 0
+                }
+            };
+        }
+
+        return Array.Empty<CustomQuizQuestionPlayerAnswerDto>();
+    }
+
+    private string GetAnswerStyle(string answer)
+    {
+        if (string.IsNullOrWhiteSpace(CorrectAnswer))
+            return string.Empty;
+
+        if (string.Equals(answer, CorrectAnswer, StringComparison.OrdinalIgnoreCase))
+            return "border:2px solid #51cf66; background:linear-gradient(135deg, rgba(81,207,102,0.38), rgba(81,207,102,0.20));";
+
+        return string.Empty;
+    }
+
+    private string GetAnswerHighlightClass(string answer)
+        => !string.IsNullOrWhiteSpace(CorrectAnswer) &&
+           string.Equals(answer, CorrectAnswer, StringComparison.OrdinalIgnoreCase)
+            ? "multiplayer-game-answer-btn--resolved"
+            : string.Empty;
+
+    private async Task BackToMenu()
+    {
+        await CustomMp.DisconnectAsync();
+        await JS.InvokeVoidAsync("appNav.replace", "/multiplayer");
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        IntroCts?.Cancel();
+
+        CustomMp.OnNewQuestion -= HandleNewQuestion;
+        CustomMp.OnQuestionResolved -= HandleQuestionResolved;
+        CustomMp.OnGameFinished -= HandleGameFinished;
+        CustomMp.OnGameError -= HandleGameError;
+        CustomMp.OnScoresUpdated -= HandleScoresUpdated;
+
+        if (!Finished && !_isLeaving)
+            await SafeLeaveAsync();
+        else
+            await CustomMp.DisconnectAsync();
+    }
+
+    private string GetAvatarUrl(string? avatarKey)
+    {
+        var key = string.IsNullOrWhiteSpace(avatarKey) ? "default_1" : avatarKey;
+        return $"/images/avatars/{key}.png";
+    }
+}

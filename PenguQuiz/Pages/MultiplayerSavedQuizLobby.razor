@@ -1,0 +1,285 @@
+﻿@page "/multiplayerSavedQuizLobby/{Code}"
+@using WebQuizGame.Classes.Models
+@using WebQuizGame.Classes.Services
+@using Microsoft.AspNetCore.Components.Routing
+@inject CustomQuizMultiplayerClient CustomMp
+@inject Authorization Auth
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<NavigationLock OnBeforeInternalNavigation="ConfirmLeaveNavigation" />
+
+<div class="saved-quiz-lobby-page">
+    <div class="saved-quiz-lobby-screen">
+        <h1 class="saved-quiz-lobby-title">Saved Quiz Lobby</h1>
+        <p class="saved-quiz-lobby-subtitle">Invite players and start your saved quiz</p>
+
+        @if (State == null)
+        {
+            <div class="saved-quiz-lobby-card">
+                <p class="saved-quiz-lobby-message">Loading lobby...</p>
+            </div>
+        }
+        else
+        {
+            <div class="saved-quiz-lobby-card">
+                <div class="saved-quiz-lobby-overview">
+                    <div class="saved-quiz-lobby-overview-box">
+                        <span class="saved-quiz-lobby-overview-label">Lobby Code</span>
+                        <span class="saved-quiz-lobby-overview-value">@State.Code</span>
+                    </div>
+
+                    <div class="saved-quiz-lobby-overview-box">
+                        <span class="saved-quiz-lobby-overview-label">Quiz</span>
+                        <span class="saved-quiz-lobby-overview-value">@State.QuizTitle</span>
+                    </div>
+
+                    <div class="saved-quiz-lobby-overview-box">
+                        <span class="saved-quiz-lobby-overview-label">Host</span>
+                        <span class="saved-quiz-lobby-overview-value">@State.HostUsername</span>
+                    </div>
+
+                    <div class="saved-quiz-lobby-overview-box">
+                        <span class="saved-quiz-lobby-overview-label">Questions</span>
+                        <span class="saved-quiz-lobby-overview-value">@State.QuestionCount</span>
+                    </div>
+                </div>
+
+                <div class="saved-quiz-lobby-section">
+                    <h2 class="saved-quiz-lobby-section-title">Players</h2>
+                    <div class="saved-quiz-lobby-players-list">
+                        @foreach (var player in State.PlayerDetails)
+                        {
+                            <div class="saved-quiz-lobby-player-item saved-quiz-lobby-player-row">
+                                <img class="saved-quiz-lobby-player-avatar"
+                                     src="@GetAvatarUrl(player.AvatarKey)"
+                                     alt="avatar" />
+                                <span class="saved-quiz-lobby-player-name">@player.Username</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="saved-quiz-lobby-section">
+                    <h2 class="saved-quiz-lobby-section-title">Match Settings</h2>
+                    <div class="saved-quiz-lobby-settings-grid">
+                        <div class="saved-quiz-lobby-setting-box">
+                            <span class="saved-quiz-lobby-setting-label">Time per question</span>
+                            <span class="saved-quiz-lobby-setting-value">@State.TimePerQuestion s</span>
+                        </div>
+
+                        <div class="saved-quiz-lobby-setting-box">
+                            <span class="saved-quiz-lobby-setting-label">Question count</span>
+                            <span class="saved-quiz-lobby-setting-value">@State.QuestionCount</span>
+                        </div>
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(GameError))
+                {
+                    <div class="saved-quiz-lobby-error-box">
+                        <p class="saved-quiz-lobby-message">@GameError</p>
+                    </div>
+                }
+
+                @if (IsHost && !State.IsStarted)
+                {
+                    <div class="saved-quiz-lobby-actions">
+                        <button class="menu-btn saved-quiz-lobby-btn"
+                                @onclick="StartGame"
+                                disabled="@(State.Players.Count < 1)">
+                            Start Game
+                        </button>
+                    </div>
+                }
+                else if (!State.IsStarted)
+                {
+                    <div class="saved-quiz-lobby-status-box">
+                        <p class="saved-quiz-lobby-message">Waiting for host to start the game...</p>
+                    </div>
+                }
+
+                @if (State.IsStarted)
+                {
+                    <div class="saved-quiz-lobby-status-box">
+                        <p class="saved-quiz-lobby-message"><strong>Game starting...</strong></p>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@if (ShowLeaveModal)
+{
+    <div class="leave-modal-overlay">
+        <div class="leave-modal-card">
+            <div class="leave-modal-icon">!</div>
+
+            <h2 class="leave-modal-title">Leave lobby?</h2>
+
+            <p class="leave-modal-text">
+                Do you really want to leave this saved quiz lobby?
+                <br />
+                You will be disconnected and returned to multiplayer.
+            </p>
+
+            <div class="leave-modal-actions">
+                <button class="menu-btn leave-modal-btn-secondary" @onclick="CancelLeave">Stay</button>
+                <button class="menu-btn leave-modal-btn-danger" @onclick="ConfirmLeave">Leave</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public string Code { get; set; } = "";
+
+    private CustomQuizLobbyState? State;
+    private bool _navigated = false;
+    private string? GameError;
+    private bool _isLeaving = false;
+    private bool _leaveSent = false;
+    private bool ShowLeaveModal = false;
+    private string? PendingTargetUrl;
+
+    private bool IsHost => State != null && State.HostUsername == CustomMp.LocalUsername;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Auth.InitializeAsync();
+        await CustomMp.ConnectAsync("http://localhost:5237");
+
+        CustomMp.OnLobbyUpdated += HandleLobbyUpdated;
+        CustomMp.OnGameError += HandleGameError;
+        CustomMp.OnNewQuestion += HandleNewQuestion;
+
+        try
+        {
+            State = await CustomMp.GetLobbyStateAsync(Code);
+        }
+        catch
+        {
+            Nav.NavigateTo("/multiplayer", true);
+        }
+    }
+
+    private Task ConfirmLeaveNavigation(LocationChangingContext context)
+    {
+        if (_isLeaving || _navigated)
+            return Task.CompletedTask;
+
+        var target = Nav.ToBaseRelativePath(context.TargetLocation).ToLowerInvariant();
+        var gameTarget = $"multiplayersavedquizgame/{Code}".ToLowerInvariant();
+
+        if (target == gameTarget)
+            return Task.CompletedTask;
+
+        context.PreventNavigation();
+        PendingTargetUrl = context.TargetLocation;
+        ShowLeaveModal = true;
+        InvokeAsync(StateHasChanged);
+        return Task.CompletedTask;
+    }
+
+    private Task CancelLeave()
+    {
+        ShowLeaveModal = false;
+        PendingTargetUrl = null;
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ConfirmLeave()
+    {
+        if (_isLeaving)
+            return;
+
+        _isLeaving = true;
+        ShowLeaveModal = false;
+
+        await SafeLeaveAsync();
+        await JS.InvokeVoidAsync("appNav.replace", "/multiplayer");
+    }
+
+    private async Task SafeLeaveAsync()
+    {
+        if (_leaveSent)
+            return;
+
+        _leaveSent = true;
+
+        try
+        {
+            await CustomMp.LeaveLobbyAsync(Code);
+        }
+        catch
+        {
+        }
+
+        try
+        {
+            await CustomMp.DisconnectAsync();
+        }
+        catch
+        {
+        }
+    }
+
+    private void HandleLobbyUpdated(CustomQuizLobbyState s)
+    {
+        if (!string.Equals(s.Code, Code, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        State = s;
+
+        if (State.IsStarted && !_navigated)
+        {
+            _navigated = true;
+            Nav.NavigateTo($"/multiplayerSavedQuizGame/{State.Code}");
+            return;
+        }
+
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private void HandleGameError(string msg)
+    {
+        GameError = msg;
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private async void HandleNewQuestion(TriviaQuestion q)
+    {
+        if (_navigated || State == null)
+            return;
+
+        _navigated = true;
+        await Task.Delay(100);
+        Nav.NavigateTo($"/multiplayerSavedQuizGame/{State.Code}");
+    }
+
+    private async Task StartGame()
+    {
+        if (State == null)
+            return;
+
+        await CustomMp.StartGameAsync(State.Code);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        CustomMp.OnLobbyUpdated -= HandleLobbyUpdated;
+        CustomMp.OnGameError -= HandleGameError;
+        CustomMp.OnNewQuestion -= HandleNewQuestion;
+
+        if (!_navigated && !_isLeaving)
+            await SafeLeaveAsync();
+    }
+
+    private string GetAvatarUrl(string? avatarKey)
+    {
+        var key = string.IsNullOrWhiteSpace(avatarKey) ? "default_1" : avatarKey;
+        return $"/images/avatars/{key}.png";
+    }
+}
