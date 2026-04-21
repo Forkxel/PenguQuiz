@@ -329,18 +329,17 @@
         if (_isLeaving)
             return Task.CompletedTask;
 
-        var target = Nav.ToBaseRelativePath(context.TargetLocation).ToLowerInvariant();
-        var gameTarget = $"multiplayergame/{Code}".ToLowerInvariant();
+        var target = context.TargetLocation?.ToLowerInvariant() ?? "";
+        var gameTarget = $"/multiplayerGame/{Code}".ToLowerInvariant();
 
-        if (target == gameTarget)
+        if (target.EndsWith(gameTarget))
             return Task.CompletedTask;
 
         context.PreventNavigation();
         PendingTargetUrl = context.TargetLocation;
         ShowLeaveModal = true;
 
-        InvokeAsync(StateHasChanged);
-        return Task.CompletedTask;
+        return InvokeAsync(StateHasChanged);
     }
 
     private async Task ApplySettings()
