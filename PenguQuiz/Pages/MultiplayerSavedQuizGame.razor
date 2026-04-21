@@ -12,10 +12,6 @@
 <NavigationLock OnBeforeInternalNavigation="ConfirmLeaveNavigation" />
 
 <div class="saved-quiz-game-page">
-    <button class="home-floating-btn home-with-text" @onclick="GoHome" title="Home">
-        <img src="/images/avatars/macaroni.png" alt="Home" class="home-floating-img" />
-        <span>Home</span>
-    </button>
     <div class="game-layout">
         <aside class="game-sidebar">
             @if (LiveScores.Any())
@@ -108,6 +104,8 @@
                             <p class="multiplayer-game-question-label">Current Question</p>
                             <h2 class="multiplayer-game-question">@Current.Question</h2>
                         </div>
+                        
+                        <p class="multiplayer-game-question-timer">Time left: @TimeLeft s</p>
 
                         <div class="multiplayer-game-answers">
                             @foreach (var a in Answers)
@@ -190,6 +188,8 @@
     private bool ShowLeaveModal = false;
     private string? PendingTargetUrl;
     private string QuizTitle = "Saved Quiz Game";
+    private int TimeLeft = 0;
+    private CancellationTokenSource? TimerCts;
 
     private bool CanAnswer => !Locked && !ShowingQuestionIntro && !HasAnswered && !Finished;
 
@@ -337,6 +337,8 @@
 
     private void HandleGameFinished(Dictionary<string, int> scores)
     {
+        TimeLeft = 0;
+        TimerCts?.Cancel();
         Scores = scores;
         Finished = true;
         Locked = true;
@@ -361,6 +363,8 @@
 
         Locked = true;
         HasAnswered = false;
+        TimeLeft = 0;
+        TimerCts?.Cancel();
         CorrectAnswer = null;
         RoundResults = new List<CustomQuizQuestionPlayerAnswerDto>();
         LocalSelectedAnswer = null;
@@ -370,6 +374,8 @@
     private async Task StartQuestionIntroAsync(DateTime? questionStartedAtUtc)
     {
         IntroCts?.Cancel();
+        TimerCts?.Cancel();
+
         IntroCts = new CancellationTokenSource();
         var token = IntroCts.Token;
 
@@ -386,6 +392,9 @@
             ShowingQuestionIntro = false;
             Locked = false;
             CurrentIntroSeconds = QuestionIntroSeconds;
+
+            StartQuestionTimer(questionStartedAtUtc);
+
             await InvokeAsync(StateHasChanged);
             return;
         }
@@ -408,7 +417,46 @@
         ShowingQuestionIntro = false;
         Locked = false;
         CurrentIntroSeconds = QuestionIntroSeconds;
+
+        StartQuestionTimer(questionStartedAtUtc);
+
         await InvokeAsync(StateHasChanged);
+    }
+    
+    private void StartQuestionTimer(DateTime? questionStartedAtUtc)
+    {
+        TimerCts?.Cancel();
+        TimerCts = new CancellationTokenSource();
+
+        var totalSeconds = 15;
+
+        if (questionStartedAtUtc.HasValue)
+        {
+            var elapsedAfterIntro = Math.Max(0, (DateTime.UtcNow - questionStartedAtUtc.Value).TotalSeconds - QuestionIntroSeconds);
+            TimeLeft = Math.Max(0, totalSeconds - (int)Math.Floor(elapsedAfterIntro));
+        }
+        else
+        {
+            TimeLeft = totalSeconds;
+        }
+
+        _ = RunQuestionTimerAsync(TimerCts.Token);
+    }
+
+    private async Task RunQuestionTimerAsync(CancellationToken token)
+    {
+        try
+        {
+            while (TimeLeft > 0 && !token.IsCancellationRequested && !Finished && !ResultsVisible)
+            {
+                await Task.Delay(1000, token);
+                TimeLeft = Math.Max(0, TimeLeft - 1);
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (TaskCanceledException)
+        {
+        }
     }
 
     private async Task Answer(string ans)
@@ -480,6 +528,7 @@
     public async ValueTask DisposeAsync()
     {
         IntroCts?.Cancel();
+        TimerCts?.Cancel();
 
         CustomMp.OnNewQuestion -= HandleNewQuestion;
         CustomMp.OnQuestionResolved -= HandleQuestionResolved;

@@ -122,6 +122,8 @@
                             <p class="ranked-mp-game-question-label">Current Question</p>
                             <h2 class="ranked-mp-game-question">@Current.Question</h2>
                         </div>
+                        
+                        <p class="ranked-mp-game-question-timer">Time left: @TimeLeft s</p>
 
                         <div class="ranked-mp-game-answers">
                             @foreach (var a in Answers)
@@ -209,6 +211,9 @@
     private const int QuestionIntroSeconds = 4;
     private bool ShowingQuestionIntro = false;
     private CancellationTokenSource? IntroCts;
+    private int TimeLeft = 0;
+    private CancellationTokenSource? TimerCts;
+    private const int QuestionTimeSeconds = 15;
 
     private bool CanAnswer => !Locked && !ShowingQuestionIntro && !HasAnswered && !Finished;
 
@@ -272,7 +277,7 @@
 
         if (!startedAt.HasValue)
         {
-            await StartQuestionIntroAsync(TimeSpan.FromSeconds(QuestionIntroSeconds));
+            await StartQuestionIntroAsync(TimeSpan.FromSeconds(QuestionIntroSeconds), null);
             return;
         }
 
@@ -281,13 +286,16 @@
 
         if (remaining > TimeSpan.Zero)
         {
-            await StartQuestionIntroAsync(remaining);
+            await StartQuestionIntroAsync(remaining, startedAt);
         }
         else
         {
             IntroCts?.Cancel();
             ShowingQuestionIntro = false;
             Locked = false;
+
+            StartQuestionTimer(startedAt);
+
             await InvokeAsync(StateHasChanged);
         }
     }
@@ -348,15 +356,19 @@
         Locked = true;
         HasAnswered = false;
         Message = "";
+        TimerCts?.Cancel();
+        TimeLeft = 0;
         CorrectAnswer = null;
         RoundResults = new List<RankedQuestionPlayerAnswerDto>();
         LocalSelectedAnswer = null;
         ResultsVisible = false;
     }
 
-    private async Task StartQuestionIntroAsync(TimeSpan duration)
+    private async Task StartQuestionIntroAsync(TimeSpan duration, DateTime? questionStartedAtUtc)
     {
         IntroCts?.Cancel();
+        TimerCts?.Cancel();
+
         IntroCts = new CancellationTokenSource();
         var token = IntroCts.Token;
 
@@ -375,7 +387,44 @@
 
         ShowingQuestionIntro = false;
         Locked = false;
+
+        StartQuestionTimer(questionStartedAtUtc);
+
         await InvokeAsync(StateHasChanged);
+    }
+    
+    private void StartQuestionTimer(DateTime? questionStartedAtUtc)
+    {
+        TimerCts?.Cancel();
+        TimerCts = new CancellationTokenSource();
+
+        if (questionStartedAtUtc.HasValue)
+        {
+            var elapsedAfterIntro = Math.Max(0, (DateTime.UtcNow - questionStartedAtUtc.Value).TotalSeconds - QuestionIntroSeconds);
+            TimeLeft = Math.Max(0, QuestionTimeSeconds - (int)Math.Floor(elapsedAfterIntro));
+        }
+        else
+        {
+            TimeLeft = QuestionTimeSeconds;
+        }
+
+        _ = RunQuestionTimerAsync(TimerCts.Token);
+    }
+
+    private async Task RunQuestionTimerAsync(CancellationToken token)
+    {
+        try
+        {
+            while (TimeLeft > 0 && !token.IsCancellationRequested && !Finished && !ResultsVisible)
+            {
+                await Task.Delay(1000, token);
+                TimeLeft = Math.Max(0, TimeLeft - 1);
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (TaskCanceledException)
+        {
+        }
     }
 
     private void HandleQuestionResolved(RankedQuestionResolutionDto dto)
@@ -387,8 +436,8 @@
 
         var correctCount = RoundResults.Count(x => x.IsCorrect);
         Message = correctCount > 0
-            ? $"Správná odpověď: {dto.CorrectAnswer}"
-            : $"Nikdo neodpověděl správně. Správná odpověď: {dto.CorrectAnswer}";
+            ? $"Correct answer: {dto.CorrectAnswer}"
+            : $"Nobody answered. Correct answer: {dto.CorrectAnswer}";
 
         _ = InvokeAsync(StateHasChanged);
     }
@@ -398,6 +447,8 @@
         if (dto.LobbyCode != Code) return;
 
         Finished = true;
+        TimeLeft = 0;
+        TimerCts?.Cancel();
         FinalResult = dto;
         Locked = true;
 
@@ -428,6 +479,7 @@
     public void Dispose()
     {
         IntroCts?.Cancel();
+        TimerCts?.Cancel();
 
         RankedMp.OnNewQuestion -= HandleNewQuestion;
         RankedMp.OnQuestionResolved -= HandleQuestionResolved;

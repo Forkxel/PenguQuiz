@@ -296,7 +296,7 @@ public class MultiplayerHub : Hub
                 : string.Join(",", lobby.Settings.CategoryIds);
 
             var url =
-                $"http://localhost:5237/api/trivia?amount={lobby.Settings.Amount}" +
+                $"api/trivia?amount={lobby.Settings.Amount}" +
                 $"&difficulty={lobby.Settings.Difficulty}" +
                 $"&categories={cats}&fresh=true";
 
@@ -475,5 +475,25 @@ public class MultiplayerHub : Hub
             .OrderByDescending(x => x.Score)
             .ThenBy(x => x.Username)
             .ToList();
+    }
+    
+    public Task<DateTime?> GetQuestionStartedAtUtc(string lobbyCode)
+    {
+        if (!_lobbies.TryGetLobby(lobbyCode, out var lobby) || lobby == null)
+            return Task.FromResult<DateTime?>(null);
+
+        if (!_lobbies.IsPlayerInLobby(lobbyCode, Context.ConnectionId))
+            return Task.FromResult<DateTime?>(null);
+
+        lock (lobby)
+        {
+            if (lobby.Questions.Count == 0)
+                return Task.FromResult<DateTime?>(null);
+
+            if (lobby.CurrentQuestionIndex < 0 || lobby.CurrentQuestionIndex >= lobby.Questions.Count)
+                return Task.FromResult<DateTime?>(null);
+
+            return Task.FromResult<DateTime?>(lobby.QuestionStartedAtUtc);
+        }
     }
 }

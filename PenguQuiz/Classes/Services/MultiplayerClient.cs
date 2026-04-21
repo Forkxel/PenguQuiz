@@ -76,4 +76,6 @@ public class MultiplayerClient
     
     public async Task LeaveLobbyAsync(string lobbyCode)
         => await _conn!.InvokeAsync("LeaveLobby", lobbyCode);
+    public async Task<DateTime?> GetQuestionStartedAtUtcAsync(string lobbyCode)
+        => await _conn!.InvokeAsync<DateTime?>("GetQuestionStartedAtUtc", lobbyCode);
 }

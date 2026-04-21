@@ -2,8 +2,9 @@
 @using WebQuizGame.Classes.Models
 @using WebQuizGame.Classes.Models.Multiplayer
 @using WebQuizGame.Classes.Services
-@inject MultiplayerClient Mp
 @using Microsoft.AspNetCore.Components.Routing
+@using System.Globalization
+@inject MultiplayerClient Mp
 @inject NavigationManager Nav
 @inject IJSRuntime JS
 @implements IDisposable
@@ -15,6 +16,7 @@
         <img src="/images/avatars/macaroni.png" alt="Home" class="home-floating-img" />
         <span>Home</span>
     </button>
+
     <div class="game-layout">
         <aside class="game-sidebar">
             @if (LiveScores.Any())
@@ -25,7 +27,7 @@
                         <div class="game-avatar-wrap">
                             <img class="game-avatar"
                                  src="@GetAvatarUrl(player.AvatarKey)"
-                                 alt="avatar"/>
+                                 alt="avatar" />
                         </div>
 
                         <div class="game-player-info">
@@ -46,7 +48,7 @@
                         <div class="game-avatar-wrap">
                             <img class="game-avatar"
                                  src="@GetAvatarUrl("default")"
-                                 alt="avatar"/>
+                                 alt="avatar" />
                         </div>
 
                         <div class="game-player-info">
@@ -63,7 +65,6 @@
 
         <main class="game-main">
             <div class="multiplayer-game-card">
-
                 <h1 class="game-page-title">MULTIPLAYER GAME</h1>
                 <p class="game-page-subtitle">Lobby code: @Code</p>
 
@@ -96,7 +97,10 @@
                             <h2 class="question-reveal-text">@Current.Question</h2>
 
                             <div class="question-reveal-progress">
-                                <div class="question-reveal-progress-bar" style="animation-duration:@($"{QuestionIntroSeconds}s")"></div>
+                                <div class="question-reveal-progress-bar"
+                                     @key="IntroRenderKey"
+                                     style="@($"animation-duration:{CurrentIntroSeconds.ToString("0.00", CultureInfo.InvariantCulture)}s")">
+                                </div>
                             </div>
                         </div>
                     }
@@ -106,6 +110,8 @@
                             <p class="multiplayer-game-question-label">Current Question</p>
                             <h2 class="multiplayer-game-question">@Current.Question</h2>
                         </div>
+
+                        <p class="multiplayer-game-question-timer">Time left: @TimeLeft s</p>
 
                         <div class="multiplayer-game-answers">
                             @foreach (var a in Answers)
@@ -186,14 +192,21 @@
     private string? LocalSelectedAnswer;
     private bool ResultsVisible = false;
 
-    private const int QuestionIntroSeconds = 4;
+    private const double QuestionIntroSeconds = 4;
+    private double CurrentIntroSeconds = QuestionIntroSeconds;
     private bool ShowingQuestionIntro = false;
     private CancellationTokenSource? IntroCts;
+    private int IntroRenderKey = 0;
+
+    private CancellationTokenSource? QuestionTimerCts;
+    private int QuestionTimeLimit = 10;
+    private int TimeLeft = 10;
+
     private bool _isLeaving = false;
     private bool ShowLeaveModal = false;
     private string? PendingTargetUrl;
 
-    private bool CanAnswer => !Locked && !ShowingQuestionIntro && !HasAnswered && !Finished;
+    private bool CanAnswer => !Locked && !ShowingQuestionIntro && !HasAnswered && !Finished && TimeLeft > 0;
 
     protected override async Task OnInitializedAsync()
     {
@@ -207,6 +220,9 @@
 
         try
         {
+            var state = await Mp.GetLobbyStateAsync(Code);
+            QuestionTimeLimit = Math.Max(1, state.Settings.TimePerQuestion);
+
             LiveScores = await Mp.GetLiveScoresAsync(Code);
             var q = await Mp.GetCurrentQuestionAsync(Code);
 
@@ -219,7 +235,17 @@
             if (q != null)
             {
                 SetQuestion(q);
-                await StartQuestionIntroAsync();
+
+                DateTime? startedAtUtc = null;
+                try
+                {
+                    startedAtUtc = await Mp.GetQuestionStartedAtUtcAsync(Code);
+                }
+                catch
+                {
+                }
+
+                await StartQuestionIntroAsync(startedAtUtc);
             }
         }
         catch
@@ -227,7 +253,7 @@
             Nav.NavigateTo("/multiplayer", true);
         }
     }
-  
+
     private Task ConfirmLeaveNavigation(LocationChangingContext context)
     {
         if (_isLeaving || Finished)
@@ -272,11 +298,26 @@
         else
             await JS.InvokeVoidAsync("appNav.replace", target);
     }
-    
+
     private void HandleNewQuestion(TriviaQuestion q)
     {
+        _ = HandleNewQuestionAsync(q);
+    }
+
+    private async Task HandleNewQuestionAsync(TriviaQuestion q)
+    {
         SetQuestion(q);
-        _ = StartQuestionIntroAsync();
+
+        DateTime? startedAtUtc = null;
+        try
+        {
+            startedAtUtc = await Mp.GetQuestionStartedAtUtcAsync(Code);
+        }
+        catch
+        {
+        }
+
+        await StartQuestionIntroAsync(startedAtUtc);
     }
 
     private void HandleScoresUpdated(List<LivePlayerScoreDto> scores)
@@ -287,6 +328,8 @@
 
     private void HandleQuestionResolved(QuestionResolutionDto dto)
     {
+        QuestionTimerCts?.Cancel();
+
         Locked = true;
         ResultsVisible = true;
         CorrectAnswer = dto.CorrectAnswer;
@@ -302,9 +345,14 @@
 
     private void HandleGameFinished(Dictionary<string, int> scores)
     {
+        QuestionTimerCts?.Cancel();
+        IntroCts?.Cancel();
+
         Finished = true;
         Scores = scores;
         Locked = true;
+        ShowingQuestionIntro = false;
+
         _ = InvokeAsync(StateHasChanged);
     }
 
@@ -316,6 +364,9 @@
 
     private void SetQuestion(TriviaQuestion q)
     {
+        IntroCts?.Cancel();
+        QuestionTimerCts?.Cancel();
+
         Current = q;
         Answers = q.IncorrectAnswers
             .Append(q.CorrectAnswer)
@@ -329,21 +380,42 @@
         RoundResults = new List<QuestionPlayerAnswerDto>();
         LocalSelectedAnswer = null;
         ResultsVisible = false;
+        TimeLeft = QuestionTimeLimit;
     }
 
-    private async Task StartQuestionIntroAsync()
+    private async Task StartQuestionIntroAsync(DateTime? questionStartedAtUtc)
     {
         IntroCts?.Cancel();
         IntroCts = new CancellationTokenSource();
         var token = IntroCts.Token;
 
+        double remainingSeconds = QuestionIntroSeconds;
+
+        if (questionStartedAtUtc.HasValue)
+        {
+            var elapsed = (DateTime.UtcNow - questionStartedAtUtc.Value).TotalSeconds;
+            remainingSeconds = Math.Max(0, QuestionIntroSeconds - elapsed);
+        }
+
+        if (remainingSeconds <= 0.05)
+        {
+            ShowingQuestionIntro = false;
+            Locked = false;
+            CurrentIntroSeconds = QuestionIntroSeconds;
+            await StartQuestionCountdownAsync(questionStartedAtUtc);
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        CurrentIntroSeconds = remainingSeconds;
+        IntroRenderKey++;
         ShowingQuestionIntro = true;
         Locked = true;
         await InvokeAsync(StateHasChanged);
 
         try
         {
-            await Task.Delay(TimeSpan.FromSeconds(QuestionIntroSeconds), token);
+            await Task.Delay(TimeSpan.FromSeconds(remainingSeconds), token);
         }
         catch (TaskCanceledException)
         {
@@ -352,7 +424,64 @@
 
         ShowingQuestionIntro = false;
         Locked = false;
+        CurrentIntroSeconds = QuestionIntroSeconds;
+
+        await StartQuestionCountdownAsync(questionStartedAtUtc);
         await InvokeAsync(StateHasChanged);
+    }
+
+    private Task StartQuestionCountdownAsync(DateTime? questionStartedAtUtc)
+    {
+        QuestionTimerCts?.Cancel();
+        QuestionTimerCts = new CancellationTokenSource();
+
+        var token = QuestionTimerCts.Token;
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                while (!token.IsCancellationRequested && !Finished && !ResultsVisible)
+                {
+                    double remainingSeconds;
+
+                    if (questionStartedAtUtc.HasValue)
+                    {
+                        var answerStart = questionStartedAtUtc.Value.AddSeconds(QuestionIntroSeconds);
+                        var elapsed = (DateTime.UtcNow - answerStart).TotalSeconds;
+                        remainingSeconds = Math.Max(0, QuestionTimeLimit - elapsed);
+                    }
+                    else
+                    {
+                        remainingSeconds = TimeLeft;
+                    }
+
+                    var nextTimeLeft = (int)Math.Ceiling(remainingSeconds);
+                    if (nextTimeLeft < 0) nextTimeLeft = 0;
+
+                    if (TimeLeft != nextTimeLeft)
+                    {
+                        TimeLeft = nextTimeLeft;
+                        await InvokeAsync(StateHasChanged);
+                    }
+
+                    if (remainingSeconds <= 0)
+                    {
+                        TimeLeft = 0;
+                        Locked = true;
+                        await InvokeAsync(StateHasChanged);
+                        break;
+                    }
+
+                    await Task.Delay(200, token);
+                }
+            }
+            catch (TaskCanceledException)
+            {
+            }
+        }, token);
+
+        return Task.CompletedTask;
     }
 
     private async Task Answer(string ans)
@@ -431,15 +560,10 @@
             ? "multiplayer-game-answer-btn--resolved"
             : string.Empty;
 
-    private string GetAvatarUrl(string? avatarKey)
-    {
-        var key = string.IsNullOrWhiteSpace(avatarKey) ? "default" : avatarKey;
-        return $"/images/avatars/{key}.png";
-    }
-
     public void Dispose()
     {
         IntroCts?.Cancel();
+        QuestionTimerCts?.Cancel();
 
         Mp.OnNewQuestion -= HandleNewQuestion;
         Mp.OnScoresUpdated -= HandleScoresUpdated;
@@ -447,7 +571,13 @@
         Mp.OnGameFinished -= HandleGameFinished;
         Mp.OnGameError -= HandleGameError;
     }
-    
+
+    private string GetAvatarUrl(string? avatarKey)
+    {
+        var key = string.IsNullOrWhiteSpace(avatarKey) ? "default" : avatarKey;
+        return $"/images/avatars/{key}.png";
+    }
+
     private Task GoHome()
     {
         if (_isLeaving)
