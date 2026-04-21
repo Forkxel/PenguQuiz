@@ -7939,3 +7939,23 @@ main {
 .profile-menu-card {
     color: var(--pengu-text) !important;
 }
+
+.profile-menu-user-value,
+.profile-menu-section-title,
+.profile-menu-stat-value,
+.single-game-question-text,
+.ranked-game-question-text,
+.multiplayer-game-question,
+.ranked-mp-game-question,
+.account-settings-avatar-name,
+.account-settings-overview-value,
+.account-settings-section-title,
+.account-settings-label,
+.account-settings-message,
+.saved-quiz-lobby-player-name,
+.ranked-lobby-player-name,
+.mp-custom-lobby-player-name,
+.lobby-player-name {
+    color: #12384d !important;
+    text-shadow: none !important;
+}
