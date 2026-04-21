@@ -124,10 +124,11 @@
 
                                     @if (GetAnswerMarkers(a).Any())
                                     {
-                                        <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; justify-content:center;">
+                                        <div class="multiplayer-answer-markers">
                                             @foreach (var marker in GetAnswerMarkers(a))
                                             {
-                                                <span style="background:@marker.PlayerColor; color:#101323; padding:4px 8px; border-radius:999px; font-size:12px; font-weight:700;">
+                                                <span class="multiplayer-answer-player-tag @(GetMarkerResultClass(marker))">
+                                                    <span class="multiplayer-answer-player-dot" style="background:@marker.PlayerColor;"></span>
                                                     @marker.Username
                                                     @if (marker.PointsAwarded > 0)
                                                     {
@@ -585,5 +586,13 @@
         PendingTargetUrl = "/";
         ShowLeaveModal = true;
         return InvokeAsync(StateHasChanged);
+    }
+    
+    private string GetMarkerResultClass(QuestionPlayerAnswerDto marker)
+    {
+        if (string.IsNullOrWhiteSpace(marker.Answer))
+            return "timeout";
+
+        return marker.IsCorrect ? "correct" : "wrong";
     }
 }
