@@ -8212,3 +8212,46 @@ main {
     text-align: center;
     text-wrap: balance;
 }
+
+.multiplayer-game-answers {
+    width: 100%;
+    max-width: 600px;
+}
+
+.multiplayer-game-question-timer {
+    text-align: center;
+    font-weight: 700;
+    color: #16384d;
+}
+
+.multiplayer-game-question-box {
+    text-align: center;
+}
+
+/* ===== RANKED MULTIPLAYER RULES TEXT FIX ===== */
+.ranked-rules-card,
+.ranked-rules-card * {
+    color: #16384d !important;
+}
+
+.ranked-rules-card .rule-label,
+.ranked-rules-card .rule-value,
+.ranked-rules-card .match-rule-box,
+.ranked-rules-card span,
+.ranked-rules-card p {
+    color: #16384d !important;
+}
+
+:root {
+    --text-primary: #16384d;
+    --text-secondary: rgba(22, 56, 77, 0.7);
+    --text-muted: rgba(22, 56, 77, 0.5);
+}
+
+body {
+    color: var(--text-primary);
+}
+
+.text-light {
+    color: white;
+}
