@@ -296,12 +296,26 @@ public class MultiplayerHub : Hub
                 : string.Join(",", lobby.Settings.CategoryIds);
 
             var url =
-                $"http://localhost:5237/api/trivia?amount={lobby.Settings.Amount}" +
+                $"https://www.penguquiz.com/api/trivia?amount={lobby.Settings.Amount}" +
                 $"&difficulty={lobby.Settings.Difficulty}" +
                 $"&categories={cats}&fresh=true";
 
-            var resp = await http.GetFromJsonAsync<TriviaResponse>(url);
-            var questions = resp?.Results ?? new List<TriviaQuestion>();
+            Console.WriteLine("START GAME URL: " + url);
+
+            var resp = await http.GetAsync(url);
+            Console.WriteLine("TRIVIA STATUS: " + resp.StatusCode);
+
+            var json = await resp.Content.ReadAsStringAsync();
+            Console.WriteLine("TRIVIA JSON: " + json);
+
+            var data = System.Text.Json.JsonSerializer.Deserialize<TriviaResponse>(json,
+                new System.Text.Json.JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
+            var questions = data?.Results ?? new List<TriviaQuestion>();
+            Console.WriteLine("QUESTION COUNT: " + questions.Count);
 
             if (questions.Count == 0)
             {
@@ -325,11 +339,13 @@ public class MultiplayerHub : Hub
             await _hubContext.Clients.Group(lobby.GroupName).SendCoreAsync("ScoresUpdated",
                 new object[] { BuildLiveScores(lobby) });
 
+            Console.WriteLine("SENDING FIRST QUESTION");
             await SendQuestion(lobby, lobby.Questions[0]);
         }
         catch (Exception ex)
         {
-            Console.WriteLine("[START ERROR]\n" + ex);
+            Console.WriteLine("[START ERROR]");
+            Console.WriteLine(ex.ToString());
 
             await _hubContext.Clients.Group(lobby.GroupName).SendCoreAsync("GameError",
                 new object[] { "StartGame failed: " + ex.Message });
