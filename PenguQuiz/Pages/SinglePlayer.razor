@@ -63,7 +63,7 @@
                         <div class="question-reveal-card">
                             <p class="question-reveal-label">Question @(CurrentQuestionIndex + 1)</p>
                             <h2 class="question-reveal-text">
-                                @Questions[CurrentQuestionIndex]?.Text
+                                @DecodeHtmlTwice(Questions[CurrentQuestionIndex]?.Text)
                             </h2>
 
                             <div class="question-reveal-progress">
@@ -76,7 +76,7 @@
                         <div class="single-game-question-box">
                             <p class="single-game-question-number">Question @(CurrentQuestionIndex + 1)</p>
                             <p class="single-game-question-text">
-                                @Questions[CurrentQuestionIndex]?.Text
+                                @DecodeHtmlTwice(Questions[CurrentQuestionIndex]?.Text)
                             </p>
                         </div>
 
@@ -546,5 +546,15 @@
         PendingTargetUrl = "/";
         ShowLeaveModal = true;
         return InvokeAsync(StateHasChanged);
+    }
+    
+    private static string DecodeHtmlTwice(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return string.Empty;
+
+        var once = System.Net.WebUtility.HtmlDecode(value);
+        var twice = System.Net.WebUtility.HtmlDecode(once);
+        return twice;
     }
 }

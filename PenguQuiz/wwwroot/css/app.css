@@ -8233,25 +8233,3 @@ main {
 .ranked-rules-card * {
     color: #16384d !important;
 }
-
-.ranked-rules-card .rule-label,
-.ranked-rules-card .rule-value,
-.ranked-rules-card .match-rule-box,
-.ranked-rules-card span,
-.ranked-rules-card p {
-    color: #16384d !important;
-}
-
-:root {
-    --text-primary: #16384d;
-    --text-secondary: rgba(22, 56, 77, 0.7);
-    --text-muted: rgba(22, 56, 77, 0.5);
-}
-
-body {
-    color: var(--text-primary);
-}
-
-.text-light {
-    color: white;
-}

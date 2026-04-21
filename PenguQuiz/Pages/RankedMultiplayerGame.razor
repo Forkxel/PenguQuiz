@@ -339,10 +339,7 @@
         var target = PendingTargetUrl;
         PendingTargetUrl = null;
 
-        if (string.IsNullOrWhiteSpace(target))
-            await JS.InvokeVoidAsync("appNav.replace", "/multiplayerRanked");
-        else
-            await JS.InvokeVoidAsync("appNav.replace", target);
+        Nav.NavigateTo(string.IsNullOrWhiteSpace(target) ? "/multiplayerRanked" : target);
     }
 
     private void SetQuestion(TriviaQuestion q)
