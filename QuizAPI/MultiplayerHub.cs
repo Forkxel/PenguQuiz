@@ -296,7 +296,7 @@ public class MultiplayerHub : Hub
                 : string.Join(",", lobby.Settings.CategoryIds);
 
             var url =
-                $"api/trivia?amount={lobby.Settings.Amount}" +
+                $"http://localhost:5237/api/trivia?amount={lobby.Settings.Amount}" +
                 $"&difficulty={lobby.Settings.Difficulty}" +
                 $"&categories={cats}&fresh=true";
 
