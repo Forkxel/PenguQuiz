@@ -24,8 +24,8 @@ jobs:
           echo "RELEASE_NAME=release-$(date -u +%Y%m%dT%H%M%SZ)" >> $GITHUB_ENV
 
       - name: Create source archive
-          run: |
-            git archive --format=tar.gz -o penguquiz-source.tar.gz HEAD
+        run: |
+          git archive --format=tar.gz -o penguquiz-source.tar.gz HEAD
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
