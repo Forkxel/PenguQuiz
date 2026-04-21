@@ -20,8 +20,7 @@ jobs:
             set -e
 
             cd /var/www/PenguQuiz
-            git fetch origin
-            git reset --hard origin/master
+            git pull
 
             dotnet publish QuizAPI/QuizAPI.csproj -c Release -o /var/www/penguquiz/api
             dotnet publish PenguQuiz/PenguQuiz.csproj -c Release -o /var/www/penguquiz/frontend
