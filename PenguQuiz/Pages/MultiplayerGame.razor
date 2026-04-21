@@ -259,6 +259,17 @@
         if (_isLeaving || Finished)
             return Task.CompletedTask;
 
+        var target = context.TargetLocation;
+
+        if (Uri.TryCreate(target, UriKind.Absolute, out var absoluteUri))
+        {
+            target = Nav.ToBaseRelativePath(absoluteUri.ToString());
+        }
+        else
+        {
+            target = target.TrimStart('/');
+        }
+
         context.PreventNavigation();
         PendingTargetUrl = context.TargetLocation;
         ShowLeaveModal = true;
