@@ -116,8 +116,7 @@
                         <div class="multiplayer-game-answers">
                             @foreach (var a in Answers)
                             {
-                                <button class="multiplayer-game-answer-btn menu-btn @GetAnswerHighlightClass(a)"
-                                        style="@GetAnswerStyle(a)"
+                                <button class="multiplayer-game-answer-btn menu-btn @GetAnswerResultClass(a)"
                                         @onclick="() => Answer(a)"
                                         disabled="@(!CanAnswer)">
                                     <span>@a</span>
@@ -594,5 +593,19 @@
             return "timeout";
 
         return marker.IsCorrect ? "correct" : "wrong";
+    }
+    
+    private string GetAnswerResultClass(string answer)
+    {
+        if (string.IsNullOrWhiteSpace(CorrectAnswer))
+            return "";
+
+        if (string.Equals(answer, CorrectAnswer, StringComparison.OrdinalIgnoreCase))
+            return "correct";
+
+        if (GetAnswerMarkers(answer).Any())
+            return "wrong";
+
+        return "disabled";
     }
 }

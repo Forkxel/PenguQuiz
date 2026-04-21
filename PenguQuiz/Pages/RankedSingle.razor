@@ -41,6 +41,14 @@
                     <span class="ranked-game-sidebar-stat-value">@(CurrentQuestionIndex + 1) / @Questions.Count</span>
                 </div>
             }
+            
+            @if (Questions != null && Questions.Count > 0 && CurrentQuestionIndex < Questions.Count && !ShowingQuestionIntro)
+            {
+                <div class="ranked-game-sidebar-stat">
+                    <span class="ranked-game-sidebar-stat-label">Time</span>
+                    <span class="ranked-game-sidebar-stat-value">@TimeLeft s</span>
+                </div>
+            }
         </aside>
 
         <div class="ranked-game-screen">
