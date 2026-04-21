@@ -94,7 +94,7 @@
                     {
                         <div class="question-reveal-card">
                             <p class="question-reveal-label">Current Question</p>
-                            <h2 class="question-reveal-text">@Current.Question</h2>
+                            <h2 class="question-reveal-text">@DecodeHtmlTwice(Current.Question)</h2>
 
                             <div class="question-reveal-progress">
                                 <div class="question-reveal-progress-bar"
@@ -108,7 +108,7 @@
                     {
                         <div class="multiplayer-game-question-box">
                             <p class="multiplayer-game-question-label">Current Question</p>
-                            <h2 class="multiplayer-game-question">@Current.Question</h2>
+                            <h2 class="multiplayer-game-question">@DecodeHtmlTwice(Current.Question)</h2>
                         </div>
 
                         <p class="multiplayer-game-question-timer">Time left: @TimeLeft s</p>
@@ -366,9 +366,15 @@
         IntroCts?.Cancel();
         QuestionTimerCts?.Cancel();
 
-        Current = q;
-        Answers = q.IncorrectAnswers
-            .Append(q.CorrectAnswer)
+        Current = new TriviaQuestion
+        {
+            Question = DecodeHtmlTwice(q.Question),
+            CorrectAnswer = DecodeHtmlTwice(q.CorrectAnswer),
+            IncorrectAnswers = q.IncorrectAnswers.Select(DecodeHtmlTwice).ToList()
+        };
+
+        Answers = Current.IncorrectAnswers
+            .Append(Current.CorrectAnswer)
             .OrderBy(_ => Guid.NewGuid())
             .ToList();
 
@@ -607,5 +613,15 @@
             return "wrong";
 
         return "disabled";
+    }
+    
+    private static string DecodeHtmlTwice(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return string.Empty;
+
+        var once = System.Net.WebUtility.HtmlDecode(value);
+        var twice = System.Net.WebUtility.HtmlDecode(once);
+        return twice;
     }
 }

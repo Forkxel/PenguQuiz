@@ -8181,3 +8181,34 @@ main {
     opacity: 0.5;
     filter: saturate(0.8);
 }
+
+/* ===== QUICK GAME / MULTIPLAYER FINISH SCOREBOARD TEXT FIX ===== */
+.multiplayer-game-scoreboard,
+.multiplayer-game-score-row,
+.multiplayer-game-player,
+.multiplayer-game-points {
+    color: #16384d !important;
+}
+
+.multiplayer-game-player {
+    font-weight: 700;
+}
+
+.multiplayer-game-points {
+    font-weight: 800;
+}
+
+.multiplayer-game-score-row {
+    background: rgba(255, 255, 255, 0.46) !important;
+    border: 1px solid rgba(145, 205, 235, 0.45) !important;
+}
+
+.multiplayer-game-question {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1.35;
+    color: #16384d !important;
+    text-align: center;
+    text-wrap: balance;
+}
