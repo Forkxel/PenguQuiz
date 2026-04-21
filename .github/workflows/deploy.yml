@@ -8,6 +8,9 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://penguquiz.com
 
     steps:
       - name: Deploy over SSH
