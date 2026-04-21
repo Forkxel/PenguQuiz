@@ -5773,3 +5773,783 @@ main,
     font-size: 1rem;
     text-shadow: 0 2px 8px rgba(0,0,0,0.6);
 }
+
+
+html,
+body {
+    max-width: 100%;
+    overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+}
+
+img,
+svg,
+canvas,
+video {
+    max-width: 100%;
+    height: auto;
+}
+
+@media (max-width: 950px) {
+    .single-game-layout,
+    .ranked-game-layout {
+        flex-direction: column;
+        gap: 14px !important;
+    }
+
+    .single-game-sidebar,
+    .ranked-game-sidebar {
+        width: 100%;
+        padding: 14px !important;
+        border-radius: 18px !important;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        align-items: stretch;
+    }
+
+    .single-game-sidebar-name,
+    .ranked-game-sidebar-name {
+        grid-column: 1 / -1;
+        margin-bottom: 2px !important;
+        font-size: 1rem !important;
+        text-align: center;
+    }
+
+    .single-game-sidebar-stat,
+    .ranked-game-sidebar-stat {
+        margin-bottom: 0 !important;
+        padding: 10px 8px !important;
+        border-radius: 14px !important;
+    }
+
+    .single-game-sidebar-stat-label,
+    .ranked-game-sidebar-stat-label {
+        font-size: 0.7rem !important;
+        margin-bottom: 4px !important;
+        letter-spacing: 0.6px !important;
+    }
+
+    .single-game-sidebar-stat-value,
+    .ranked-game-sidebar-stat-value {
+        font-size: 1rem !important;
+        line-height: 1.2;
+    }
+
+    .game-layout {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+        padding: 16px !important;
+    }
+
+    .game-sidebar {
+        order: 1;
+        width: 100%;
+    }
+
+    .game-main {
+        order: 2;
+        width: 100%;
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+    }
+}
+
+@media (max-width: 700px) {
+    .home-page,
+    .profile-page,
+    .profile-menu-page,
+    .leaderboard-page,
+    .single-menu-page,
+    .single-game-page,
+    .ranked-game-page,
+    .multiplayer-page,
+    .multiplayer-game-page,
+    .lobby-page,
+    .mp-custom-page,
+    .mp-custom-lobby-page,
+    .ranked-multi-page,
+    .ranked-lobby-page,
+    .ranked-mp-game-page,
+    .account-settings-page,
+    .custom-quiz-lobby-page,
+    .saved-quiz-lobby-page,
+    .saved-quiz-game-page {
+        padding: 12px !important;
+        padding-top: 72px !important;
+    }
+
+    .menu-screen,
+    .profile-screen,
+    .profile-menu-screen,
+    .leaderboard-screen,
+    .single-menu-screen,
+    .single-game-screen,
+    .ranked-game-screen,
+    .multiplayer-screen,
+    .multiplayer-game-screen,
+    .lobby-screen,
+    .mp-custom-screen,
+    .mp-custom-lobby-screen,
+    .ranked-multi-screen,
+    .ranked-lobby-screen,
+    .ranked-mp-game-screen,
+    .account-settings-screen,
+    .custom-quiz-lobby-screen,
+    .saved-quiz-lobby-screen {
+        width: 100%;
+        max-width: 100%;
+        padding: 0 !important;
+    }
+
+    .menu-container,
+    .profile-container,
+    .profile-menu-card,
+    .leaderboard-card,
+    .single-menu-main,
+    .single-menu-setup,
+    .single-game-card,
+    .ranked-game-card,
+    .multiplayer-join-card,
+    .multiplayer-info-box,
+    .multiplayer-game-card,
+    .lobby-card,
+    .mp-custom-card,
+    .mp-custom-lobby-card,
+    .ranked-multi-card,
+    .ranked-lobby-card,
+    .ranked-mp-game-card,
+    .account-settings-card,
+    .custom-quiz-lobby-card,
+    .saved-quiz-lobby-card,
+    .game-sidebar {
+        width: 100%;
+        max-width: 100%;
+        padding: 16px !important;
+        border-radius: 18px !important;
+        overflow-x: hidden;
+    }
+
+    .menu-title,
+    .profile-title,
+    .profile-menu-title,
+    .leaderboard-title,
+    .single-menu-title,
+    .single-game-title,
+    .ranked-game-title,
+    .multiplayer-title,
+    .multiplayer-game-title,
+    .lobby-title,
+    .mp-custom-title,
+    .mp-custom-lobby-title,
+    .ranked-multi-title,
+    .ranked-lobby-title,
+    .ranked-mp-game-title,
+    .account-settings-title,
+    .custom-quiz-lobby-title,
+    .saved-quiz-lobby-title,
+    .game-page-title {
+        font-size: clamp(1.8rem, 8vw, 2.5rem) !important;
+        line-height: 1.12 !important;
+        letter-spacing: 1px !important;
+        word-break: break-word;
+        overflow-wrap: anywhere;
+    }
+
+    .menu-subtitle,
+    .profile-subtitle,
+    .profile-menu-subtitle,
+    .leaderboard-subtitle,
+    .single-menu-subtitle,
+    .single-game-subtitle,
+    .ranked-game-subtitle,
+    .multiplayer-subtitle,
+    .multiplayer-game-subtitle,
+    .lobby-subtitle,
+    .mp-custom-subtitle,
+    .mp-custom-lobby-subtitle,
+    .ranked-multi-subtitle,
+    .ranked-lobby-subtitle,
+    .ranked-mp-game-subtitle,
+    .account-settings-subtitle,
+    .custom-quiz-lobby-subtitle,
+    .saved-quiz-lobby-subtitle,
+    .game-page-subtitle {
+        font-size: 0.94rem !important;
+        margin-bottom: 16px !important;
+        overflow-wrap: anywhere;
+    }
+
+    .menu-btn,
+    .profile-btn,
+    .profile-menu-btn,
+    .single-game-menu-btn,
+    .ranked-game-menu-btn,
+    .leaderboard-back-btn,
+    .multiplayer-join-btn,
+    .lobby-action-btn,
+    .mp-custom-btn,
+    .mp-custom-lobby-btn,
+    .ranked-multi-btn,
+    .account-settings-btn,
+    .custom-quiz-lobby-btn,
+    .saved-quiz-lobby-btn,
+    .single-game-answer-btn,
+    .ranked-game-answer-btn,
+    .multiplayer-game-answer-btn,
+    .ranked-mp-game-answer-btn,
+    .answer-btn {
+        width: 100% !important;
+        min-width: 0 !important;
+        padding: 14px 14px !important;
+        font-size: 0.96rem !important;
+        border-radius: 16px !important;
+        white-space: normal;
+        word-break: break-word;
+    }
+
+    .profile-menu-actions,
+    .single-game-actions,
+    .ranked-game-actions,
+    .ranked-multi-actions,
+    .mp-custom-actions,
+    .mp-custom-lobby-actions,
+    .saved-quiz-lobby-actions,
+    .account-settings-actions,
+    .account-settings-actions-bottom,
+    .lobby-actions,
+    .leaderboard-switch {
+        flex-direction: column !important;
+    }
+
+    .profile-menu-btn,
+    .leaderboard-switch .menu-btn,
+    .leaderboard-back-btn {
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    .profile-input,
+    .multiplayer-input,
+    .account-settings-input,
+    .lobby-input,
+    .lobby-select,
+    .single-menu-select,
+    .mp-custom-select,
+    .mp-custom-lobby-select,
+    .category-dropdown-toggle,
+    .mp-custom-lobby-category-dropdown-toggle {
+        width: 100%;
+        max-width: 100%;
+        padding: 14px 16px !important;
+        font-size: 16px !important;
+        border-radius: 14px !important;
+    }
+
+    .profile-menu-stats,
+    .single-game-summary,
+    .ranked-game-summary,
+    .single-menu-categories,
+    .lobby-overview,
+    .lobby-settings-grid,
+    .lobby-form-grid,
+    .lobby-categories,
+    .mp-custom-categories,
+    .mp-custom-lobby-overview,
+    .mp-custom-lobby-settings-grid,
+    .mp-custom-lobby-players-list,
+    .saved-quiz-lobby-overview,
+    .saved-quiz-lobby-settings-grid,
+    .saved-quiz-lobby-players-list,
+    .ranked-lobby-overview,
+    .ranked-lobby-settings-grid,
+    .ranked-lobby-players-list,
+    .custom-quiz-lobby-overview,
+    .account-settings-overview,
+    .profile-menu-stats,
+    .ranked-multi-rules {
+        grid-template-columns: 1fr !important;
+    }
+
+    .single-menu-difficulty,
+    .mp-custom-difficulty,
+    .mp-custom-lobby-difficulty,
+    .account-settings-avatar-grid {
+        grid-template-columns: 1fr 1fr !important;
+    }
+
+    .single-game-question-text,
+    .ranked-game-question-text,
+    .multiplayer-game-question,
+    .ranked-mp-game-question,
+    .custom-quiz-lobby-question-text,
+    .question-reveal-text {
+        font-size: 1.02rem !important;
+        line-height: 1.4 !important;
+        word-break: break-word;
+    }
+
+    .single-game-topbar,
+    .ranked-game-topbar {
+        gap: 8px !important;
+        margin-bottom: 12px !important;
+    }
+
+    .single-game-stat,
+    .ranked-game-stat {
+        min-width: calc(50% - 4px);
+        flex: 1 1 calc(50% - 4px);
+        padding: 10px 12px !important;
+        border-radius: 14px !important;
+    }
+
+    .single-game-stat-label,
+    .ranked-game-stat-label {
+        font-size: 0.7rem !important;
+        margin-bottom: 4px !important;
+    }
+
+    .single-game-stat-value,
+    .ranked-game-stat-value {
+        font-size: 1rem !important;
+    }
+
+    .single-game-sidebar,
+    .ranked-game-sidebar {
+        padding-top: 12px !important;
+    }
+
+    .single-game-sidebar-avatar-wrap,
+    .ranked-game-sidebar-avatar-wrap {
+        width: 46px !important;
+        height: 46px !important;
+        margin: 0 auto 6px auto !important;
+    }
+
+    .single-game-sidebar-name,
+    .ranked-game-sidebar-name {
+        font-size: 0.92rem !important;
+        margin-bottom: 2px !important;
+    }
+
+    .single-game-sidebar-stat,
+    .ranked-game-sidebar-stat {
+        padding: 8px 6px !important;
+        border-radius: 12px !important;
+        margin-top: 2px !important;
+    }
+
+    .single-game-sidebar-stat-label,
+    .ranked-game-sidebar-stat-label {
+        font-size: 0.62rem !important;
+        margin-bottom: 3px !important;
+    }
+
+    .single-game-sidebar-stat-value,
+    .ranked-game-sidebar-stat-value {
+        font-size: 0.9rem !important;
+    }
+
+    .home-floating-btn {
+        position: fixed;
+        top: 8px !important;
+        left: 8px !important;
+        z-index: 10000;
+        width: 56px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px !important;
+        padding: 0 !important;
+    }
+
+    .home-floating-img {
+        width: 42px !important;
+        height: 42px !important;
+        display: block;
+    }
+
+    .home-floating-btn span {
+        font-size: 0.7rem !important;
+        line-height: 1 !important;
+        margin: 0 !important;
+        text-align: center;
+    }
+
+    .mainmenu-logo {
+        width: 150px !important;
+        height: 150px !important;
+    }
+
+    .mainmenu-logo-wrap {
+        margin-top: -20px !important;
+        margin-bottom: 0 !important;
+    }
+
+    .game-layout {
+        gap: 8px !important;
+    }
+
+    .game-sidebar {
+        margin-top: 4px !important;
+        margin-bottom: 2px !important;
+        padding-top: 12px !important;
+        padding-bottom: 8px !important;
+        gap: 8px !important;
+    }
+
+    .game-main > *:first-child,
+    .multiplayer-game-card,
+    .ranked-mp-game-card,
+    .single-game-card,
+    .ranked-game-card {
+        margin-top: 0 !important;
+    }
+
+    .multiplayer-game-live-scores,
+    .ranked-mp-game-live-scores {
+        margin-top: 4px !important;
+        margin-bottom: 8px !important;
+        gap: 8px !important;
+    }
+
+    .multiplayer-game-live-score-row,
+    .ranked-mp-game-live-score-row,
+    .multiplayer-game-score-row,
+    .game-player,
+    .lobby-player-row,
+    .mp-custom-lobby-player-row,
+    .saved-quiz-lobby-player-row,
+    .ranked-lobby-player-row {
+        gap: 10px !important;
+        min-height: 56px;
+        padding: 12px !important;
+    }
+
+    .multiplayer-game-live-score-avatar,
+    .ranked-mp-game-live-score-avatar,
+    .lobby-player-avatar-wrap,
+    .mp-custom-lobby-player-avatar-wrap,
+    .saved-quiz-lobby-player-avatar-wrap,
+    .ranked-lobby-player-avatar-wrap,
+    .game-avatar-wrap {
+        width: 38px !important;
+        height: 38px !important;
+        flex-shrink: 0;
+    }
+
+    .ranked-mp-game-result-avatar-wrap {
+        width: 44px !important;
+        height: 44px !important;
+    }
+
+    .multiplayer-game-live-score-name,
+    .ranked-mp-game-live-score-name,
+    .game-player-name,
+    .lobby-player-name,
+    .mp-custom-lobby-player-name,
+    .saved-quiz-lobby-player-name,
+    .ranked-lobby-player-name,
+    .ranked-mp-game-result-name {
+        font-size: 0.92rem !important;
+        line-height: 1.2 !important;
+        overflow-wrap: anywhere;
+    }
+
+    .multiplayer-game-live-score-value,
+    .ranked-mp-game-live-score-value,
+    .game-player-score {
+        font-size: 0.98rem !important;
+    }
+
+    .saved-quiz-lobby-title,
+    .custom-quiz-lobby-title,
+    .lobby-title,
+    .mp-custom-lobby-title,
+    .ranked-lobby-title {
+        padding-left: 36px;
+    }
+
+    .saved-quiz-lobby-subtitle,
+    .custom-quiz-lobby-subtitle,
+    .lobby-subtitle,
+    .mp-custom-lobby-subtitle,
+    .ranked-lobby-subtitle {
+        padding-left: 36px;
+    }
+
+    .category-dropdown-menu,
+    .mp-custom-lobby-category-dropdown-menu {
+        width: 100%;
+        max-height: 220px;
+        left: 0;
+        right: 0;
+    }
+}
+
+@media (max-width: 520px) {
+    .single-game-topbar,
+    .ranked-game-topbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .single-game-stat,
+    .ranked-game-stat {
+        min-width: 100%;
+        width: 100%;
+    }
+
+    .single-menu-difficulty,
+    .mp-custom-difficulty,
+    .mp-custom-lobby-difficulty,
+    .account-settings-avatar-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .question-reveal-card {
+        min-height: 220px !important;
+        gap: 14px !important;
+    }
+
+    .question-reveal-text {
+        font-size: 1.45rem !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .home-page,
+    .profile-page,
+    .profile-menu-page,
+    .leaderboard-page,
+    .single-menu-page,
+    .single-game-page,
+    .ranked-game-page,
+    .multiplayer-page,
+    .multiplayer-game-page,
+    .lobby-page,
+    .mp-custom-page,
+    .mp-custom-lobby-page,
+    .ranked-multi-page,
+    .ranked-lobby-page,
+    .ranked-mp-game-page,
+    .account-settings-page,
+    .custom-quiz-lobby-page,
+    .saved-quiz-lobby-page,
+    .saved-quiz-game-page {
+        padding-top: 68px !important;
+        padding-left: 10px !important;
+        padding-right: 10px !important;
+        padding-bottom: 10px !important;
+    }
+
+    .home-floating-btn {
+        top: 6px !important;
+        left: 6px !important;
+        width: 50px;
+    }
+
+    .home-floating-img {
+        width: 36px !important;
+        height: 36px !important;
+    }
+
+    .home-floating-btn span {
+        font-size: 0.66rem !important;
+    }
+
+    .menu-title,
+    .profile-title,
+    .profile-menu-title,
+    .leaderboard-title,
+    .single-menu-title,
+    .single-game-title,
+    .ranked-game-title,
+    .multiplayer-title,
+    .multiplayer-game-title,
+    .lobby-title,
+    .mp-custom-title,
+    .mp-custom-lobby-title,
+    .ranked-multi-title,
+    .ranked-lobby-title,
+    .ranked-mp-game-title,
+    .account-settings-title,
+    .custom-quiz-lobby-title,
+    .saved-quiz-lobby-title,
+    .game-page-title {
+        font-size: 1.55rem !important;
+    }
+
+    .menu-container,
+    .profile-container,
+    .profile-menu-card,
+    .leaderboard-card,
+    .single-menu-main,
+    .single-menu-setup,
+    .single-game-card,
+    .ranked-game-card,
+    .multiplayer-join-card,
+    .multiplayer-game-card,
+    .lobby-card,
+    .mp-custom-card,
+    .mp-custom-lobby-card,
+    .ranked-multi-card,
+    .ranked-lobby-card,
+    .ranked-mp-game-card,
+    .account-settings-card,
+    .custom-quiz-lobby-card,
+    .saved-quiz-lobby-card,
+    .game-sidebar {
+        padding: 14px !important;
+    }
+
+    .single-game-sidebar,
+    .ranked-game-sidebar {
+        gap: 6px !important;
+        padding: 10px !important;
+    }
+
+    .single-game-sidebar-avatar-wrap,
+    .ranked-game-sidebar-avatar-wrap {
+        width: 40px !important;
+        height: 40px !important;
+    }
+
+    .single-game-sidebar-name,
+    .ranked-game-sidebar-name {
+        font-size: 0.86rem !important;
+    }
+
+    .single-game-sidebar-stat-label,
+    .ranked-game-sidebar-stat-label {
+        font-size: 0.56rem !important;
+    }
+
+    .single-game-sidebar-stat-value,
+    .ranked-game-sidebar-stat-value {
+        font-size: 0.8rem !important;
+    }
+
+    .single-game-question-number,
+    .ranked-game-question-number,
+    .multiplayer-game-question-label,
+    .ranked-mp-game-question-label {
+        font-size: 0.76rem !important;
+    }
+
+    .single-game-question-text,
+    .ranked-game-question-text,
+    .multiplayer-game-question,
+    .ranked-mp-game-question {
+        font-size: 0.95rem !important;
+    }
+
+    .single-game-answer-btn,
+    .ranked-game-answer-btn,
+    .multiplayer-game-answer-btn,
+    .ranked-mp-game-answer-btn,
+    .answer-btn {
+        font-size: 0.9rem !important;
+        padding: 12px 10px !important;
+    }
+
+    .saved-quiz-lobby-title,
+    .custom-quiz-lobby-title,
+    .lobby-title,
+    .mp-custom-lobby-title,
+    .ranked-lobby-title {
+        padding-left: 30px;
+    }
+
+    .saved-quiz-lobby-subtitle,
+    .custom-quiz-lobby-subtitle,
+    .lobby-subtitle,
+    .mp-custom-lobby-subtitle,
+    .ranked-lobby-subtitle {
+        padding-left: 30px;
+    }
+}
+
+@media (max-width: 700px) {
+
+    .game-layout {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 6px !important;
+    }
+
+    .game-sidebar {
+        margin: 0 !important;
+        padding-bottom: 4px !important;
+    }
+
+    .game-main {
+        margin: 0 !important;
+        padding: 0 !important;
+
+        justify-content: flex-start !important;
+        align-items: stretch !important;
+        min-height: auto !important;
+    }
+
+    .multiplayer-game-card,
+    .ranked-mp-game-card {
+        margin-top: 0 !important;
+    }
+
+    .game-main > *:first-child {
+        margin-top: 0 !important;
+    }
+}
+
+@media (min-width: 701px) {
+
+    .home-floating-btn {
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        width: auto;
+    }
+
+    .home-floating-img {
+        width: 80px !important;
+        height: 80px !important;
+    }
+
+    .home-floating-btn span {
+        font-size: 1rem !important;
+    }
+}
+
+.home-floating-btn {
+    position: fixed;
+    top: 18px;
+    left: 18px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+}
+
+.home-floating-img {
+    width: 90px;
+    height: 90px;
+    object-fit: contain;
+    transition: transform 0.2s ease;
+}
+
+.home-floating-btn:hover .home-floating-img {
+    transform: scale(1.06);
+}
+
+.home-floating-btn span {
+    color: white;
+    font-weight: 800;
+    font-size: 1rem;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+}
