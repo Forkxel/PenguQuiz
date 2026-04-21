@@ -68,25 +68,17 @@ public class RankedController : ControllerBase
             ? 0
             : (double)req.CorrectAnswers / req.TotalQuestions;
 
-        int delta = 0;
+        double expectedAccuracy = 0.45 + ((currentRating - 1000) / 1000.0) * 0.30;
+        expectedAccuracy = Math.Clamp(expectedAccuracy, 0.40, 0.80);
 
-        if (accuracy >= 0.9) delta += 25;
-        else if (accuracy >= 0.8) delta += 15;
-        else if (accuracy >= 0.7) delta += 8;
-        else if (accuracy >= 0.6) delta += 0;
-        else if (accuracy >= 0.5) delta -= 8;
-        else delta -= 15;
+        double performance = accuracy - expectedAccuracy;
 
-        if (req.AverageTimeSeconds <= 5) delta += 5;
-        else if (req.AverageTimeSeconds >= 15) delta -= 5;
+        int delta = (int)Math.Round(performance * 40);
 
-        if (req.Difficulty == "hard") delta += 5;
-        else if (req.Difficulty == "easy") delta -= 3;
+        if (req.AverageTimeSeconds <= 6) delta += 2;
+        else if (req.AverageTimeSeconds >= 14) delta -= 2;
 
-        if (currentRating >= 1400) delta -= 3;
-        if (currentRating >= 1800) delta -= 3;
-
-        return delta;
+        return Math.Clamp(delta, -20, 20);
     }
     
     [Authorize]

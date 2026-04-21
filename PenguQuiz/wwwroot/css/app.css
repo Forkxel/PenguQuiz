@@ -6553,3 +6553,44 @@ video {
     font-size: 1rem;
     text-shadow: 0 2px 8px rgba(0,0,0,0.6);
 }
+
+.menu-title:focus,
+.menu-title:focus-visible,
+.profile-title:focus,
+.profile-title:focus-visible,
+.profile-menu-title:focus,
+.profile-menu-title:focus-visible,
+.leaderboard-title:focus,
+.leaderboard-title:focus-visible,
+.single-menu-title:focus,
+.single-menu-title:focus-visible,
+.single-game-title:focus,
+.single-game-title:focus-visible,
+.ranked-game-title:focus,
+.ranked-game-title:focus-visible,
+.multiplayer-title:focus,
+.multiplayer-title:focus-visible,
+.lobby-title:focus,
+.lobby-title:focus-visible,
+.mp-custom-title:focus,
+.mp-custom-title:focus-visible,
+.mp-custom-lobby-title:focus,
+.mp-custom-lobby-title:focus-visible,
+.ranked-multi-title:focus,
+.ranked-multi-title:focus-visible,
+.ranked-lobby-title:focus,
+.ranked-lobby-title:focus-visible,
+.ranked-mp-game-title:focus,
+.ranked-mp-game-title:focus-visible,
+.account-settings-title:focus,
+.account-settings-title:focus-visible,
+.custom-quiz-lobby-title:focus,
+.custom-quiz-lobby-title:focus-visible,
+.saved-quiz-lobby-title:focus,
+.saved-quiz-lobby-title:focus-visible,
+.game-page-title:focus,
+.game-page-title:focus-visible {
+    outline: none !important;
+    border: none !important;
+    box-shadow: none !important;
+}
