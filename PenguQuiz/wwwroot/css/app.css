@@ -2294,11 +2294,8 @@ main,
     margin: 0 0 10px 0;
     letter-spacing: 2px;
     text-transform: uppercase;
-    color: #ffffff;
-    text-shadow:
-            0 0 10px rgba(120, 119, 255, 0.6),
-            0 0 25px rgba(120, 119, 255, 0.35),
-            0 0 45px rgba(0, 224, 255, 0.2);
+    color: #0a3147 !important;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .multiplayer-subtitle {
@@ -3474,7 +3471,7 @@ main,
 
 .mp-custom-lobby-selected-category-tag button:hover {
     color: #ffffff;
-} 
+}
 
 .mp-custom-lobby-radio-item {
     display: flex;
@@ -5756,7 +5753,7 @@ main,
 .mainmenu-logo-wrap {
     display: flex;
     justify-content: center;
-    margin-top: -60px;  
+    margin-top: -60px;
     margin-bottom: -10px;
 }
 
@@ -5773,7 +5770,6 @@ main,
     font-size: 1rem;
     text-shadow: 0 2px 8px rgba(0,0,0,0.6);
 }
-
 
 html,
 body {
@@ -5954,6 +5950,7 @@ video {
         letter-spacing: 1px !important;
         word-break: break-word;
         overflow-wrap: anywhere;
+        color: #0a3147 !important;
     }
 
     .menu-subtitle,
@@ -6378,6 +6375,7 @@ video {
     .saved-quiz-lobby-title,
     .game-page-title {
         font-size: 1.55rem !important;
+        color: #0a3147 !important;
     }
 
     .menu-container,
@@ -6612,4 +6610,780 @@ video {
     font-size: 0.98rem;
     font-weight: 700;
     color: rgba(255, 255, 255, 0.82);
+}
+/* ===== ANTARCTICA CONTRAST HOTFIX ===== */
+:root {
+    --ice-text: #0e3850;
+    --ice-text-strong: #082a3c;
+    --ice-text-soft: #4a6a7d;
+    --ice-panel: rgba(245, 251, 255, 0.82);
+    --ice-panel-2: rgba(236, 246, 252, 0.90);
+    --ice-stroke: rgba(128, 193, 229, 0.55);
+    --ice-shadow: 0 18px 42px rgba(42, 83, 111, 0.20);
+}
+
+body {
+    color: var(--ice-text) !important;
+}
+
+.menu-subtitle,
+.profile-subtitle,
+.profile-menu-subtitle,
+.multiplayer-subtitle,
+.lobby-subtitle,
+.mp-custom-subtitle,
+.mp-custom-lobby-subtitle,
+.ranked-lobby-subtitle,
+.ranked-multi-subtitle,
+.account-settings-subtitle,
+.custom-quiz-lobby-subtitle,
+.saved-quiz-lobby-subtitle,
+.leaderboard-subtitle,
+.single-menu-subtitle,
+.ranked-game-subtitle,
+.single-game-subtitle,
+.game-page-subtitle {
+    color: rgba(8, 42, 60, 0.82) !important;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.55) !important;
+}
+
+.menu-title,
+.profile-title,
+.profile-menu-title,
+.multiplayer-title,
+.lobby-title,
+.mp-custom-title,
+.mp-custom-lobby-title,
+.ranked-lobby-title,
+.ranked-multi-title,
+.account-settings-title,
+.custom-quiz-lobby-title,
+.saved-quiz-lobby-title,
+.leaderboard-title,
+.single-menu-title,
+.ranked-game-title,
+.single-game-title,
+.multiplayer-game-finish-title,
+.ranked-mp-game-title,
+.ranked-mp-game-finish-title,
+.multiplayer-game-title,
+.game-page-title {
+    color: #0a3147 !important;
+    text-shadow:
+            0 2px 0 rgba(255,255,255,0.35),
+            0 8px 18px rgba(23, 71, 99, 0.28) !important;
+}
+
+.menu-container,
+.profile-container,
+.profile-menu-card,
+.profile-menu-error-box,
+.multiplayer-info-box,
+.multiplayer-join-card,
+.lobby-card,
+.lobby-error-box,
+.ranked-lobby-card,
+.ranked-lobby-error-box,
+.mp-custom-card,
+.mp-custom-message-box,
+.mp-custom-lobby-card,
+.mp-custom-lobby-error-box,
+.custom-quiz-lobby-card,
+.custom-quiz-lobby-message-box,
+.saved-quiz-lobby-card,
+.saved-quiz-lobby-error-box,
+.account-settings-card,
+.account-settings-message-box,
+.leaderboard-card,
+.leaderboard-error-box,
+.single-game-card,
+.single-game-finish-card,
+.ranked-game-card,
+.ranked-game-finish-card,
+.multiplayer-game-card,
+.multiplayer-game-finish-card,
+.ranked-mp-game-card,
+.ranked-mp-game-finish-card,
+.leave-modal-card,
+.question-reveal-card {
+    background: linear-gradient(180deg, var(--ice-panel), var(--ice-panel-2)) !important;
+    border: 1px solid var(--ice-stroke) !important;
+    box-shadow: var(--ice-shadow), inset 0 1px 0 rgba(255,255,255,0.8) !important;
+    color: var(--ice-text) !important;
+}
+
+.profile-menu-user-box,
+.profile-menu-stat-box,
+.lobby-setting-box,
+.lobby-status-box,
+.lobby-overview-box,
+.mp-custom-lobby-setting-box,
+.mp-custom-lobby-status-box,
+.mp-custom-lobby-overview-box,
+.ranked-lobby-setting-box,
+.ranked-lobby-status-box,
+.ranked-lobby-overview-box,
+.custom-quiz-lobby-setting-box,
+.custom-quiz-lobby-overview-box,
+.saved-quiz-lobby-setting-box,
+.saved-quiz-lobby-overview-box,
+.account-settings-overview-box,
+.ranked-multi-rule-box,
+.ranked-game-summary-box,
+.single-game-summary-box,
+.rankled-game-summary-box,
+.multiplayer-game-question-box,
+.ranked-mp-game-result-box {
+    background: rgba(255,255,255,0.56) !important;
+    border: 1px solid rgba(128, 193, 229, 0.48) !important;
+    color: var(--ice-text) !important;
+}
+
+.profile-menu-user-label,
+.profile-menu-stat-label,
+.lobby-label,
+.lobby-setting-label,
+.lobby-overview-label,
+.mp-custom-label,
+.mp-custom-value,
+.mp-custom-lobby-label,
+.mp-custom-lobby-setting-label,
+.mp-custom-lobby-overview-label,
+.ranked-lobby-overview-label,
+.ranked-lobby-setting-label,
+.custom-quiz-lobby-overview-label,
+.custom-quiz-lobby-setting-label,
+.saved-quiz-lobby-overview-label,
+.saved-quiz-lobby-setting-label,
+.account-settings-label,
+.account-settings-overview-label,
+.ranked-multi-rule-label,
+.single-game-stat-label,
+.single-game-sidebar-stat-label,
+.ranked-game-stat-label,
+.ranked-game-sidebar-stat-label,
+.question-reveal-label,
+.multiplayer-game-question-label,
+.ranked-mp-game-result-label,
+.profile-menu-message,
+.multiplayer-message,
+.lobby-message,
+.mp-custom-message,
+.mp-custom-lobby-message,
+.ranked-lobby-message,
+.custom-quiz-lobby-message,
+.saved-quiz-lobby-message,
+.account-settings-message,
+.leaderboard-message,
+.leave-modal-text {
+    color: var(--ice-text-soft) !important;
+}
+
+.profile-menu-user-value,
+.profile-menu-section-title,
+.profile-menu-stat-value,
+.multiplayer-join-title,
+.lobby-section-title,
+.lobby-overview-value,
+.lobby-setting-value,
+.lobby-player-name,
+.mp-custom-card-title,
+.mp-custom-lobby-section-title,
+.mp-custom-lobby-overview-value,
+.mp-custom-lobby-setting-value,
+.mp-custom-lobby-player-name,
+.ranked-lobby-section-title,
+.ranked-lobby-overview-value,
+.ranked-lobby-setting-value,
+.ranked-lobby-player-name,
+.custom-quiz-lobby-section-title,
+.custom-quiz-lobby-overview-value,
+.custom-quiz-lobby-setting-value,
+.saved-quiz-lobby-section-title,
+.saved-quiz-lobby-overview-value,
+.saved-quiz-lobby-setting-value,
+.account-settings-section-title,
+.account-settings-overview-value,
+.leaderboard-switch,
+.leave-modal-title,
+.single-game-stat-value,
+.single-game-sidebar-stat-value,
+.ranked-game-stat-value,
+.ranked-game-sidebar-stat-value,
+.question-reveal-text,
+.multiplayer-game-question,
+.multiplayer-game-points,
+.ranked-mp-game-result-name,
+.ranked-mp-game-result-value {
+    color: var(--ice-text-strong) !important;
+}
+
+.profile-input,
+.multiplayer-input,
+.lobby-input,
+.lobby-select,
+.mp-custom-select,
+.mp-custom-lobby-select,
+.account-settings-input,
+.single-menu-select,
+.single-menu-range,
+.ranked-game-answer-btn,
+.single-game-answer-btn,
+.multiplayer-game-answer-btn,
+.ranked-mp-game-answer-btn {
+    background: rgba(255,255,255,0.78) !important;
+    color: var(--ice-text-strong) !important;
+    border: 1px solid rgba(128, 193, 229, 0.62) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.82), 0 8px 18px rgba(74, 115, 143, 0.10) !important;
+}
+
+.profile-input::placeholder,
+.multiplayer-input::placeholder,
+.lobby-input::placeholder,
+.account-settings-input::placeholder {
+    color: rgba(74, 106, 125, 0.88) !important;
+}
+
+.menu-btn,
+.profile-btn,
+.profile-menu-btn,
+.multiplayer-join-btn,
+.lobby-action-btn,
+.lobby-start-btn,
+.mp-custom-btn,
+.mp-custom-lobby-btn,
+.mp-custom-lobby-start-btn,
+.ranked-multi-btn,
+.custom-quiz-lobby-btn,
+.saved-quiz-lobby-btn,
+.account-settings-btn,
+.leaderboard-back-btn,
+.single-menu-start-btn,
+.single-game-menu-btn,
+.single-game-secondary-btn,
+.ranked-game-menu-btn,
+.ranked-game-secondary-btn,
+.ranked-mp-game-menu-btn,
+.leave-modal-btn-secondary {
+    color: #083149 !important;
+    background: linear-gradient(180deg, rgba(248,252,255,0.97), rgba(168,214,241,0.96)) !important;
+    border: 1px solid rgba(126, 195, 235, 0.75) !important;
+    box-shadow: 0 10px 22px rgba(90, 147, 180, 0.18), inset 0 1px 0 rgba(255,255,255,0.95) !important;
+    text-shadow: none !important;
+}
+
+.menu-btn:hover,
+.profile-btn:hover,
+.profile-menu-btn:hover,
+.multiplayer-join-btn:hover,
+.lobby-action-btn:hover,
+.lobby-start-btn:hover,
+.mp-custom-btn:hover,
+.mp-custom-lobby-btn:hover,
+.mp-custom-lobby-start-btn:hover,
+.ranked-multi-btn:hover,
+.custom-quiz-lobby-btn:hover,
+.saved-quiz-lobby-btn:hover,
+.account-settings-btn:hover,
+.leaderboard-back-btn:hover,
+.single-menu-start-btn:hover,
+.single-game-menu-btn:hover,
+.single-game-secondary-btn:hover,
+.ranked-game-menu-btn:hover,
+.ranked-game-secondary-btn:hover,
+.ranked-mp-game-menu-btn:hover,
+.leave-modal-btn-secondary:hover {
+    filter: brightness(1.02) !important;
+    transform: translateY(-2px) !important;
+}
+
+.profile-menu-btn-secondary,
+.profile-btn-secondary,
+.menu-btn.exit,
+.leave-modal-btn-secondary,
+.single-game-secondary-btn,
+.ranked-game-secondary-btn {
+    color: #f6fbff !important;
+    background: linear-gradient(180deg, #4d6480, #2f4258) !important;
+    border-color: rgba(54, 82, 109, 0.9) !important;
+}
+
+.profile-menu-btn-danger,
+.leave-modal-btn-danger {
+    color: #fff !important;
+    background: linear-gradient(180deg, #e34957, #b62234) !important;
+    border-color: rgba(145, 27, 43, 0.95) !important;
+}
+
+@media (max-width: 700px) {
+    .profile-menu-card,
+    .multiplayer-join-card,
+    .lobby-card,
+    .mp-custom-lobby-card,
+    .ranked-lobby-card,
+    .custom-quiz-lobby-card,
+    .saved-quiz-lobby-card,
+    .account-settings-card {
+        padding: 18px !important;
+        border-radius: 20px !important;
+    }
+
+    .menu-btn,
+    .profile-btn,
+    .profile-menu-btn,
+    .multiplayer-join-btn,
+    .lobby-action-btn,
+    .lobby-start-btn,
+    .mp-custom-btn,
+    .mp-custom-lobby-btn,
+    .ranked-multi-btn,
+    .custom-quiz-lobby-btn,
+    .saved-quiz-lobby-btn,
+    .account-settings-btn {
+        font-size: 1rem !important;
+        padding: 14px 16px !important;
+    }
+}
+
+/* ===== ANTARCTICA THEME FINAL ===== */
+:root {
+    --ice-text: #12384d;
+    --ice-text-strong: #0a2a3a;
+    --ice-text-soft: #4f6f82;
+    --ice-panel: rgba(255, 255, 255, 0.62);
+    --ice-panel-strong: rgba(245, 251, 255, 0.72);
+    --ice-panel-soft: rgba(255, 255, 255, 0.42);
+    --ice-border: rgba(150, 210, 240, 0.55);
+    --ice-shadow: 0 20px 50px rgba(40, 78, 104, 0.18);
+    --ice-btn-top: #eefaff;
+    --ice-btn-bottom: #a9d8f1;
+    --ice-btn-text: #0a3147;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: var(--ice-text);
+    background:
+            linear-gradient(rgba(227, 243, 252, 0.70), rgba(235, 247, 253, 0.78)),
+            url("/images/ui/antarctica-penguins-pattern.png");
+    background-size: 420px auto;
+    background-repeat: repeat;
+    background-attachment: fixed;
+    background-position: center;
+}
+
+/* ===== TITLES ===== */
+.menu-title,
+.profile-title,
+.profile-menu-title,
+.leaderboard-title,
+.single-menu-title,
+.single-game-title,
+.ranked-game-title,
+.multiplayer-title,
+.multiplayer-game-title,
+.lobby-title,
+.mp-custom-title,
+.mp-custom-lobby-title,
+.ranked-multi-title,
+.ranked-lobby-title,
+.ranked-mp-game-title,
+.account-settings-title,
+.custom-quiz-lobby-title,
+.saved-quiz-lobby-title,
+.game-page-title {
+    color: #0a3147 !important;
+    text-shadow:
+            0 2px 0 rgba(255,255,255,0.40),
+            0 6px 18px rgba(39, 77, 103, 0.28) !important;
+}
+
+.menu-subtitle,
+.profile-subtitle,
+.profile-menu-subtitle,
+.leaderboard-subtitle,
+.single-menu-subtitle,
+.single-game-subtitle,
+.ranked-game-subtitle,
+.multiplayer-subtitle,
+.multiplayer-game-subtitle,
+.lobby-subtitle,
+.mp-custom-subtitle,
+.mp-custom-lobby-subtitle,
+.ranked-multi-subtitle,
+.ranked-lobby-subtitle,
+.ranked-mp-game-subtitle,
+.account-settings-subtitle,
+.custom-quiz-lobby-subtitle,
+.saved-quiz-lobby-subtitle,
+.game-page-subtitle {
+    color: rgba(11, 45, 64, 0.88) !important;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.45);
+}
+
+/* ===== MAIN GLASS PANELS ===== */
+.menu-container,
+.profile-container,
+.profile-menu-card,
+.profile-menu-error-box,
+.leaderboard-card,
+.leaderboard-error-box,
+.single-menu-main,
+.single-menu-setup,
+.single-game-card,
+.ranked-game-card,
+.multiplayer-join-card,
+.multiplayer-info-box,
+.multiplayer-game-card,
+.lobby-card,
+.mp-custom-card,
+.mp-custom-lobby-card,
+.ranked-multi-card,
+.ranked-lobby-card,
+.ranked-mp-game-card,
+.account-settings-card,
+.custom-quiz-lobby-card,
+.saved-quiz-lobby-card,
+.leave-modal-card,
+.game-sidebar {
+    background: linear-gradient(
+            180deg,
+            var(--ice-panel-strong) 0%,
+            var(--ice-panel) 100%
+    ) !important;
+    border: 1px solid var(--ice-border) !important;
+    box-shadow:
+            var(--ice-shadow),
+            inset 0 1px 0 rgba(255,255,255,0.85) !important;
+    color: var(--ice-text) !important;
+}
+
+/* ===== INNER BOXES ===== */
+.profile-menu-user-box,
+.profile-menu-stat-box,
+.lobby-overview-box,
+.lobby-setting-box,
+.lobby-status-box,
+.lobby-error-box,
+.mp-custom-lobby-overview-box,
+.mp-custom-lobby-setting-box,
+.mp-custom-lobby-players-box,
+.mp-custom-lobby-status-box,
+.mp-custom-lobby-error-box,
+.ranked-lobby-overview-box,
+.ranked-lobby-setting-box,
+.ranked-lobby-players-box,
+.ranked-lobby-status-box,
+.ranked-lobby-error-box,
+.saved-quiz-lobby-overview-box,
+.saved-quiz-lobby-setting-box,
+.saved-quiz-lobby-player-item,
+.saved-quiz-lobby-status-box,
+.saved-quiz-lobby-error-box,
+.account-settings-overview-box,
+.account-settings-message-box,
+.leaderboard-table thead tr,
+.single-game-stat,
+.ranked-game-stat,
+.single-game-summary-box,
+.ranked-game-summary-box,
+.multiplayer-game-info-box,
+.multiplayer-game-score-row,
+.multiplayer-game-live-score-row,
+.ranked-mp-game-info-box,
+.ranked-mp-game-result-item,
+.ranked-mp-game-result-box,
+.game-player,
+.custom-quiz-lobby-overview-box,
+.custom-quiz-lobby-question-card,
+.custom-quiz-lobby-message-box,
+.ranked-multi-info-box,
+.ranked-multi-rule-box,
+.ranked-multi-status-box {
+    background: rgba(255,255,255,0.46) !important;
+    border: 1px solid rgba(145, 205, 235, 0.45) !important;
+    color: var(--ice-text) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.65);
+}
+
+/* ===== TEXT ===== */
+.profile-menu-user-label,
+.profile-menu-stat-label,
+.lobby-overview-label,
+.lobby-setting-label,
+.mp-custom-lobby-overview-label,
+.mp-custom-lobby-setting-label,
+.ranked-lobby-overview-label,
+.ranked-lobby-setting-label,
+.saved-quiz-lobby-overview-label,
+.saved-quiz-lobby-setting-label,
+.account-settings-overview-label,
+.ranked-multi-rule-label,
+.single-game-stat-label,
+.ranked-game-stat-label,
+.single-game-summary-label,
+.ranked-game-summary-label,
+.multiplayer-game-question-label,
+.ranked-mp-game-question-label,
+.ranked-mp-game-result-label,
+.leaderboard-table th,
+.leaderboard-message,
+.multiplayer-message,
+.lobby-message,
+.mp-custom-message,
+.mp-custom-lobby-message,
+.ranked-lobby-message,
+.saved-quiz-lobby-message,
+.account-settings-message,
+.leave-modal-text,
+.question-reveal-label {
+    color: var(--ice-text-soft) !important;
+}
+
+.profile-menu-user-value,
+.profile-menu-section-title,
+.profile-menu-stat-value,
+.lobby-section-title,
+.lobby-overview-value,
+.lobby-setting-value,
+.lobby-player-name,
+.mp-custom-card-title,
+.mp-custom-lobby-section-title,
+.mp-custom-lobby-overview-value,
+.mp-custom-lobby-setting-value,
+.mp-custom-lobby-player-name,
+.ranked-lobby-section-title,
+.ranked-lobby-overview-value,
+.ranked-lobby-setting-value,
+.ranked-lobby-player-name,
+.saved-quiz-lobby-section-title,
+.saved-quiz-lobby-overview-value,
+.saved-quiz-lobby-setting-value,
+.saved-quiz-lobby-player-name,
+.account-settings-section-title,
+.account-settings-overview-value,
+.single-game-stat-value,
+.ranked-game-stat-value,
+.single-game-question-text,
+.ranked-game-question-text,
+.multiplayer-game-question,
+.ranked-mp-game-question,
+.ranked-mp-game-result-name,
+.ranked-mp-game-result-value,
+.multiplayer-game-live-score-name,
+.ranked-mp-game-live-score-name,
+.game-player-name,
+.game-player-score,
+.leave-modal-title,
+.question-reveal-text,
+.leaderboard-table td {
+    color: var(--ice-text-strong) !important;
+}
+
+/* ===== INPUTS / SELECTS ===== */
+.profile-input,
+.multiplayer-input,
+.lobby-input,
+.lobby-select,
+.mp-custom-select,
+.mp-custom-lobby-select,
+.account-settings-input,
+.single-menu-select,
+.category-dropdown-toggle,
+.mp-custom-lobby-category-dropdown-toggle {
+    background: rgba(255,255,255,0.72) !important;
+    color: var(--ice-text-strong) !important;
+    border: 1px solid rgba(145, 205, 235, 0.62) !important;
+    box-shadow:
+            inset 0 1px 0 rgba(255,255,255,0.85),
+            0 8px 18px rgba(82, 124, 149, 0.10) !important;
+}
+
+.profile-input::placeholder,
+.multiplayer-input::placeholder,
+.lobby-input::placeholder,
+.account-settings-input::placeholder {
+    color: rgba(73, 106, 125, 0.92) !important;
+}
+
+/* ===== DROPDOWNS ===== */
+.category-dropdown-menu,
+.mp-custom-lobby-category-dropdown-menu {
+    background: rgba(239, 249, 255, 0.96) !important;
+    border: 1px solid rgba(145, 205, 235, 0.55) !important;
+    box-shadow: 0 18px 36px rgba(45, 83, 107, 0.18) !important;
+}
+
+.category-dropdown-item,
+.mp-custom-lobby-category-dropdown-item {
+    color: var(--ice-text-strong) !important;
+}
+
+.category-dropdown-item:hover,
+.mp-custom-lobby-category-dropdown-item:hover {
+    background: rgba(173, 219, 242, 0.22) !important;
+    border-color: rgba(145, 205, 235, 0.45) !important;
+}
+
+/* ===== BUTTONS - ledové kry ===== */
+.menu-btn,
+.profile-btn,
+.profile-menu-btn,
+.multiplayer-join-btn,
+.lobby-action-btn,
+.lobby-start-btn,
+.mp-custom-btn,
+.mp-custom-lobby-btn,
+.ranked-multi-btn,
+.account-settings-btn,
+.custom-quiz-lobby-btn,
+.saved-quiz-lobby-btn,
+.leaderboard-back-btn,
+.single-game-menu-btn,
+.ranked-game-menu-btn,
+.ranked-mp-game-menu-btn,
+.single-menu-start-btn {
+    color: var(--ice-btn-text) !important;
+    background: linear-gradient(180deg, var(--ice-btn-top), var(--ice-btn-bottom)) !important;
+    border: 1px solid rgba(127, 198, 234, 0.8) !important;
+    box-shadow:
+            0 10px 24px rgba(92, 145, 173, 0.16),
+            inset 0 1px 0 rgba(255,255,255,0.95) !important;
+    text-shadow: none !important;
+}
+
+.menu-btn:hover,
+.profile-btn:hover,
+.profile-menu-btn:hover,
+.multiplayer-join-btn:hover,
+.lobby-action-btn:hover,
+.lobby-start-btn:hover,
+.mp-custom-btn:hover,
+.mp-custom-lobby-btn:hover,
+.ranked-multi-btn:hover,
+.account-settings-btn:hover,
+.custom-quiz-lobby-btn:hover,
+.saved-quiz-lobby-btn:hover,
+.leaderboard-back-btn:hover,
+.single-game-menu-btn:hover,
+.ranked-game-menu-btn:hover,
+.ranked-mp-game-menu-btn:hover,
+.single-menu-start-btn:hover {
+    transform: translateY(-2px) !important;
+    filter: brightness(1.03) !important;
+}
+
+/* ===== SECONDARY / DANGER ===== */
+.menu-btn.exit,
+.profile-btn-secondary,
+.profile-menu-btn-secondary,
+.single-game-secondary-btn,
+.ranked-game-secondary-btn,
+.leave-modal-btn-secondary {
+    color: #f7fbff !important;
+    background: linear-gradient(180deg, #50677f, #33485e) !important;
+    border: 1px solid rgba(60, 86, 109, 0.85) !important;
+}
+
+.profile-menu-btn-danger,
+.leave-modal-btn-danger {
+    color: #ffffff !important;
+    background: linear-gradient(180deg, #df4a58, #b62435) !important;
+    border: 1px solid rgba(143, 27, 42, 0.92) !important;
+}
+
+/* ===== ANSWER BUTTONS ===== */
+.single-game-answer-btn,
+.ranked-game-answer-btn,
+.multiplayer-game-answer-btn,
+.ranked-mp-game-answer-btn,
+.answer-btn {
+    color: #0a3147 !important;
+    background: linear-gradient(180deg, #f1fbff, #b8e2f5) !important;
+    border: 1px solid rgba(127, 198, 234, 0.75) !important;
+    box-shadow:
+            0 10px 22px rgba(95, 148, 177, 0.16),
+            inset 0 1px 0 rgba(255,255,255,0.92) !important;
+}
+
+.single-game-answer-btn.correct,
+.ranked-game-answer-btn.correct {
+    color: #fff !important;
+    background: linear-gradient(180deg, #5ccf7f, #3baa61) !important;
+    border-color: #319752 !important;
+}
+
+.single-game-answer-btn.wrong,
+.ranked-game-answer-btn.wrong {
+    color: #fff !important;
+    background: linear-gradient(180deg, #ef6a6a, #d24545) !important;
+    border-color: #bb3434 !important;
+}
+
+/* ===== HOME BUTTON ===== */
+.home-floating-btn span {
+    color: #0f3c55 !important;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.75) !important;
+}
+
+/* ===== MOBILE ===== */
+@media (max-width: 700px) {
+    body {
+        background-size: 220px auto;
+        background-attachment: scroll;
+    }
+
+    .menu-container,
+    .profile-container,
+    .profile-menu-card,
+    .leaderboard-card,
+    .single-menu-main,
+    .single-menu-setup,
+    .single-game-card,
+    .ranked-game-card,
+    .multiplayer-join-card,
+    .multiplayer-game-card,
+    .lobby-card,
+    .mp-custom-card,
+    .mp-custom-lobby-card,
+    .ranked-multi-card,
+    .ranked-lobby-card,
+    .ranked-mp-game-card,
+    .account-settings-card,
+    .custom-quiz-lobby-card,
+    .saved-quiz-lobby-card,
+    .game-sidebar {
+        padding: 16px !important;
+        border-radius: 18px !important;
+    }
+}
+
+/* ===== SINGLEPLAYER TEXT FIX ===== */
+.single-menu-subtitle,
+.single-menu-setup-title,
+.single-menu-label,
+.single-menu-radio-item,
+.single-menu-check-item,
+.single-menu-warning {
+    color: #12384d !important;
+    text-shadow: none !important;
+}
+
+.single-menu-radio-item input,
+.single-menu-check-item input {
+    accent-color: #6f5cff;
+}
+
+.single-menu-select,
+.category-dropdown-toggle,
+.category-dropdown-item,
+.selected-category-tag {
+    color: #12384d !important;
+}
+
+.single-menu-select option {
+    color: #12384d !important;
+    background: #f4fbff !important;
 }
