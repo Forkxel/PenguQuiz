@@ -108,13 +108,15 @@
                     <div class="single-menu-difficulty">
                         @foreach (var diff in Difficulties)
                         {
+                            var localDiff = diff;
+
                             <label class="single-menu-radio-item">
                                 <input type="radio"
                                        name="difficulty"
-                                       value="@diff"
-                                       @onchange="() => SelectedDifficulty = diff"
-                                       checked="@SelectedDifficulty == diff"/>
-                                <span>@diff</span>
+                                       value="@localDiff"
+                                       checked="@(SelectedDifficulty == localDiff)"
+                                       @onchange="@(() => SelectedDifficulty = localDiff)" />
+                                <span>@localDiff</span>
                             </label>
                         }
                     </div>
