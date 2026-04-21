@@ -6594,3 +6594,22 @@ video {
     border: none !important;
     box-shadow: none !important;
 }
+
+.multiplayer-game-question-timer {
+    margin: 0 0 16px 0;
+    text-align: center;
+    font-size: 0.98rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.82);
+}
+
+.multiplayer-game-question-timer,
+.ranked-mp-game-question-timer,
+.single-game-question-timer,
+.ranked-game-question-timer {
+    margin: 0 0 16px 0;
+    text-align: center;
+    font-size: 0.98rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.82);
+}
