@@ -7959,3 +7959,128 @@ main {
     color: #12384d !important;
     text-shadow: none !important;
 }
+
+.single-game-finish-title,
+.ranked-game-finish-title,
+.multiplayer-game-finish-title,
+.ranked-mp-game-finish-title,
+.custom-quiz-lobby-question-text,
+.custom-quiz-lobby-answer-item,
+.account-settings-avatar-name,
+.account-settings-avatar-check,
+.mp-custom-lobby-highlight,
+.mp-custom-highlight,
+.ranked-lobby-highlight,
+.saved-quiz-lobby-highlight,
+.single-game-summary-value,
+.ranked-game-summary-value,
+.custom-quiz-lobby-overview-value,
+.saved-quiz-lobby-overview-value,
+.saved-quiz-lobby-setting-value,
+.account-settings-overview-value,
+.account-settings-section-title,
+.account-settings-message,
+.single-game-message,
+.ranked-game-message,
+.multiplayer-game-message,
+.ranked-mp-game-message,
+.question-reveal-text,
+.question-reveal-label {
+    color: #12384d !important;
+    text-shadow: none !important;
+}
+
+.single-game-summary-label,
+.ranked-game-summary-label,
+.account-settings-overview-label,
+.custom-quiz-lobby-overview-label,
+.saved-quiz-lobby-overview-label,
+.saved-quiz-lobby-setting-label,
+.account-settings-avatar-check,
+.single-game-message,
+.ranked-game-message,
+.multiplayer-game-message,
+.ranked-mp-game-message,
+.question-reveal-label {
+    color: #5f7b8d !important;
+    text-shadow: none !important;
+}
+
+.account-settings-avatar-btn.active .account-settings-avatar-name,
+.account-settings-avatar-btn.active .account-settings-avatar-check,
+.selected-category-tag,
+.mp-custom-lobby-selected-category-tag,
+.custom-quiz-lobby-answer-item.correct {
+    color: #12384d !important;
+}
+
+.single-game-card .single-game-message,
+.ranked-game-card .ranked-game-message,
+.multiplayer-game-card .multiplayer-game-message,
+.ranked-mp-game-card .ranked-mp-game-message {
+    color: #6a8393 !important;
+    font-weight: 600;
+    text-shadow: none !important;
+}
+
+.single-game-card p,
+.ranked-game-card p,
+.multiplayer-game-card p,
+.ranked-mp-game-card p,
+.account-settings-card p,
+.account-settings-card span,
+.custom-quiz-lobby-card p,
+.custom-quiz-lobby-card span,
+.saved-quiz-lobby-card p,
+.saved-quiz-lobby-card span {
+    color: inherit;
+}
+
+/* ===== MOBILE SIDEBAR AVATAR FIX ===== */
+@media (max-width: 950px) {
+    .single-game-sidebar,
+    .ranked-game-sidebar {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        align-items: start;
+    }
+
+    .single-game-sidebar-avatar-wrap,
+    .ranked-game-sidebar-avatar-wrap {
+        grid-column: 1 / -1;
+        justify-self: center;
+        align-self: center;
+        margin: 0 auto 8px auto !important;
+    }
+
+    .single-game-sidebar-name,
+    .ranked-game-sidebar-name {
+        grid-column: 1 / -1;
+        justify-self: center;
+        text-align: center;
+        margin-bottom: 6px !important;
+    }
+
+    .single-game-sidebar-avatar,
+    .ranked-game-sidebar-avatar {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+}
+
+@media (max-width: 700px) {
+    .single-game-sidebar-avatar-wrap,
+    .ranked-game-sidebar-avatar-wrap {
+        width: 52px !important;
+        height: 52px !important;
+        margin: 0 auto 8px auto !important;
+    }
+
+    .single-game-sidebar-name,
+    .ranked-game-sidebar-name {
+        width: 100%;
+        text-align: center;
+    }
+}
