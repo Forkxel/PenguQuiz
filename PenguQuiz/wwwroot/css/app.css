@@ -7387,3 +7387,161 @@ body {
     color: #12384d !important;
     background: #f4fbff !important;
 }
+
+/* ===== FINAL TEXT + QUESTION REVEAL FIX ===== */
+
+/* nick hráče */
+.single-game-sidebar-name,
+.ranked-game-sidebar-name,
+.game-player-name,
+.lobby-player-name,
+.mp-custom-lobby-player-name,
+.saved-quiz-lobby-player-name,
+.ranked-lobby-player-name,
+.multiplayer-game-live-score-name,
+.ranked-mp-game-live-score-name,
+.ranked-mp-game-result-name,
+.profile-menu-user-value {
+    color: #12384d !important;
+    text-shadow: none !important;
+}
+
+/* loading / reveal otázky */
+.question-reveal-label,
+.question-reveal-text,
+.single-game-question-number,
+.ranked-game-question-number,
+.multiplayer-game-question-label,
+.ranked-mp-game-question-label,
+.single-game-question-text,
+.ranked-game-question-text,
+.multiplayer-game-question,
+.ranked-mp-game-question,
+.single-game-question-timer,
+.ranked-game-question-timer,
+.multiplayer-game-question-timer,
+.ranked-mp-game-question-timer {
+    color: #12384d !important;
+    text-shadow: none !important;
+}
+
+/* box s načítanou otázkou */
+.question-reveal-card,
+.multiplayer-game-question-box,
+.ranked-mp-game-question-box,
+.single-game-question-box,
+.ranked-game-question-box {
+    background: rgba(255, 255, 255, 0.58) !important;
+    border: 1px solid rgba(145, 205, 235, 0.55) !important;
+}
+
+/* progress bar container - ať není nalepený */
+.question-reveal-progress {
+    width: calc(100% - 48px) !important;
+    margin: 18px auto 0 auto !important;
+    height: 10px !important;
+    border-radius: 999px !important;
+    overflow: hidden !important;
+    background: rgba(120, 170, 200, 0.18) !important;
+    border: 1px solid rgba(127, 198, 234, 0.45) !important;
+}
+
+/* samotná čárka */
+.question-reveal-progress-bar {
+    border-radius: 999px !important;
+    background: linear-gradient(90deg, #7c5cff 0%, #4cc9f0 100%) !important;
+}
+
+/* otázka uvnitř reveal boxu - trochu víc vzduchu */
+.question-reveal-card {
+    padding: 28px 24px !important;
+    gap: 22px !important;
+}
+
+.question-reveal-text {
+    max-width: 90%;
+    margin: 0 auto !important;
+    line-height: 1.35 !important;
+    font-size: clamp(1.5rem, 3vw, 2.2rem) !important;
+}
+
+.question-reveal-label {
+    font-size: 0.95rem !important;
+    letter-spacing: 1.2px !important;
+    opacity: 0.8;
+}
+
+/* ===== LOADING QUESTIONS FIX ===== */
+.question-reveal-card {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+    min-height: 280px !important;
+    padding: 32px 28px !important;
+    text-align: center !important;
+    gap: 20px !important;
+
+    background: linear-gradient(
+            180deg,
+            rgba(255,255,255,0.82),
+            rgba(238,247,252,0.72)
+    ) !important;
+    border: 1px solid rgba(145, 205, 235, 0.55) !important;
+}
+
+.question-reveal-card .question-reveal-label,
+.question-reveal-card .question-reveal-text,
+.question-reveal-card p,
+.question-reveal-card span,
+.question-reveal-card div {
+    color: #12384d !important;
+    text-shadow: none !important;
+    opacity: 1 !important;
+}
+
+.question-reveal-card .question-reveal-text {
+    font-size: clamp(1.4rem, 3vw, 2.1rem) !important;
+    font-weight: 800 !important;
+    line-height: 1.35 !important;
+    max-width: 90% !important;
+    margin: 0 auto !important;
+}
+
+.question-reveal-card .question-reveal-label {
+    font-size: 0.95rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 1px !important;
+}
+
+.question-reveal-progress {
+    width: calc(100% - 64px) !important;
+    margin: 12px auto 0 auto !important;
+    height: 10px !important;
+    border-radius: 999px !important;
+    background: rgba(115, 164, 191, 0.18) !important;
+    border: 1px solid rgba(127, 198, 234, 0.45) !important;
+    overflow: hidden !important;
+}
+
+.question-reveal-progress-bar {
+    height: 100% !important;
+    border-radius: 999px !important;
+    background: linear-gradient(90deg, #7c5cff 0%, #4cc9f0 100%) !important;
+}
+
+/* ===== GLOBAL MESSAGE FIX ===== */
+.single-game-message,
+.multiplayer-message,
+.lobby-message,
+.mp-custom-message,
+.mp-custom-lobby-message,
+.ranked-lobby-message,
+.saved-quiz-lobby-message,
+.account-settings-message,
+.leaderboard-message {
+    color: #12384d !important;
+    text-shadow: none !important;
+    opacity: 1 !important;
+    font-weight: 600;
+}

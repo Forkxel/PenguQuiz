@@ -55,23 +55,6 @@
             }
             else if (CurrentQuestionIndex < Questions.Count)
             {
-                <div class="ranked-game-topbar">
-                    <div class="ranked-game-stat">
-                        <span class="ranked-game-stat-label">Score</span>
-                        <span class="ranked-game-stat-value">@Score</span>
-                    </div>
-
-                    <div class="ranked-game-stat">
-                        <span class="ranked-game-stat-label">Time Left</span>
-                        <span class="ranked-game-stat-value">@TimeLeft s</span>
-                    </div>
-
-                    <div class="ranked-game-stat">
-                        <span class="ranked-game-stat-label">Question</span>
-                        <span class="ranked-game-stat-value">@(@CurrentQuestionIndex + 1) / @Questions.Count</span>
-                    </div>
-                </div>
-
                 <div class="ranked-game-card">
                     @if (ShowingQuestionIntro)
                     {
