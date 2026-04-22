@@ -10,7 +10,7 @@ public class MultiplayerClient
 
     public event Action<LobbyState>? OnLobbyUpdated;
     public event Action<LobbyState>? OnGameStarted;
-    public event Action<TriviaQuestion>? OnNewQuestion;
+    public event Action<NewQuestionDto>? OnNewQuestion;
     public event Action<Dictionary<string, int>>? OnGameFinished;
     public event Action<string>? OnGameError;
     public event Action<QuestionResolutionDto>? OnQuestionResolved;
@@ -30,7 +30,7 @@ public class MultiplayerClient
         _conn.On<LobbyState>("LobbyUpdated", state => OnLobbyUpdated?.Invoke(state));
         _conn.On<string>("GameError", msg => OnGameError?.Invoke(msg));
         _conn.On<LobbyState>("GameStarted", state => OnGameStarted?.Invoke(state));
-        _conn.On<TriviaQuestion>("NewQuestion", q => OnNewQuestion?.Invoke(q));
+        _conn.On<NewQuestionDto>("NewQuestion", q => OnNewQuestion?.Invoke(q));
         _conn.On<Dictionary<string, int>>("GameFinished", scores => OnGameFinished?.Invoke(scores));
         _conn.On<QuestionResolutionDto>("QuestionResolved", dto => OnQuestionResolved?.Invoke(dto));
         _conn.On<List<LivePlayerScoreDto>>("ScoresUpdated", scores => OnScoresUpdated?.Invoke(scores));
