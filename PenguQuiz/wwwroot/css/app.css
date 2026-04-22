@@ -8499,3 +8499,34 @@ main {
     background: rgba(120, 140, 160, 0.20) !important;
     border-color: rgba(120, 140, 160, 0.40) !important;
 }
+
+.multiplayer-game-answer-btn,
+.ranked-mp-game-answer-btn {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    gap: 10px !important;
+}
+
+.multiplayer-game-answer-btn > span,
+.ranked-mp-game-answer-btn > span {
+    display: block;
+    width: 100%;
+    text-align: center;
+}
+
+.multiplayer-answer-markers {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 8px;
+    margin-top: 0 !important;
+}
+
+.multiplayer-answer-player-tag {
+    margin: 0 auto;
+}
