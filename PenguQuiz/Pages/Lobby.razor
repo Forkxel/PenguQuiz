@@ -320,7 +320,6 @@
     {
         if (_navigated) return;
         _navigated = true;
-        await Task.Delay(100);
         Nav.NavigateTo($"/multiplayerGame/{Code}");
     }
     
