@@ -8663,3 +8663,50 @@ main {
     width: 100%;
     text-align: center !important;
 }
+
+/* ===== FORCE CENTER ANSWER BUTTONS IN ALL GAME MODES ===== */
+.single-game-answers,
+.ranked-game-answers,
+.multiplayer-game-answers,
+.ranked-mp-game-answers {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+}
+
+.single-game-answer-btn,
+.ranked-game-answer-btn,
+.multiplayer-game-answer-btn,
+.ranked-mp-game-answer-btn {
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    width: min(100%, 780px) !important;
+    margin: 0 auto !important;
+}
+
+.saved-quiz-game-page .multiplayer-game-answer-btn,
+.custom-quiz-lobby-page .multiplayer-game-answer-btn,
+.multiplayerSavedQuizGame .multiplayer-game-answer-btn {
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    width: min(100%, 780px) !important;
+    margin: 0 auto !important;
+}
+
+.multiplayer-answer-markers {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    margin-top: 10px;
+    width: 100%;
+}
