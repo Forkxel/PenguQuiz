@@ -110,18 +110,18 @@
                         <div class="multiplayer-game-answers">
                             @foreach (var a in Answers)
                             {
-                                <button class="menu-btn multiplayer-game-answer-btn @GetAnswerHighlightClass(a)"
-                                        style="@GetAnswerStyle(a)"
+                                <button class="menu-btn multiplayer-game-answer-btn @GetAnswerStateClass(a)"
                                         @onclick="() => Answer(a)"
                                         disabled="@(!CanAnswer)">
                                     <span>@a</span>
 
                                     @if (GetAnswerMarkers(a).Any())
                                     {
-                                        <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; justify-content:center;">
+                                        <div class="multiplayer-answer-markers">
                                             @foreach (var marker in GetAnswerMarkers(a))
                                             {
-                                                <span style="background:@marker.PlayerColor; color:#101323; padding:4px 8px; border-radius:999px; font-size:12px; font-weight:700;">
+                                                <span class="multiplayer-answer-player-tag @GetMarkerResultClass(marker)">
+                                                    <span class="multiplayer-answer-player-dot" style="background:@marker.PlayerColor;"></span>
                                                     @marker.Username
                                                     @if (marker.PointsAwarded > 0)
                                                     {
@@ -502,27 +502,33 @@
         return Array.Empty<CustomQuizQuestionPlayerAnswerDto>();
     }
 
-    private string GetAnswerStyle(string answer)
+    private async Task BackToMenu()
+    {
+        await CustomMp.DisconnectAsync();
+        await JS.InvokeVoidAsync("appNav.replace", "/multiplayer");
+    }
+    
+    private string GetAnswerStateClass(string answer)
     {
         if (string.IsNullOrWhiteSpace(CorrectAnswer))
             return string.Empty;
 
         if (string.Equals(answer, CorrectAnswer, StringComparison.OrdinalIgnoreCase))
-            return "border:2px solid #51cf66; background:linear-gradient(135deg, rgba(81,207,102,0.38), rgba(81,207,102,0.20));";
+            return "multiplayer-game-answer-btn--resolved";
+
+        if (!string.IsNullOrWhiteSpace(LocalSelectedAnswer) &&
+            string.Equals(answer, LocalSelectedAnswer, StringComparison.OrdinalIgnoreCase))
+            return "multiplayer-game-answer-btn--wrong";
 
         return string.Empty;
     }
 
-    private string GetAnswerHighlightClass(string answer)
-        => !string.IsNullOrWhiteSpace(CorrectAnswer) &&
-           string.Equals(answer, CorrectAnswer, StringComparison.OrdinalIgnoreCase)
-            ? "multiplayer-game-answer-btn--resolved"
-            : string.Empty;
-
-    private async Task BackToMenu()
+    private string GetMarkerResultClass(CustomQuizQuestionPlayerAnswerDto marker)
     {
-        await CustomMp.DisconnectAsync();
-        await JS.InvokeVoidAsync("appNav.replace", "/multiplayer");
+        if (string.IsNullOrWhiteSpace(marker.Answer))
+            return "timeout";
+
+        return marker.IsCorrect ? "correct" : "wrong";
     }
 
     public async ValueTask DisposeAsync()
