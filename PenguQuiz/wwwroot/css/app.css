@@ -8530,3 +8530,101 @@ main {
 .multiplayer-answer-player-tag {
     margin: 0 auto;
 }
+
+/* ===== CENTER CONTENT IN ALL QUESTION / ANSWER BLOCKS ===== */
+
+/* question box */
+.single-game-question-box,
+.ranked-game-question-box,
+.multiplayer-game-question-box,
+.ranked-mp-game-question-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+/* labels above question */
+.single-game-question-number,
+.ranked-game-question-number,
+.multiplayer-game-question-label,
+.ranked-mp-game-question-label,
+.question-reveal-label {
+    width: 100%;
+    text-align: center !important;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* question text */
+.single-game-question-text,
+.ranked-game-question-text,
+.multiplayer-game-question,
+.ranked-mp-game-question,
+.question-reveal-text {
+    width: 100%;
+    text-align: center !important;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* answer container */
+.single-game-answers,
+.ranked-game-answers,
+.multiplayer-game-answers,
+.ranked-mp-game-answers {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+/* every answer button */
+.single-game-answer-btn,
+.ranked-game-answer-btn,
+.multiplayer-game-answer-btn,
+.ranked-mp-game-answer-btn {
+    width: 100%;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    gap: 10px;
+}
+
+/* direct text inside button */
+.single-game-answer-btn > span,
+.ranked-game-answer-btn > span,
+.multiplayer-game-answer-btn > span,
+.ranked-mp-game-answer-btn > span {
+    display: block;
+    width: 100%;
+    text-align: center !important;
+}
+
+/* player markers under answer */
+.multiplayer-answer-markers {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 8px;
+}
+
+/* intro/reveal progress block */
+.question-reveal-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.question-reveal-progress {
+    width: min(650px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+}
