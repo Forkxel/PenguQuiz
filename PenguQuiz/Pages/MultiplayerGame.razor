@@ -298,25 +298,15 @@
             await JS.InvokeVoidAsync("appNav.replace", target);
     }
 
-    private void HandleNewQuestion(TriviaQuestion q)
+    private void HandleNewQuestion(NewQuestionDto dto)
     {
-        _ = HandleNewQuestionAsync(q);
+        _ = HandleNewQuestionAsync(dto);
     }
-
-    private async Task HandleNewQuestionAsync(TriviaQuestion q)
+    
+    private async Task HandleNewQuestionAsync(NewQuestionDto dto)
     {
-        SetQuestion(q);
-
-        DateTime? startedAtUtc = null;
-        try
-        {
-            startedAtUtc = await Mp.GetQuestionStartedAtUtcAsync(Code);
-        }
-        catch
-        {
-        }
-
-        await StartQuestionIntroAsync(startedAtUtc);
+        SetQuestion(dto.Question);
+        await StartQuestionIntroAsync(dto.QuestionStartedAtUtc);
     }
 
     private void HandleScoresUpdated(List<LivePlayerScoreDto> scores)
