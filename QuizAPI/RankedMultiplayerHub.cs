@@ -324,7 +324,7 @@ public class RankedMultiplayerHub : Hub
                 : string.Join(",", lobby.Settings.CategoryIds);
 
             var url =
-                $"http://localhost:5237/api/trivia?amount={lobby.Settings.Amount}" +
+                $"https://www.penguquiz.com/api/trivia?amount={lobby.Settings.Amount}" +
                 $"&difficulty={lobby.Settings.Difficulty}" +
                 $"&categories={cats}&fresh=true";
 
