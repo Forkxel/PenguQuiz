@@ -8628,3 +8628,38 @@ main {
     margin-left: auto;
     margin-right: auto;
 }
+
+/* ===== FORCE CENTER ALL ANSWER BUTTONS EVERYWHERE ===== */
+
+.single-game-answers,
+.ranked-game-answers,
+.multiplayer-game-answers,
+.ranked-mp-game-answers {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+}
+
+.single-game-answer-btn,
+.ranked-game-answer-btn,
+.multiplayer-game-answer-btn,
+.ranked-mp-game-answer-btn {
+    width: min(600px, 90%) !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    text-align: center !important;
+}
+
+.single-game-answer-btn span,
+.ranked-game-answer-btn span,
+.multiplayer-game-answer-btn span,
+.ranked-mp-game-answer-btn span {
+    width: 100%;
+    text-align: center !important;
+}
