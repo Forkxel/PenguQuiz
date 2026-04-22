@@ -316,7 +316,7 @@
         InvokeAsync(StateHasChanged);
     }
 
-    private async void HandleNewQuestionInternal(TriviaQuestion q)
+    private async void HandleNewQuestionInternal(NewQuestionDto q)
     {
         if (_navigated) return;
         _navigated = true;
