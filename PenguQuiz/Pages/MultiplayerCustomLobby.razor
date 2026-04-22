@@ -408,7 +408,7 @@
         InvokeAsync(StateHasChanged);
     }
 
-    private async void HandleNewQuestion(TriviaQuestion q)
+    private async void HandleNewQuestion(NewQuestionDto q)
     {
         if (_navigated) return;
         _navigated = true;
