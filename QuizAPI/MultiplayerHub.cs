@@ -165,7 +165,7 @@ public class MultiplayerHub : Hub
             {
                 try
                 {
-                    await Task.Delay(TimeSpan.FromSeconds(30), token);
+                    await Task.Delay(TimeSpan.FromSeconds(10), token);
                 }
                 catch
                 {
