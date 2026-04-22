@@ -155,7 +155,7 @@ public class MultiplayerHub : Hub
             if (lobby.IsMatchmaking) return;
 
             lobby.IsMatchmaking = true;
-            lobby.MatchmakingEndsAtUtc = DateTime.UtcNow.AddSeconds(30);
+            lobby.MatchmakingEndsAtUtc = DateTime.UtcNow.AddSeconds(10);
 
             lobby.MatchmakingCts?.Cancel();
             lobby.MatchmakingCts = new CancellationTokenSource();
