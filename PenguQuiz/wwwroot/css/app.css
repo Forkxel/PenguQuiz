@@ -8257,6 +8257,53 @@ main {
     color: #5f7688 !important;
 }
 
+/* ===== GLOBAL DARK TEXT SAFETY FIX ===== */
+.menu-container *,
+.profile-container *,
+.profile-menu-card *,
+.leaderboard-card *,
+.single-menu-main *,
+.single-menu-setup *,
+.single-game-card *,
+.ranked-game-card *,
+.multiplayer-join-card *,
+.multiplayer-info-box *,
+.multiplayer-game-card *,
+.lobby-card *,
+.mp-custom-card *,
+.mp-custom-lobby-card *,
+.ranked-multi-card *,
+.ranked-lobby-card *,
+.ranked-mp-game-card *,
+.account-settings-card *,
+.custom-quiz-lobby-card *,
+.saved-quiz-lobby-card * {
+    color: inherit;
+}
+
+.menu-container,
+.profile-container,
+.profile-menu-card,
+.leaderboard-card,
+.single-menu-main,
+.single-menu-setup,
+.single-game-card,
+.ranked-game-card,
+.multiplayer-join-card,
+.multiplayer-info-box,
+.multiplayer-game-card,
+.lobby-card,
+.mp-custom-card,
+.mp-custom-lobby-card,
+.ranked-multi-card,
+.ranked-lobby-card,
+.ranked-mp-game-card,
+.account-settings-card,
+.custom-quiz-lobby-card,
+.saved-quiz-lobby-card {
+    color: #12384d !important;
+}
+
 .ranked-multi-rule-value,
 .ranked-multi-section-title,
 .ranked-multi-message {
