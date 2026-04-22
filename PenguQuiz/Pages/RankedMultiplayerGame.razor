@@ -107,7 +107,7 @@
                     {
                         <div class="question-reveal-card">
                             <p class="question-reveal-label">Current Question</p>
-                            <h2 class="question-reveal-text">@Current.Question</h2>
+                            <h2 class="question-reveal-text">@DecodeHtmlTwice(Current.Question)</h2>
 
                             <div class="question-reveal-progress">
                                 <div class="question-reveal-progress-bar" style="animation-duration:@($"{QuestionIntroSeconds}s")"></div>
@@ -118,7 +118,7 @@
                     {
                         <div class="ranked-mp-game-question-box">
                             <p class="ranked-mp-game-question-label">Current Question</p>
-                            <h2 class="ranked-mp-game-question">@Current.Question</h2>
+                            <h2 class="ranked-mp-game-question">@DecodeHtmlTwice(Current.Question)</h2>
                         </div>
                         
                         <p class="ranked-mp-game-question-timer">Time left: @TimeLeft s</p>
@@ -552,5 +552,15 @@
         PendingTargetUrl = "/";
         ShowLeaveModal = true;
         return InvokeAsync(StateHasChanged);
+    }
+
+    private static string DecodeHtmlTwice(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return string.Empty;
+
+        var once = System.Net.WebUtility.HtmlDecode(value);
+        var twice = System.Net.WebUtility.HtmlDecode(once);
+        return twice;
     }
 }
