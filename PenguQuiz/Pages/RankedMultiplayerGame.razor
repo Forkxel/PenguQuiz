@@ -9,8 +9,6 @@
 @inject IJSRuntime JS
 @implements IDisposable
 
-<NavigationLock OnBeforeInternalNavigation="ConfirmLeaveNavigation" />
-
 <div class="ranked-mp-game-page">
     <button class="home-floating-btn" @onclick="GoHome" title="Home">
         <img src="/images/avatars/macaroni.png" alt="Home" class="home-floating-img" />
@@ -299,19 +297,6 @@
             await InvokeAsync(StateHasChanged);
         }
     }
-    
-    private Task ConfirmLeaveNavigation(LocationChangingContext context)
-    {
-        if (_isLeaving || Finished)
-            return Task.CompletedTask;
-
-        context.PreventNavigation();
-        PendingTargetUrl = context.TargetLocation;
-        ShowLeaveModal = true;
-
-        InvokeAsync(StateHasChanged);
-        return Task.CompletedTask;
-    }
 
     private Task CancelLeave()
     {
@@ -468,9 +453,14 @@
         await InvokeAsync(StateHasChanged);
     }
 
-    private void BackToMenu()
+    private Task BackToMenu()
     {
-        Nav.NavigateTo("/multiplayerRanked");
+        if (_isLeaving)
+            return Task.CompletedTask;
+
+        PendingTargetUrl = "/multiplayerRanked";
+        ShowLeaveModal = true;
+        return InvokeAsync(StateHasChanged);
     }
 
     public void Dispose()

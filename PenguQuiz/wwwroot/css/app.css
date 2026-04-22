@@ -8233,3 +8233,32 @@ main {
 .ranked-rules-card * {
     color: #16384d !important;
 }
+
+/* ===== RANKED MULTIPLAYER WHITE TEXT FIX ===== */
+.ranked-multi-card,
+.ranked-multi-info-box,
+.ranked-multi-status-box,
+.ranked-multi-rule-box,
+.ranked-multi-section-title,
+.ranked-multi-message,
+.ranked-multi-rule-label,
+.ranked-multi-rule-value {
+    color: #12384d !important;
+}
+
+.ranked-multi-card *,
+.ranked-multi-info-box *,
+.ranked-multi-status-box *,
+.ranked-multi-rule-box * {
+    color: inherit;
+}
+
+.ranked-multi-rule-label {
+    color: #5f7688 !important;
+}
+
+.ranked-multi-rule-value,
+.ranked-multi-section-title,
+.ranked-multi-message {
+    color: #12384d !important;
+}
