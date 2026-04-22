@@ -354,31 +354,42 @@ public class MultiplayerHub : Hub
 
     private async Task SendQuestion(Lobby lobby, TriviaQuestion q)
     {
+        DateTime startedAtUtc;
+    
         lock (lobby)
         {
             lobby.QuestionLocked = false;
             lobby.QuestionStartedAtUtc = DateTime.UtcNow;
+            startedAtUtc = lobby.QuestionStartedAtUtc;
             lobby.SubmittedAnswers.Clear();
-
+    
             lobby.QuestionCts?.Cancel();
             lobby.QuestionCts = new CancellationTokenSource();
         }
-
-        await _hubContext.Clients.Group(lobby.GroupName).SendCoreAsync("NewQuestion", new object[] { q });
-
+    
+        var dto = new NewQuestionDto
+        {
+            Question = q,
+            QuestionStartedAtUtc = startedAtUtc
+        };
+    
+        await _hubContext.Clients.Group(lobby.GroupName)
+            .SendCoreAsync("NewQuestion", new object[] { dto });
+    
         _ = Task.Run(async () =>
         {
             CancellationToken token;
             int seconds;
+    
             lock (lobby)
             {
                 token = lobby.QuestionCts!.Token;
                 seconds = lobby.Settings.TimePerQuestion;
             }
-
+    
             if (seconds <= 0) seconds = 10;
             seconds += QuestionIntroSeconds;
-
+    
             try
             {
                 await Task.Delay(TimeSpan.FromSeconds(seconds), token);
@@ -387,7 +398,7 @@ public class MultiplayerHub : Hub
             {
                 return;
             }
-
+    
             await ResolveQuestion(lobby);
         });
     }
